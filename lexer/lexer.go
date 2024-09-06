@@ -1,5 +1,7 @@
 package lexer
 
+import "fmt"
+
 func (IntegerToken) token() {}
 
 func Parse(input string) ([]Token, error) {
@@ -21,7 +23,10 @@ func Parse(input string) ([]Token, error) {
 
 		if input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/' {
 			tokens = append(tokens, BinaryToken{Operation: string(input[i])})
+			continue
 		}
+
+		return nil, fmt.Errorf("invalid character: %c", input[i])
 	}
 
 	return tokens, nil

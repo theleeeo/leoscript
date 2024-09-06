@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseExr(t *testing.T) {
+func TestParseExpr(t *testing.T) {
 	t.Run("Binary ops with whitespace", func(t *testing.T) {
 		lx, err := lexer.Parse("1+ 2- 3 *4/ 5")
 		assert.NoError(t, err)
@@ -37,5 +37,10 @@ func TestParseExr(t *testing.T) {
 			lexer.BinaryToken{Operation: "/"},
 			lexer.IntegerToken{Value: 898989},
 		}, lx)
+	})
+
+	t.Run("Invalid character", func(t *testing.T) {
+		_, err := lexer.Parse("1+2$3")
+		assert.ErrorContains(t, err, "invalid character: $")
 	})
 }
