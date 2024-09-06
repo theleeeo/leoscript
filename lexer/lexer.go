@@ -1,18 +1,6 @@
 package lexer
 
-type TokenType string
-
-const (
-	// An integer
-	Integer TokenType = "INT"
-	// A binary operator
-	Binary TokenType = "BINOP"
-)
-
-type Token struct {
-	Type    TokenType
-	Literal string
-}
+func (IntegerToken) token() {}
 
 func Parse(input string) ([]Token, error) {
 	var tokens []Token
@@ -23,9 +11,16 @@ func Parse(input string) ([]Token, error) {
 		}
 
 		if isNumeric(input[i]) {
-			tokens = append(tokens, Token{Type: Integer, Literal: string(input[i])})
-		} else if input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/' {
-			tokens = append(tokens, Token{Type: Binary, Literal: string(input[i])})
+			value, j := parseInteger(input[i:])
+			tokens = append(tokens, IntegerToken{Value: value})
+			// Skip the number of characters we just parsed
+			// -1 because the loop will increment i
+			i += j - 1
+			continue
+		}
+
+		if input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/' {
+			tokens = append(tokens, BinaryToken{Operation: string(input[i])})
 		}
 	}
 
@@ -38,6 +33,21 @@ func isWhitespace(char byte) bool {
 
 func isNumeric(char byte) bool {
 	return char >= '0' && char <= '9'
+}
+
+func parseInteger(input string) (int, int) {
+	var value int
+	var i int
+
+	for i = 0; i < len(input); i++ {
+		if !isNumeric(input[i]) {
+			break
+		}
+
+		value = value*10 + int(input[i]-'0')
+	}
+
+	return value, i
 }
 
 func isAlpha(char byte) bool {
