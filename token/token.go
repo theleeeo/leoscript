@@ -12,6 +12,18 @@ type Integer struct {
 
 type OpenParen struct{}
 
+func (t OpenParen) String() string {
+	return "{(}"
+}
+
 type CloseParen struct{}
 
+func (t CloseParen) String() string {
+	return "{)}"
+}
+
 type Semicolon struct{}
+
+func (t Semicolon) String() string {
+	return "{;}"
+}

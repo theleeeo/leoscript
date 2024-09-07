@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"fmt"
 	"leoscript/lexer"
 	"leoscript/parser"
 	"testing"
@@ -116,6 +117,7 @@ func Test_ParseExpr(t *testing.T) {
 	t.Run("negation of integer", func(t *testing.T) {
 		lx, err := lexer.Tokenize("-123;")
 		assert.NoError(t, err)
+		fmt.Println(lx)
 
 		p := parser.NewParser(lx)
 		prog, err := p.Parse()
@@ -124,6 +126,38 @@ func Test_ParseExpr(t *testing.T) {
 		assert.Equal(t, parser.Program{
 			Body: []parser.Expression{
 				parser.IntegerLiteral{Value: -123},
+			},
+		}, prog)
+	})
+
+	t.Run("double negation of integer, error", func(t *testing.T) {
+		lx, err := lexer.Tokenize("--123;")
+		assert.NoError(t, err)
+		fmt.Println(lx)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "expected integer token")
+		assert.Empty(t, prog)
+	})
+
+	t.Run("unneccessary plus sign", func(t *testing.T) {
+		lx, err := lexer.Tokenize("+123 - 45;")
+		assert.NoError(t, err)
+		fmt.Println(lx)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left:  parser.IntegerLiteral{Value: 123},
+					Right: parser.IntegerLiteral{Value: 45},
+					Op:    "-",
+				},
 			},
 		}, prog)
 	})

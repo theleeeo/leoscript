@@ -10,6 +10,7 @@ func (p *Parser) parseExpression() (Expression, error) {
 	var root Expression
 
 	for tk := p.peek(); tk != nil; tk = p.peek() {
+		fmt.Printf("tk: %T\n", tk)
 		// This will only hit if it is the first token in the expression.
 		// Otherwise it will have been handled by another branch.
 		if intTk, ok := tk.(token.Integer); ok {
@@ -79,14 +80,34 @@ func (p *Parser) parseAtomicExpression() (Expression, error) {
 }
 
 func (p *Parser) parseBinaryExpression(root Expression, binaryToken token.Binary) (Expression, error) {
-	p.next() // consume the operator token
 
+	// No preceeding expression, this is the first one
 	if root == nil {
-		panic("unhandled binary operator without left expression")
+		switch binaryToken.Operation {
+		case "-":
+			// Negation of an integer
+			intTk := p.next()
+			fmt.Printf("intTk: %T\n", intTk)
+			if _, ok := intTk.(token.Integer); !ok {
+				return nil, fmt.Errorf("expected integer token, got %v", intTk)
+			}
+
+			return IntegerLiteral{Value: -intTk.(token.Integer).Value}, nil
+		case "+":
+			intTk := p.next()
+			if _, ok := intTk.(token.Integer); !ok {
+				return nil, fmt.Errorf("expected integer token, got %v", intTk)
+			}
+
+			return IntegerLiteral{Value: intTk.(token.Integer).Value}, nil
+		default:
+			return nil, fmt.Errorf("unexpected operator: %v", binaryToken)
+		}
 	}
 
 	left := root
 
+	p.next() // consume the operator token
 	right, err := p.parseAtomicExpression()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse right expression: %w", err)
