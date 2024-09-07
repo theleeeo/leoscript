@@ -5,7 +5,7 @@ import (
 )
 
 func NewParser(tokens []token.Token) *Parser {
-	return &Parser{tokens: tokens, current: -1}
+	return &Parser{tokens: tokens, current: 0}
 }
 
 type Parser struct {
@@ -38,17 +38,19 @@ type Program struct {
 }
 
 func (p *Parser) Parse() (Program, error) {
-	for tk := p.next(); tk != nil; tk = p.next() {
+	for tk := p.peek(); tk != nil; tk = p.peek() {
 		if _, ok := tk.(token.Semicolon); ok {
+			p.next()
 			continue
 		}
 
-		expr, err := p.parseExpression()
+		expr, err := p.parseExpressionGroup(false)
 		if err != nil {
 			return Program{}, err
 		}
 
 		p.Program.Body = append(p.Program.Body, expr)
+		p.next()
 	}
 
 	return p.Program, nil

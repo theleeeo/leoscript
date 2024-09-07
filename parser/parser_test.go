@@ -114,7 +114,7 @@ func Test_ParseExpr(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("negation of integer", func(t *testing.T) {
+	t.Run("Negation of integer", func(t *testing.T) {
 		lx, err := lexer.Tokenize("-123;")
 		assert.NoError(t, err)
 		fmt.Println(lx)
@@ -130,7 +130,7 @@ func Test_ParseExpr(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("double negation of integer, error", func(t *testing.T) {
+	t.Run("Double negation of integer, error", func(t *testing.T) {
 		lx, err := lexer.Tokenize("--123;")
 		assert.NoError(t, err)
 		fmt.Println(lx)
@@ -142,7 +142,7 @@ func Test_ParseExpr(t *testing.T) {
 		assert.Empty(t, prog)
 	})
 
-	t.Run("unneccessary plus sign", func(t *testing.T) {
+	t.Run("Unneccessary plus sign", func(t *testing.T) {
 		lx, err := lexer.Tokenize("+123 - 45;")
 		assert.NoError(t, err)
 		fmt.Println(lx)
@@ -182,7 +182,7 @@ func Test_ParseExpr(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("Simple parentheses on integer", func(t *testing.T) {
+	t.Run("Unneccessary parentheses on integer", func(t *testing.T) {
 		lx, err := lexer.Tokenize("(123);")
 		assert.NoError(t, err)
 
@@ -193,6 +193,133 @@ func Test_ParseExpr(t *testing.T) {
 		assert.Equal(t, parser.Program{
 			Body: []parser.Expression{
 				parser.IntegerLiteral{Value: 123},
+			},
+		}, prog)
+	})
+
+	t.Run("Parentheses first in top-level with more afterwards", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(1 + 2) + 10;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.BinaryExpression{
+						Left:     parser.IntegerLiteral{Value: 1},
+						Right:    parser.IntegerLiteral{Value: 2},
+						Op:       "+",
+						Priority: 100,
+					},
+					Right:    parser.IntegerLiteral{Value: 10},
+					Op:       "+",
+					Priority: 0,
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Parentheses first in top-level with more afterwards, order changed", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(1 + 2) * 10;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.BinaryExpression{
+						Left:     parser.IntegerLiteral{Value: 1},
+						Right:    parser.IntegerLiteral{Value: 2},
+						Op:       "+",
+						Priority: 100,
+					},
+					Right:    parser.IntegerLiteral{Value: 10},
+					Op:       "*",
+					Priority: 1,
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Parentheses on binary expression", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(123 + 456);")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left:     parser.IntegerLiteral{Value: 123},
+					Right:    parser.IntegerLiteral{Value: 456},
+					Op:       "+",
+					Priority: 100,
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Parentheses inside binary expression, not changing order", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(67 + 123) + 456 - 70;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.BinaryExpression{
+						Left: parser.BinaryExpression{
+							Left:     parser.IntegerLiteral{Value: 67},
+							Right:    parser.IntegerLiteral{Value: 123},
+							Op:       "+",
+							Priority: 100,
+						},
+						Right: parser.IntegerLiteral{Value: 456},
+						Op:    "+",
+					},
+					Right: parser.IntegerLiteral{Value: 70},
+					Op:    "-",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Parentheses inside binary expression, changing order", func(t *testing.T) {
+		lx, err := lexer.Tokenize("67 * (123 - 456) - 70;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.BinaryExpression{
+						Left: parser.IntegerLiteral{Value: 67},
+						Right: parser.BinaryExpression{
+							Left:     parser.IntegerLiteral{Value: 123},
+							Right:    parser.IntegerLiteral{Value: 456},
+							Op:       "-",
+							Priority: 100,
+						},
+						Op:       "*",
+						Priority: 100,
+					},
+					Right: parser.IntegerLiteral{Value: 70},
+					Op:    "-",
+				},
 			},
 		}, prog)
 	})
