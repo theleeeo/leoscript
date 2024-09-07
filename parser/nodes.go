@@ -13,9 +13,9 @@ type IntegerLiteral struct {
 	Value int
 }
 
-// type BinaryExpression struct {
-// 	expression
-// 	Left  Expression
-// 	Right Expression
-// 	Op    string
-// }
+type BinaryExpression struct {
+	expression
+	Left  Expression
+	Right Expression
+	Op    string
+}

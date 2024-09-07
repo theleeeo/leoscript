@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"leoscript/lexer"
 )
 
@@ -12,6 +11,8 @@ func NewParser(tokens []lexer.Token) *Parser {
 type Parser struct {
 	tokens  []lexer.Token
 	current int
+
+	Program Program
 }
 
 func (p *Parser) next() lexer.Token {
@@ -38,23 +39,17 @@ type Program struct {
 }
 
 func (p *Parser) Parse() (Program, error) {
-	var program Program
 
 	for tk := p.next(); tk != nil; tk = p.next() {
-		fmt.Println(tk)
 		expr, err := p.parseExpression()
 		if err != nil {
 			return Program{}, err
 		}
 
-		fmt.Println(expr)
-
-		program.Body = append(program.Body, expr)
+		p.Program.PushExpression(expr)
 	}
 
-	fmt.Println(program)
-
-	return program, nil
+	return p.Program, nil
 }
 
 func (p *Parser) parseExpression() (Expression, error) {
@@ -64,5 +59,36 @@ func (p *Parser) parseExpression() (Expression, error) {
 		return IntegerLiteral{Value: intTk.Value}, nil
 	}
 
+	if binTk, ok := tk.(lexer.BinaryToken); ok {
+		p.next() // consume the operator token
+
+		left := p.Program.PopExpression()
+		right, err := p.parseExpression()
+		if err != nil {
+			return nil, err
+		}
+
+		return BinaryExpression{
+			Left:  left,
+			Right: right,
+			Op:    binTk.Operation,
+		}, nil
+	}
+
 	return nil, nil
+}
+
+func (p *Program) PushExpression(expr Expression) {
+	p.Body = append(p.Body, expr)
+}
+
+func (p *Program) PopExpression() Expression {
+	if len(p.Body) == 0 {
+		panic("no expressions to pop")
+	}
+
+	expr := p.Body[len(p.Body)-1]
+	p.Body = p.Body[:len(p.Body)-1]
+
+	return expr
 }
