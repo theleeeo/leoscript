@@ -1,16 +1,10 @@
 package lexer
 
-type TokenType string
-
-type Token interface {
-	token()
-}
+type Token interface{}
 
 type BinaryToken struct {
 	Operation string
 }
-
-func (BinaryToken) token() {}
 
 type IntegerToken struct {
 	Value int

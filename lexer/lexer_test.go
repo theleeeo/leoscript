@@ -9,7 +9,7 @@ import (
 
 func TestParseExpr(t *testing.T) {
 	t.Run("Binary ops with whitespace", func(t *testing.T) {
-		lx, err := lexer.Parse("1+ 2- 3 *4/ 5")
+		lx, err := lexer.Tokenize("1+ 2- 3 *4/ 5")
 		assert.NoError(t, err)
 		assert.Equal(t, []lexer.Token{
 			lexer.IntegerToken{Value: 1},
@@ -25,7 +25,7 @@ func TestParseExpr(t *testing.T) {
 	})
 
 	t.Run("Multiple digit numbers", func(t *testing.T) {
-		lx, err := lexer.Parse("123+456789-987 7898 / 898989")
+		lx, err := lexer.Tokenize("123+456789-987 7898 / 898989")
 		assert.NoError(t, err)
 		assert.Equal(t, []lexer.Token{
 			lexer.IntegerToken{Value: 123},
@@ -40,7 +40,7 @@ func TestParseExpr(t *testing.T) {
 	})
 
 	t.Run("Invalid character", func(t *testing.T) {
-		_, err := lexer.Parse("1+2$3")
+		_, err := lexer.Tokenize("1+2$3")
 		assert.ErrorContains(t, err, "invalid character: $")
 	})
 }

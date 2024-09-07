@@ -2,9 +2,7 @@ package lexer
 
 import "fmt"
 
-func (IntegerToken) token() {}
-
-func Parse(input string) ([]Token, error) {
+func Tokenize(input string) ([]Token, error) {
 	var tokens []Token
 
 	for i := 0; i < len(input); i++ {
@@ -55,6 +53,6 @@ func parseInteger(input string) (int, int) {
 	return value, i
 }
 
-func isAlpha(char byte) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-}
+// func isAlpha(char byte) bool {
+// 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+// }
