@@ -15,7 +15,8 @@ type IntegerLiteral struct {
 
 type BinaryExpression struct {
 	expression
-	Left  Expression
-	Right Expression
-	Op    string
+	Left     Expression
+	Right    Expression
+	Op       string
+	Priority int
 }

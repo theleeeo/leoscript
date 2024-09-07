@@ -70,6 +70,78 @@ func Test_ParseExpr(t *testing.T) {
 		}, prog)
 	})
 
+	t.Run("Multiple binary expression, order", func(t *testing.T) {
+		lx, err := lexer.Tokenize("123 + 2 * 789 / 4")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.IntegerLiteral{Value: 123},
+					Right: parser.BinaryExpression{
+						Left: parser.BinaryExpression{
+							Left:     parser.IntegerLiteral{Value: 2},
+							Right:    parser.IntegerLiteral{Value: 789},
+							Op:       "*",
+							Priority: 1,
+						},
+						Right:    parser.IntegerLiteral{Value: 4},
+						Op:       "/",
+						Priority: 1,
+					},
+					Op: "+",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Multiple binary expression, order", func(t *testing.T) {
+		lx, err := lexer.Tokenize("123 + 2 * 789 / 4 - 9 * 1 / 2")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.BinaryExpression{
+						Left: parser.IntegerLiteral{Value: 123},
+						Right: parser.BinaryExpression{
+							Left: parser.BinaryExpression{
+								Left:     parser.IntegerLiteral{Value: 2},
+								Right:    parser.IntegerLiteral{Value: 789},
+								Op:       "*",
+								Priority: 1,
+							},
+							Right:    parser.IntegerLiteral{Value: 4},
+							Op:       "/",
+							Priority: 1,
+						},
+						Op: "+",
+					},
+					Right: parser.BinaryExpression{
+						Left: parser.BinaryExpression{
+							Left:     parser.IntegerLiteral{Value: 9},
+							Right:    parser.IntegerLiteral{Value: 1},
+							Op:       "*",
+							Priority: 1,
+						},
+						Right:    parser.IntegerLiteral{Value: 2},
+						Op:       "/",
+						Priority: 1,
+					},
+					Op: "-",
+				},
+			},
+		}, prog)
+	})
+
 	// t.Run("Multiple integers", func(t *testing.T) {
 	// 	lx, err := lexer.Tokenize("123 456 789")
 	// 	assert.NoError(t, err)

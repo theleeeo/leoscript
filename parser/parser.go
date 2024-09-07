@@ -68,10 +68,33 @@ func (p *Parser) parseExpression() (Expression, error) {
 			return nil, err
 		}
 
+		var priority int
+		switch binTk.Operation {
+		case "+", "-":
+			priority = 0
+		case "*", "/":
+			priority = 1
+		default:
+			panic("invalid operator in binary expression")
+		}
+
+		if leftBinExpr, ok := left.(BinaryExpression); ok && priority > leftBinExpr.Priority {
+			right = BinaryExpression{
+				Left:     leftBinExpr.Right,
+				Right:    right,
+				Op:       binTk.Operation,
+				Priority: priority,
+			}
+
+			leftBinExpr.Right = right
+			return leftBinExpr, nil
+		}
+
 		return BinaryExpression{
-			Left:  left,
-			Right: right,
-			Op:    binTk.Operation,
+			Left:     left,
+			Right:    right,
+			Op:       binTk.Operation,
+			Priority: priority,
 		}, nil
 	}
 
