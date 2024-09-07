@@ -112,6 +112,56 @@ func Test_ParseExpr(t *testing.T) {
 			},
 		}, prog)
 	})
+
+	t.Run("negation of integer", func(t *testing.T) {
+		lx, err := lexer.Tokenize("-123;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.IntegerLiteral{Value: -123},
+			},
+		}, prog)
+	})
+
+	t.Run("Negation of integer in operation", func(t *testing.T) {
+		lx, err := lexer.Tokenize("4 + -123;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		// Maybe in the future this can be made into a subtraction
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left:  parser.IntegerLiteral{Value: 4},
+					Right: parser.IntegerLiteral{Value: -123},
+					Op:    "+",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Simple parentheses on integer", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(123);")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.IntegerLiteral{Value: 123},
+			},
+		}, prog)
+	})
 }
 
 // func Test_ParseExpr_InvalidSyntax(t *testing.T) {
