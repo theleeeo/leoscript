@@ -15,15 +15,9 @@ type Parser struct {
 	Program Program
 }
 
-func (p *Parser) next() lexer.Token {
+func (p *Parser) next() bool {
 	p.current++
-
-	if p.current >= len(p.tokens) {
-		// TODO: EOF token?
-		return nil
-	}
-
-	return p.tokens[p.current]
+	return p.current < len(p.tokens)
 }
 
 func (p *Parser) peek() lexer.Token {
@@ -39,8 +33,7 @@ type Program struct {
 }
 
 func (p *Parser) Parse() (Program, error) {
-
-	for tk := p.next(); tk != nil; tk = p.next() {
+	for p.next() {
 		expr, err := p.parseExpression()
 		if err != nil {
 			return Program{}, err

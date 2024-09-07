@@ -6,25 +6,26 @@ func Tokenize(input string) ([]Token, error) {
 	var tokens []Token
 
 	for i := 0; i < len(input); i++ {
-		if isWhitespace(input[i]) {
+		switch {
+		case isWhitespace(input[i]):
 			continue
-		}
-
-		if isNumeric(input[i]) {
+		case isNumeric(input[i]):
 			value, j := parseInteger(input[i:])
 			tokens = append(tokens, IntegerToken{Value: value})
 			// Skip the number of characters we just parsed
 			// -1 because the loop will increment i
 			i += j - 1
-			continue
-		}
-
-		if input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/' {
+		case input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/':
 			tokens = append(tokens, BinaryToken{Operation: string(input[i])})
-			continue
+		case input[i] == '(':
+			tokens = append(tokens, OpenParenToken{})
+		case input[i] == ')':
+			tokens = append(tokens, CloseParenToken{})
+		case input[i] == ';':
+			tokens = append(tokens, SemicolonToken{})
+		default:
+			return nil, fmt.Errorf("invalid character: %c", input[i])
 		}
-
-		return nil, fmt.Errorf("invalid character: %c", input[i])
 	}
 
 	return tokens, nil

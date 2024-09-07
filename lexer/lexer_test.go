@@ -43,4 +43,21 @@ func TestParseExpr(t *testing.T) {
 		_, err := lexer.Tokenize("1+2$3")
 		assert.ErrorContains(t, err, "invalid character: $")
 	})
+
+	t.Run("Parentheses", func(t *testing.T) {
+		lx, err := lexer.Tokenize("((1+2)*3);")
+		assert.NoError(t, err)
+		assert.Equal(t, []lexer.Token{
+			lexer.OpenParenToken{},
+			lexer.OpenParenToken{},
+			lexer.IntegerToken{Value: 1},
+			lexer.BinaryToken{Operation: "+"},
+			lexer.IntegerToken{Value: 2},
+			lexer.CloseParenToken{},
+			lexer.BinaryToken{Operation: "*"},
+			lexer.IntegerToken{Value: 3},
+			lexer.CloseParenToken{},
+			lexer.SemicolonToken{},
+		}, lx)
+	})
 }

@@ -9,3 +9,9 @@ type BinaryToken struct {
 type IntegerToken struct {
 	Value int
 }
+
+type OpenParenToken struct{}
+
+type CloseParenToken struct{}
+
+type SemicolonToken struct{}
