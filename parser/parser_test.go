@@ -1,7 +1,6 @@
 package parser_test
 
 import (
-	"fmt"
 	"leoscript/lexer"
 	"leoscript/parser"
 	"testing"
@@ -117,7 +116,6 @@ func Test_ParseExpr(t *testing.T) {
 	t.Run("Negation of integer", func(t *testing.T) {
 		lx, err := lexer.Tokenize("-123;")
 		assert.NoError(t, err)
-		fmt.Println(lx)
 
 		p := parser.NewParser(lx)
 		prog, err := p.Parse()
@@ -133,7 +131,6 @@ func Test_ParseExpr(t *testing.T) {
 	t.Run("Double negation of integer, error", func(t *testing.T) {
 		lx, err := lexer.Tokenize("--123;")
 		assert.NoError(t, err)
-		fmt.Println(lx)
 
 		p := parser.NewParser(lx)
 		prog, err := p.Parse()
@@ -145,7 +142,6 @@ func Test_ParseExpr(t *testing.T) {
 	t.Run("Unneccessary plus sign", func(t *testing.T) {
 		lx, err := lexer.Tokenize("+123 - 45;")
 		assert.NoError(t, err)
-		fmt.Println(lx)
 
 		p := parser.NewParser(lx)
 		prog, err := p.Parse()
@@ -324,22 +320,3 @@ func Test_ParseExpr(t *testing.T) {
 		}, prog)
 	})
 }
-
-// func Test_ParseExpr_InvalidSyntax(t *testing.T) {
-// t.Run("Multiple integers", func(t *testing.T) {
-// 	lx, err := lexer.Tokenize("123 456 789")
-// 	assert.NoError(t, err)
-
-// 	p := parser.NewParser(lx)
-// 	prog, err := p.Parse()
-// 	assert.NoError(t, err)
-
-// 	assert.Equal(t, parser.Program{
-// 		Body: []parser.Expression{
-// 			parser.IntegerLiteral{Value: 123},
-// 			parser.IntegerLiteral{Value: 456},
-// 			parser.IntegerLiteral{Value: 789},
-// 		},
-// 	}, prog)
-// })
-// }

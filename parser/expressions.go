@@ -10,38 +10,20 @@ import (
 // An expression group is terminated by a semicolon token or a close parenthesis token.
 func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 	var root Expression
-	// var isSubgroup bool
 
-	// fmt.Println("parseExpressionGroup")
-
-	defer func() {
-		// fmt.Println("end parseExpressionGroup")
-	}()
-
-	// tk := p.peek()
-	// if _, ok := tk.(token.OpenParen); ok {
-	// 	fmt.Println("is subgroup")
-	// 	isSubgroup = true
-	// 	p.next() // consume the open parenthesis token
-	// }
-
-	// TODO: Use switch statement
 	for tk := p.peek(); tk != nil; tk = p.peek() {
 		// fmt.Printf("tk: %T %v\n", tk, tk)
-		handled := false
 
-		// This will only hit if it is the first token in the expression.
-		// Otherwise it will have been handled by another branch.
-		if intTk, ok := tk.(token.Integer); ok {
+		switch tk := tk.(type) {
+
+		case token.Integer: // This will only hit if it is the first token in the expression, otherwise it will have been handled by another branch.
+
 			if root != nil {
-				return nil, fmt.Errorf("unexpected integer token preceeding another expression, v=%v", intTk)
+				return nil, fmt.Errorf("unexpected integer token preceeding another expression, v=%v", tk)
 			}
-			root = IntegerLiteral{Value: intTk.Value}
+			root = IntegerLiteral{Value: tk.Value}
 
-			handled = true
-		}
-
-		if _, ok := tk.(token.Semicolon); ok {
+		case token.Semicolon:
 			if root == nil {
 				return nil, fmt.Errorf("unexpected semicolon token with no expression")
 			}
@@ -53,9 +35,8 @@ func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 			// TODO: Really needed?
 			p.current-- // put the semicolon back, it might be used to end the parent
 			return root, nil
-		}
 
-		if _, ok := tk.(token.OpenParen); ok {
+		case token.OpenParen:
 			p.next() // consume the open parenthesis token
 			expr, err := p.parseExpressionGroup(true)
 			if err != nil {
@@ -63,20 +44,16 @@ func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 			}
 
 			root = expr
-			handled = true
 
-		}
-
-		if _, ok := tk.(token.CloseParen); ok {
+		case token.CloseParen:
 			if !isSubgroup {
 				// return nil, fmt.Errorf("unexpected close parenthesis token")
 				panic("top-level expression group ended by close parenthesis")
 			}
 
 			return root, nil
-		}
 
-		if _, ok := tk.(token.Binary); ok {
+		case token.Binary:
 			expr, err := p.parseBinaryExpression(root)
 			if err != nil {
 				return nil, err
@@ -91,10 +68,8 @@ func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 			}
 
 			root = expr
-			handled = true
-		}
 
-		if !handled {
+		default:
 			return nil, fmt.Errorf("unexpected token in expression: T=%T V=%v", tk, tk)
 		}
 
