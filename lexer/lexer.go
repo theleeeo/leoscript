@@ -1,9 +1,12 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+	"leoscript/token"
+)
 
-func Tokenize(input string) ([]Token, error) {
-	var tokens []Token
+func Tokenize(input string) ([]token.Token, error) {
+	var tokens []token.Token
 
 	for i := 0; i < len(input); i++ {
 		switch {
@@ -11,18 +14,18 @@ func Tokenize(input string) ([]Token, error) {
 			continue
 		case isNumeric(input[i]):
 			value, j := parseInteger(input[i:])
-			tokens = append(tokens, IntegerToken{Value: value})
+			tokens = append(tokens, token.Integer{Value: value})
 			// Skip the number of characters we just parsed
 			// -1 because the loop will increment i
 			i += j - 1
 		case input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/':
-			tokens = append(tokens, BinaryToken{Operation: string(input[i])})
+			tokens = append(tokens, token.Binary{Operation: string(input[i])})
 		case input[i] == '(':
-			tokens = append(tokens, OpenParenToken{})
+			tokens = append(tokens, token.OpenParen{})
 		case input[i] == ')':
-			tokens = append(tokens, CloseParenToken{})
+			tokens = append(tokens, token.CloseParen{})
 		case input[i] == ';':
-			tokens = append(tokens, SemicolonToken{})
+			tokens = append(tokens, token.Semicolon{})
 		default:
 			return nil, fmt.Errorf("invalid character: %c", input[i])
 		}

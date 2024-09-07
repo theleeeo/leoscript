@@ -10,7 +10,7 @@ import (
 
 func Test_ParseExpr(t *testing.T) {
 	t.Run("Single integer", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123")
+		lx, err := lexer.Tokenize("123;")
 		assert.NoError(t, err)
 
 		p := parser.NewParser(lx)
@@ -25,7 +25,7 @@ func Test_ParseExpr(t *testing.T) {
 	})
 
 	t.Run("Single binary expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 456")
+		lx, err := lexer.Tokenize("123 + 456;")
 		assert.NoError(t, err)
 
 		p := parser.NewParser(lx)
@@ -44,7 +44,7 @@ func Test_ParseExpr(t *testing.T) {
 	})
 
 	t.Run("Multiple binary expression, no order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 2 - 789 + 4")
+		lx, err := lexer.Tokenize("123 + 2 - 789 + 4;")
 		assert.NoError(t, err)
 
 		p := parser.NewParser(lx)
@@ -71,7 +71,7 @@ func Test_ParseExpr(t *testing.T) {
 	})
 
 	t.Run("Multiple binary expression, order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 2 * 789 / 4 - 9 * 1 / 2")
+		lx, err := lexer.Tokenize("123 + 2 * 789 / 4 - 9 * 1 / 2;")
 		assert.NoError(t, err)
 
 		p := parser.NewParser(lx)

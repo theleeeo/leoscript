@@ -4,19 +4,23 @@ type Expression interface {
 	isExpression()
 }
 
-type expression struct{}
+// type expression struct{}
 
-func (e expression) isExpression() {}
+// func (e expression) isExpression() {}
 
 type IntegerLiteral struct {
-	expression
+	// expression
 	Value int
 }
 
+func (i IntegerLiteral) isExpression() {}
+
 type BinaryExpression struct {
-	expression
+	// expression
 	Left     Expression
 	Right    Expression
 	Op       string
 	Priority int
 }
+
+func (b BinaryExpression) isExpression() {}
