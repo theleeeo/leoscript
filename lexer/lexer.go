@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+var keywords = map[string]token.Token{
+	"true":  token.Boolean{Value: true},
+	"false": token.Boolean{Value: false},
+}
+
 type lexer struct {
 	input string
 	pos   int
@@ -47,7 +52,15 @@ func Tokenize(input string) ([]token.Token, error) {
 
 		if isAlpha(tk) {
 			value := lx.parseAlpha()
+
+			// Check if the value is a reserved keyword
+			if keyword, ok := keywords[value]; ok {
+				lx.pushToken(keyword)
+				continue
+			}
+
 			lx.pushToken(token.Identifier{Value: value})
+
 			continue
 		}
 

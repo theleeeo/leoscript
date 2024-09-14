@@ -78,6 +78,9 @@ func Test_Expression(t *testing.T) {
 		}, lx)
 	})
 
+}
+
+func Test_Identifiers(t *testing.T) {
 	t.Run("Identifiers", func(t *testing.T) {
 		lx, err := lexer.Tokenize("foo + bar-baz")
 		assert.NoError(t, err)
@@ -87,6 +90,34 @@ func Test_Expression(t *testing.T) {
 			token.Identifier{Value: "bar"},
 			token.Binary{Operation: "-"},
 			token.Identifier{Value: "baz"},
+		}, lx)
+	})
+
+	t.Run("Reserved keywords", func(t *testing.T) {
+		lx, err := lexer.Tokenize("true false")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Boolean{Value: true},
+			token.Boolean{Value: false},
+		}, lx)
+	})
+
+	t.Run("Combined keywords, fine", func(t *testing.T) {
+		lx, err := lexer.Tokenize("truefalse")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Identifier{Value: "truefalse"},
+		}, lx)
+	})
+
+	t.Run("Mixed identifiers and keywords", func(t *testing.T) {
+		lx, err := lexer.Tokenize("true foo false bar")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Boolean{Value: true},
+			token.Identifier{Value: "foo"},
+			token.Boolean{Value: false},
+			token.Identifier{Value: "bar"},
 		}, lx)
 	})
 }

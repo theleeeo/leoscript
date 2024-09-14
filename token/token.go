@@ -14,6 +14,7 @@ const (
 	CloseParenType TokenType = "CLOSE_PAREN"
 	SemicolonType  TokenType = "SEMICOLON"
 	IdentifierType TokenType = "IDENTIFIER"
+	BooleanType    TokenType = "BOOLEAN"
 )
 
 type EOF struct{}
@@ -61,3 +62,9 @@ type Identifier struct {
 }
 
 func (t Identifier) Type() TokenType { return IdentifierType }
+
+type Boolean struct {
+	Value bool
+}
+
+func (t Boolean) Type() TokenType { return BooleanType }
