@@ -166,9 +166,6 @@ func (p *Parser) parseBinaryExpression(root Expression) (Expression, error) {
 			return nil, fmt.Errorf("failed to parse expression group: %w", err)
 		}
 
-		// force the priority to be higher than any other operator
-		// so that the expression in the parenthesis is evaluated first
-		priority = 100
 	} else {
 		right, err = p.parseAtomicExpression()
 		if err != nil {

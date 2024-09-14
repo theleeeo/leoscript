@@ -311,10 +311,39 @@ func Test_ParseExpr(t *testing.T) {
 							Priority: 100,
 						},
 						Op:       "*",
-						Priority: 100,
+						Priority: 1,
 					},
 					Right: parser.IntegerLiteral{Value: 70},
 					Op:    "-",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("another case", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + (2 + 10) * 5;")
+		assert.NoError(t, err)
+
+		p := parser.NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.BinaryExpression{
+					Left: parser.IntegerLiteral{Value: 1},
+					Right: parser.BinaryExpression{
+						Left: parser.BinaryExpression{
+							Left:     parser.IntegerLiteral{Value: 2},
+							Right:    parser.IntegerLiteral{Value: 10},
+							Op:       "+",
+							Priority: 100,
+						},
+						Right:    parser.IntegerLiteral{Value: 5},
+						Op:       "*",
+						Priority: 1,
+					},
+					Op: "+",
 				},
 			},
 		}, prog)
