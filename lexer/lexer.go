@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 	"leoscript/token"
+	"strings"
 )
 
 type lexer struct {
@@ -38,12 +39,21 @@ func Tokenize(input string) ([]token.Token, error) {
 	lx := lexer{input: input}
 
 	for tk := lx.peek(); tk != 0; tk = lx.next() {
+		if isNumeric(tk) {
+			value := lx.parseInteger()
+			lx.pushToken(token.Integer{Value: value})
+			continue
+		}
+
+		if isAlpha(tk) {
+			value := lx.parseAlpha()
+			lx.pushToken(token.Identifier{Value: value})
+			continue
+		}
+
 		switch tk {
 		case ' ', '\n', '\t':
 			// Skip whitespace
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			value := lx.parseInteger()
-			lx.pushToken(token.Integer{Value: value})
 		case '+', '-', '*', '/':
 			lx.pushToken(token.Binary{Operation: string(tk)})
 		case '(':
@@ -78,6 +88,20 @@ func (lx *lexer) parseInteger() int {
 	return value
 }
 
-// func isAlpha(char byte) bool {
-// 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-// }
+func isAlpha(char byte) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+}
+
+func (lx *lexer) parseAlpha() string {
+	value := strings.Builder{}
+	value.WriteByte(lx.peek())
+
+	for isAlpha(lx.next()) {
+		value.WriteByte(lx.peek())
+	}
+
+	// Put back the last character so that we do not return with the position past the bounds of what this funciton handled.
+	lx.putBack()
+
+	return value.String()
+}

@@ -13,6 +13,7 @@ const (
 	OpenParenType  TokenType = "OPEN_PAREN"
 	CloseParenType TokenType = "CLOSE_PAREN"
 	SemicolonType  TokenType = "SEMICOLON"
+	IdentifierType TokenType = "IDENTIFIER"
 )
 
 type EOF struct{}
@@ -54,3 +55,9 @@ func (t Semicolon) String() string {
 }
 
 func (t Semicolon) Type() TokenType { return SemicolonType }
+
+type Identifier struct {
+	Value string
+}
+
+func (t Identifier) Type() TokenType { return IdentifierType }

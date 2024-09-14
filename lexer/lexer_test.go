@@ -77,4 +77,16 @@ func Test_Expression(t *testing.T) {
 			token.Semicolon{},
 		}, lx)
 	})
+
+	t.Run("Identifiers", func(t *testing.T) {
+		lx, err := lexer.Tokenize("foo + bar-baz")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Identifier{Value: "foo"},
+			token.Binary{Operation: "+"},
+			token.Identifier{Value: "bar"},
+			token.Binary{Operation: "-"},
+			token.Identifier{Value: "baz"},
+		}, lx)
+	})
 }
