@@ -8,7 +8,7 @@ import (
 // Start parsing an expression group.
 // An expression group is a group of expressions whose length is not known statically and can contain any number of sub expressions.
 // An expression group is terminated by a semicolon token or a close parenthesis token.
-func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
+func (p *Parser) parseExpr() (Expression, error) {
 	var root Expression
 
 	for tk := p.peek(); tk != nil; tk = p.peek() {
@@ -28,43 +28,38 @@ func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 				return nil, fmt.Errorf("unexpected semicolon token with no expression")
 			}
 
-			if isSubgroup {
-				panic("subgroup ended by semicolon")
-			}
-
 			// TODO: Really needed?
 			p.current-- // put the semicolon back, it might be used to end the parent
 			return root, nil
 
 		case token.OpenParen:
 			p.next() // consume the open parenthesis token
-			expr, err := p.parseExpressionGroup(true)
+			expr, err := p.parseExpr()
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse expression group: %w", err)
+			}
+
+			if binExpr, ok := expr.(BinaryExpression); ok {
+				binExpr.Priority = 100
+				expr = binExpr
+			}
+
+			nextTk := p.next()
+			if _, ok := nextTk.(token.CloseParen); !ok {
+				return nil, fmt.Errorf("expected close parenthesis token, got %v", nextTk)
 			}
 
 			root = expr
 
 		case token.CloseParen:
-			if !isSubgroup {
-				// return nil, fmt.Errorf("unexpected close parenthesis token")
-				panic("top-level expression group ended by close parenthesis")
-			}
 
+			p.current-- // put the close-paren back, it will be verified by the parent
 			return root, nil
 
 		case token.Binary:
-			expr, err := p.parseBinaryExpression(root)
+			expr, err := p.parseBinaryExpr(root)
 			if err != nil {
 				return nil, err
-			}
-
-			// If this is a subgroup, we need to force the priority to be higher
-			if isSubgroup {
-				if binExpr, ok := expr.(BinaryExpression); ok {
-					binExpr.Priority = 100
-					expr = binExpr
-				}
 			}
 
 			root = expr
@@ -79,9 +74,7 @@ func (p *Parser) parseExpressionGroup(isSubgroup bool) (Expression, error) {
 	panic("reached EOF without completing the expression")
 }
 
-// An aotmic expression is an expression that can stand on its own and does not
-// require any other expressions to be complete.
-func (p *Parser) parseAtomicExpression() (Expression, error) {
+func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	tk := p.peek()
 	if tk == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -130,7 +123,7 @@ func (p *Parser) parseNumberOperation() (Expression, error) {
 	}
 }
 
-func (p *Parser) parseBinaryExpression(root Expression) (Expression, error) {
+func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 	var binTk token.Binary
 	tk := p.peek()
 	if bt, ok := tk.(token.Binary); ok {
@@ -161,13 +154,23 @@ func (p *Parser) parseBinaryExpression(root Expression) (Expression, error) {
 	var err error
 	if _, ok := nextToken.(token.OpenParen); ok {
 		p.next() // consume the open parenthesis token
-		right, err = p.parseExpressionGroup(true)
+		right, err = p.parseExpr()
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse expression group: %w", err)
 		}
 
+		if binExpr, ok := right.(BinaryExpression); ok {
+			binExpr.Priority = 100
+			right = binExpr
+		}
+
+		nextTk := p.next()
+		if _, ok := nextTk.(token.CloseParen); !ok {
+			return nil, fmt.Errorf("expected close parenthesis token, got %v", nextTk)
+		}
+
 	} else {
-		right, err = p.parseAtomicExpression()
+		right, err = p.parsePrimaryExpression()
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse right expression: %w", err)
 		}

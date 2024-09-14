@@ -44,7 +44,7 @@ func (p *Parser) Parse() (Program, error) {
 			continue
 		}
 
-		expr, err := p.parseExpressionGroup(false)
+		expr, err := p.parseExpr()
 		if err != nil {
 			return Program{}, err
 		}

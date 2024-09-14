@@ -1,6 +1,24 @@
 package runtime
 
-import "leoscript/parser"
+import (
+	"fmt"
+	"leoscript/lexer"
+	"leoscript/parser"
+)
+
+func RunRaw(src string) (int, error) {
+	tokens, err := lexer.Tokenize(src)
+	if err != nil {
+		return 0, fmt.Errorf("failed to tokenize: %w", err)
+	}
+
+	program, err := parser.NewParser(tokens).Parse()
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse: %w", err)
+	}
+
+	return Run(program), nil
+}
 
 func Run(pg parser.Program) int {
 	if len(pg.Body) == 0 {
