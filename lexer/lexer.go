@@ -5,56 +5,77 @@ import (
 	"leoscript/token"
 )
 
-func Tokenize(input string) ([]token.Token, error) {
-	var tokens []token.Token
+type lexer struct {
+	input string
+	pos   int
 
-	for i := 0; i < len(input); i++ {
-		switch {
-		case isWhitespace(input[i]):
-			continue
-		case isNumeric(input[i]):
-			value, j := parseInteger(input[i:])
-			tokens = append(tokens, token.Integer{Value: value})
-			// Skip the number of characters we just parsed
-			// -1 because the loop will increment i
-			i += j - 1
-		case input[i] == '+' || input[i] == '-' || input[i] == '*' || input[i] == '/':
-			tokens = append(tokens, token.Binary{Operation: string(input[i])})
-		case input[i] == '(':
-			tokens = append(tokens, token.OpenParen{})
-		case input[i] == ')':
-			tokens = append(tokens, token.CloseParen{})
-		case input[i] == ';':
-			tokens = append(tokens, token.Semicolon{})
+	tokens []token.Token
+}
+
+func (lx *lexer) next() byte {
+	lx.pos++
+
+	if lx.pos >= len(lx.input) {
+		return 0
+	}
+	char := lx.input[lx.pos]
+	return char
+}
+
+func (lx *lexer) putBack() {
+	lx.pos--
+}
+
+func (lx *lexer) peek() byte {
+	return lx.input[lx.pos]
+}
+
+func (lx *lexer) pushToken(tk token.Token) {
+	lx.tokens = append(lx.tokens, tk)
+}
+
+func Tokenize(input string) ([]token.Token, error) {
+	lx := lexer{input: input}
+
+	for tk := lx.peek(); tk != 0; tk = lx.next() {
+		switch tk {
+		case ' ', '\n', '\t':
+			// Skip whitespace
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+			value := lx.parseInteger()
+			lx.pushToken(token.Integer{Value: value})
+		case '+', '-', '*', '/':
+			lx.pushToken(token.Binary{Operation: string(tk)})
+		case '(':
+			lx.pushToken(token.OpenParen{})
+		case ')':
+			lx.pushToken(token.CloseParen{})
+		case ';':
+			lx.pushToken(token.Semicolon{})
 		default:
-			return nil, fmt.Errorf("invalid character: %c", input[i])
+			return nil, fmt.Errorf("invalid character: %c", tk)
 		}
 	}
 
-	return tokens, nil
-}
-
-func isWhitespace(char byte) bool {
-	return char == ' ' || char == '\n' || char == '\t'
+	return lx.tokens, nil
 }
 
 func isNumeric(char byte) bool {
 	return char >= '0' && char <= '9'
 }
 
-func parseInteger(input string) (int, int) {
-	var value int
-	var i int
+func (lx *lexer) parseInteger() int {
+	value := int(lx.peek() - '0')
 
-	for i = 0; i < len(input); i++ {
-		if !isNumeric(input[i]) {
-			break
-		}
+	for isNumeric(lx.next()) {
+		value = value*10 + int(lx.peek()-'0')
 
-		value = value*10 + int(input[i]-'0')
 	}
 
-	return value, i
+	// Put back the last character so that we do not return with the position past the bounds of what this funciton handled.
+	lx.putBack()
+
+	return value
 }
 
 // func isAlpha(char byte) bool {

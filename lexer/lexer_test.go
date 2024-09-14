@@ -8,7 +8,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseExpr(t *testing.T) {
+func Test_Expression(t *testing.T) {
+	t.Run("Single digit", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Integer{Value: 1},
+		}, lx)
+	})
+
+	t.Run("Single number", func(t *testing.T) {
+		lx, err := lexer.Tokenize("12345")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Integer{Value: 12345},
+		}, lx)
+	})
+
 	t.Run("Binary ops with whitespace", func(t *testing.T) {
 		lx, err := lexer.Tokenize("1+ 2- 3 *4/ 5")
 		assert.NoError(t, err)
