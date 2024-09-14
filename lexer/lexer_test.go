@@ -30,13 +30,13 @@ func Test_Expression(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 1},
-			token.Binary{Operation: "+"},
+			token.MathOp{Operation: "+"},
 			token.Integer{Value: 2},
-			token.Binary{Operation: "-"},
+			token.MathOp{Operation: "-"},
 			token.Integer{Value: 3},
-			token.Binary{Operation: "*"},
+			token.MathOp{Operation: "*"},
 			token.Integer{Value: 4},
-			token.Binary{Operation: "/"},
+			token.MathOp{Operation: "/"},
 			token.Integer{Value: 5},
 		}, lx)
 	})
@@ -46,12 +46,12 @@ func Test_Expression(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 123},
-			token.Binary{Operation: "+"},
+			token.MathOp{Operation: "+"},
 			token.Integer{Value: 456789},
-			token.Binary{Operation: "-"},
+			token.MathOp{Operation: "-"},
 			token.Integer{Value: 987},
 			token.Integer{Value: 7898},
-			token.Binary{Operation: "/"},
+			token.MathOp{Operation: "/"},
 			token.Integer{Value: 898989},
 		}, lx)
 	})
@@ -68,10 +68,10 @@ func Test_Expression(t *testing.T) {
 			token.OpenParen{},
 			token.OpenParen{},
 			token.Integer{Value: 1},
-			token.Binary{Operation: "+"},
+			token.MathOp{Operation: "+"},
 			token.Integer{Value: 2},
 			token.CloseParen{},
-			token.Binary{Operation: "*"},
+			token.MathOp{Operation: "*"},
 			token.Integer{Value: 3},
 			token.CloseParen{},
 			token.Semicolon{},
@@ -86,9 +86,9 @@ func Test_Identifiers(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Identifier{Value: "foo"},
-			token.Binary{Operation: "+"},
+			token.MathOp{Operation: "+"},
 			token.Identifier{Value: "bar"},
-			token.Binary{Operation: "-"},
+			token.MathOp{Operation: "-"},
 			token.Identifier{Value: "baz"},
 		}, lx)
 	})

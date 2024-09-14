@@ -5,9 +5,6 @@ import (
 	"leoscript/token"
 )
 
-// Start parsing an expression group.
-// An expression group is a group of expressions whose length is not known statically and can contain any number of sub expressions.
-// An expression group is terminated by a semicolon token or a close parenthesis token.
 func (p *Parser) parseExpr() (Expression, error) {
 	var root Expression
 
@@ -28,7 +25,6 @@ func (p *Parser) parseExpr() (Expression, error) {
 				return nil, fmt.Errorf("unexpected semicolon token with no expression")
 			}
 
-			// TODO: Really needed?
 			p.current-- // put the semicolon back, it might be used to end the parent
 			return root, nil
 
@@ -56,7 +52,7 @@ func (p *Parser) parseExpr() (Expression, error) {
 			p.current-- // put the close-paren back, it will be verified by the parent
 			return root, nil
 
-		case token.Binary:
+		case token.MathOp:
 			expr, err := p.parseBinaryExpr(root)
 			if err != nil {
 				return nil, err
@@ -74,7 +70,7 @@ func (p *Parser) parseExpr() (Expression, error) {
 	panic("reached EOF without completing the expression")
 }
 
-func (p *Parser) parsePrimaryExpression() (Expression, error) {
+func (p *Parser) parseRightHandExpression() (Expression, error) {
 	tk := p.peek()
 	if tk == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -84,8 +80,8 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 		return IntegerLiteral{Value: intTk.Value}, nil
 	}
 
-	if _, ok := tk.(token.Binary); ok {
-		return p.parseNumberOperation()
+	if _, ok := tk.(token.MathOp); ok {
+		return p.parseUnaryExpr()
 	}
 
 	//function call
@@ -93,48 +89,32 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	return nil, fmt.Errorf("unexpected token: %v", tk)
 }
 
-func (p *Parser) parseNumberOperation() (Expression, error) {
-	var binTk token.Binary
-	tk := p.peek()
-	if bt, ok := tk.(token.Binary); ok {
-		binTk = bt
-	} else {
-		panic("unexpected token type")
-	}
+func (p *Parser) parseUnaryExpr() (Expression, error) {
+	binTk := p.peek().(token.MathOp)
 
 	switch binTk.Operation {
-	case "-":
-		// Negation of an integer
-		intTk := p.next()
-		if _, ok := intTk.(token.Integer); !ok {
-			return nil, fmt.Errorf("expected integer token, got %v", intTk)
+	case "-", "+":
+		p.next() // consume the operator token
+		expr, err := p.parseRightHandExpression()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
 		}
 
-		return IntegerLiteral{Value: -intTk.(token.Integer).Value}, nil
-	case "+":
-		intTk := p.next()
-		if _, ok := intTk.(token.Integer); !ok {
-			return nil, fmt.Errorf("expected integer token, got %v", intTk)
-		}
-
-		return IntegerLiteral{Value: intTk.(token.Integer).Value}, nil
+		return UnaryExpression{
+			Expression: expr,
+			Op:         binTk.Operation,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unexpected operator: %v", binTk)
 	}
 }
 
 func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
-	var binTk token.Binary
-	tk := p.peek()
-	if bt, ok := tk.(token.Binary); ok {
-		binTk = bt
-	} else {
-		panic("unexpected token type")
-	}
+	binTk := p.peek().(token.MathOp)
 
 	// No preceeding expression, this is the first one
 	if root == nil {
-		return p.parseNumberOperation()
+		return p.parseUnaryExpr()
 	}
 
 	var left Expression = root
@@ -170,7 +150,7 @@ func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 		}
 
 	} else {
-		right, err = p.parsePrimaryExpression()
+		right, err = p.parseRightHandExpression()
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse right expression: %w", err)
 		}

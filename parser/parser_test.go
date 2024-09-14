@@ -123,20 +123,32 @@ func Test_ParseExpr(t *testing.T) {
 
 		assert.Equal(t, parser.Program{
 			Body: []parser.Expression{
-				parser.IntegerLiteral{Value: -123},
+				parser.UnaryExpression{
+					Expression: parser.IntegerLiteral{Value: 123},
+					Op:         "-",
+				},
 			},
 		}, prog)
 	})
 
-	t.Run("Double negation of integer, error", func(t *testing.T) {
+	t.Run("Double negation of integer", func(t *testing.T) {
 		lx, err := lexer.Tokenize("--123;")
 		assert.NoError(t, err)
 
 		p := parser.NewParser(lx)
 		prog, err := p.Parse()
-		assert.Error(t, err)
-		assert.ErrorContains(t, err, "expected integer token")
-		assert.Empty(t, prog)
+		assert.NoError(t, err)
+
+		assert.Equal(t, parser.Program{
+			Body: []parser.Expression{
+				parser.UnaryExpression{
+					Expression: parser.UnaryExpression{
+						Expression: parser.IntegerLiteral{Value: 123},
+						Op:         "-"},
+					Op: "-",
+				},
+			},
+		}, prog)
 	})
 
 	t.Run("Unneccessary plus sign", func(t *testing.T) {
@@ -150,7 +162,9 @@ func Test_ParseExpr(t *testing.T) {
 		assert.Equal(t, parser.Program{
 			Body: []parser.Expression{
 				parser.BinaryExpression{
-					Left:  parser.IntegerLiteral{Value: 123},
+					Left: parser.UnaryExpression{
+						Expression: parser.IntegerLiteral{Value: 123},
+						Op:         "+"},
 					Right: parser.IntegerLiteral{Value: 45},
 					Op:    "-",
 				},
@@ -170,9 +184,11 @@ func Test_ParseExpr(t *testing.T) {
 		assert.Equal(t, parser.Program{
 			Body: []parser.Expression{
 				parser.BinaryExpression{
-					Left:  parser.IntegerLiteral{Value: 4},
-					Right: parser.IntegerLiteral{Value: -123},
-					Op:    "+",
+					Left: parser.IntegerLiteral{Value: 4},
+					Right: parser.UnaryExpression{
+						Expression: parser.IntegerLiteral{Value: 123},
+						Op:         "-"},
+					Op: "+",
 				},
 			},
 		}, prog)

@@ -9,7 +9,7 @@ type TokenType string
 const (
 	EOFType        TokenType = "EOF"
 	IntegerType    TokenType = "INTEGER"
-	BinaryType     TokenType = "BINARY"
+	MathOpType     TokenType = "MATH_OP"
 	OpenParenType  TokenType = "OPEN_PAREN"
 	CloseParenType TokenType = "CLOSE_PAREN"
 	SemicolonType  TokenType = "SEMICOLON"
@@ -27,11 +27,11 @@ type Integer struct {
 
 func (t Integer) Type() TokenType { return IntegerType }
 
-type Binary struct {
+type MathOp struct {
 	Operation string
 }
 
-func (t Binary) Type() TokenType { return BinaryType }
+func (t MathOp) Type() TokenType { return MathOpType }
 
 type OpenParen struct{}
 

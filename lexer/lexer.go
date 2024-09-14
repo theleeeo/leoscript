@@ -68,7 +68,7 @@ func Tokenize(input string) ([]token.Token, error) {
 		case ' ', '\n', '\t':
 			// Skip whitespace
 		case '+', '-', '*', '/':
-			lx.pushToken(token.Binary{Operation: string(tk)})
+			lx.pushToken(token.MathOp{Operation: string(tk)})
 		case '(':
 			lx.pushToken(token.OpenParen{})
 		case ')':
