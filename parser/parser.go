@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"leoscript/token"
 )
 
@@ -15,6 +16,7 @@ type Parser struct {
 	Program Program
 }
 
+// next will consume the current token and return the next one
 func (p *Parser) next() token.Token {
 	p.current++
 
@@ -25,6 +27,16 @@ func (p *Parser) next() token.Token {
 	return p.tokens[p.current]
 }
 
+// expect will return an error if the next token is not of the expected type
+func (p *Parser) expect(tk token.TokenType) error {
+	if tk != p.next().Type() {
+		return fmt.Errorf("expected token type %v, got %v", tk, p.peek().Type())
+	}
+
+	return nil
+}
+
+// peek will return the current token without consuming it
 func (p *Parser) peek() token.Token {
 	if p.current >= len(p.tokens) {
 		return nil
