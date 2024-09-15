@@ -52,7 +52,7 @@ func (p *Parser) putBack() {
 }
 
 type Program struct {
-	Body []Expression
+	Body []Statement
 }
 
 func (p *Parser) Parse() (Program, error) {
@@ -61,7 +61,7 @@ func (p *Parser) Parse() (Program, error) {
 			continue
 		}
 
-		expr, err := p.parseExpr()
+		expr, err := p.parseStatement()
 		if err != nil {
 			return Program{}, err
 		}

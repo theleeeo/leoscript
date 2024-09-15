@@ -2,21 +2,15 @@ package parser
 
 import "leoscript/token"
 
-type Expression interface {
-	isExpression()
-}
+type Expression interface{}
 
 type IntegerLiteral struct {
 	Value int
 }
 
-func (i IntegerLiteral) isExpression() {}
-
 type BooleanLiteral struct {
 	Value bool
 }
-
-func (i BooleanLiteral) isExpression() {}
 
 type BinaryExpression struct {
 	Left     Expression
@@ -24,8 +18,6 @@ type BinaryExpression struct {
 	Op       string
 	priority token.Priority
 }
-
-func (b BinaryExpression) isExpression() {}
 
 // PriorityMerge will merge the current binary expression with a new expression based on the priorities of the operators
 // A new expression tree will be returned with the order of operations handled correctly.
@@ -67,5 +59,3 @@ type UnaryExpression struct {
 	Expression Expression
 	Op         string
 }
-
-func (u UnaryExpression) isExpression() {}
