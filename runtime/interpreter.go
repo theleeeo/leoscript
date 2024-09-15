@@ -17,23 +17,30 @@ func RunRaw(src string) (runtimeVal, error) {
 		return 0, fmt.Errorf("failed to parse: %w", err)
 	}
 
-	return Run(program), nil
+	return Run(program)
 }
 
-func Run(pg parser.Program) runtimeVal {
+func Run(pg parser.Program) (val runtimeVal, err error) {
 	if len(pg.Body) == 0 {
-		panic("empty program")
+		return nil, fmt.Errorf("empty program")
 	}
 
 	if len(pg.Body) > 1 {
-		panic("only one expression is allowed")
+		panic("multiple expressions not supported")
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			val = nil
+			err = fmt.Errorf("panic: %v", r)
+		}
+	}()
 
 	for _, expr := range pg.Body {
-		return evaluateExpression(expr)
+		return evaluateExpression(expr), nil
 	}
 
-	return 0
+	panic("unreachable")
 }
 
 type runtimeVal interface{}
@@ -72,6 +79,20 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 			panic(fmt.Sprintf("unknown operator: %s", e.Op))
 		}
 
+	case parser.UnaryExpression:
+		val := evaluateExpression(e.Expression)
+
+		switch e.Op {
+		case "-":
+			return numberVal{value: -val.(numberVal).value}
+		case "+":
+			return numberVal{value: val.(numberVal).value}
+		case "!":
+			return booleanVal{value: !val.(booleanVal).value}
+		default:
+			panic(fmt.Sprintf("unknown operator: %s", e.Op))
+		}
+
 	case parser.IntegerLiteral:
 		return numberVal{value: e.Value}
 
@@ -79,6 +100,6 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 		return booleanVal{value: e.Value}
 
 	default:
-		panic(fmt.Sprintf("unknown expression: %s", e))
+		panic(fmt.Sprintf("unknown expression: %T, v=%+v", e, e))
 	}
 }

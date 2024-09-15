@@ -88,7 +88,7 @@ func (p *Parser) parseUnaryExpr() (Expression, error) {
 	binTk := p.peek().(token.Operator)
 
 	switch binTk.Op {
-	case "-", "+":
+	case "-", "+", "!":
 		p.next() // consume the operator token
 		expr, err := p.parsePrimaryExpression()
 		if err != nil {
@@ -99,6 +99,7 @@ func (p *Parser) parseUnaryExpr() (Expression, error) {
 			Expression: expr,
 			Op:         binTk.Op,
 		}, nil
+
 	default:
 		return nil, fmt.Errorf("unexpected operator in unary expression: %v", binTk)
 	}

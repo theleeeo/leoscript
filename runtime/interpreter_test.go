@@ -69,3 +69,43 @@ func Test_BooleanExpr(t *testing.T) {
 		assert.Equal(t, true, resp.(booleanVal).value)
 	})
 }
+
+func Test_Arithmetic_UnaryExpr(t *testing.T) {
+	t.Run("Single unary expression", func(t *testing.T) {
+		resp, err := RunRaw("-1;")
+		assert.NoError(t, err)
+		assert.Equal(t, -1, resp.(numberVal).value)
+	})
+
+	t.Run("Multiple unary expression", func(t *testing.T) {
+		resp, err := RunRaw("-1 + +2;")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, resp.(numberVal).value)
+	})
+
+	t.Run("Multiple unary expression with parentheses", func(t *testing.T) {
+		resp, err := RunRaw("-1 + (+2);")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, resp.(numberVal).value)
+	})
+}
+
+func Test_Boolean_UnaryExpr(t *testing.T) {
+	t.Run("Single unary expression", func(t *testing.T) {
+		resp, err := RunRaw("!true;")
+		assert.NoError(t, err)
+		assert.Equal(t, false, resp.(booleanVal).value)
+	})
+
+	t.Run("Multiple unary expression", func(t *testing.T) {
+		resp, err := RunRaw("!true && !!false;")
+		assert.NoError(t, err)
+		assert.Equal(t, false, resp.(booleanVal).value)
+	})
+
+	t.Run("Multiple unary expression with parentheses", func(t *testing.T) {
+		resp, err := RunRaw("!true && (!(!false));")
+		assert.NoError(t, err)
+		assert.Equal(t, false, resp.(booleanVal).value)
+	})
+}
