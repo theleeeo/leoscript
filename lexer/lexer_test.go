@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Expression(t *testing.T) {
+func Test_MathExpression(t *testing.T) {
 	t.Run("Single digit", func(t *testing.T) {
 		lx, err := lexer.Tokenize("1")
 		assert.NoError(t, err)
@@ -119,5 +119,50 @@ func Test_Identifiers(t *testing.T) {
 			token.Boolean{Value: false},
 			token.Identifier{Value: "bar"},
 		}, lx)
+	})
+}
+
+func Test_LogicalExpressions(t *testing.T) {
+	t.Run("Logical operators", func(t *testing.T) {
+		lx, err := lexer.Tokenize("true && false || true")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Boolean{Value: true},
+			token.LogicalOp{Operation: "&&"},
+			token.Boolean{Value: false},
+			token.LogicalOp{Operation: "||"},
+			token.Boolean{Value: true},
+		}, lx)
+	})
+
+	t.Run("Parentheses", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(true && false) || true")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.OpenParen{},
+			token.Boolean{Value: true},
+			token.LogicalOp{Operation: "&&"},
+			token.Boolean{Value: false},
+			token.CloseParen{},
+			token.LogicalOp{Operation: "||"},
+			token.Boolean{Value: true},
+		}, lx)
+	})
+
+	t.Run("With identifiers", func(t *testing.T) {
+		lx, err := lexer.Tokenize("true && bar || baz")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Boolean{Value: true},
+			token.LogicalOp{Operation: "&&"},
+			token.Identifier{Value: "bar"},
+			token.LogicalOp{Operation: "||"},
+			token.Identifier{Value: "baz"},
+		}, lx)
+	})
+
+	t.Run("Single character ops invalid, for now", func(t *testing.T) {
+		_, err := lexer.Tokenize("true & false | true")
+		assert.ErrorContains(t, err, "invalid character: &")
 	})
 }

@@ -7,7 +7,7 @@ type Token interface {
 type TokenType string
 
 const (
-	EOFType        TokenType = "EOF"
+	// EOFType        TokenType = "EOF"
 	IntegerType    TokenType = "INTEGER"
 	MathOpType     TokenType = "MATH_OP"
 	OpenParenType  TokenType = "OPEN_PAREN"
@@ -15,11 +15,11 @@ const (
 	SemicolonType  TokenType = "SEMICOLON"
 	IdentifierType TokenType = "IDENTIFIER"
 	BooleanType    TokenType = "BOOLEAN"
+	LogicalOpType  TokenType = "LOGICAL_OP"
 )
 
-type EOF struct{}
-
-func (t EOF) Type() TokenType { return EOFType }
+// type EOF struct{}
+// func (t EOF) Type() TokenType { return EOFType }
 
 type Integer struct {
 	Value int
@@ -79,3 +79,20 @@ type Boolean struct {
 }
 
 func (t Boolean) Type() TokenType { return BooleanType }
+
+type LogicalOp struct {
+	Operation string
+}
+
+func (t LogicalOp) Type() TokenType { return LogicalOpType }
+
+func (t LogicalOp) Priority() Priority {
+	switch t.Operation {
+	case "||":
+		return PRIO_OR
+	case "&&":
+		return PRIO_AND
+	}
+
+	panic("invalid operator in logical expression")
+}
