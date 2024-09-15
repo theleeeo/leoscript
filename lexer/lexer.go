@@ -93,6 +93,8 @@ func Tokenize(input string) ([]token.Token, error) {
 			lx.pushToken(token.CloseBrace{})
 		case ';':
 			lx.pushToken(token.Semicolon{})
+		case ',':
+			lx.pushToken(token.Comma{})
 		case '&':
 			if lx.next() == '&' {
 				lx.pushToken(token.Operator{Op: "&&"})

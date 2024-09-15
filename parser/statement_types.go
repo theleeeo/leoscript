@@ -13,10 +13,15 @@ type VarDecl struct {
 type FnDef struct {
 	Name       string
 	ReturnType types.Type
-	Args       []string
+	Args       []Argument
 	Body       []Statement
 }
 
 type Return struct {
 	Value Expression
+}
+
+type Argument struct {
+	Name string
+	Type types.Type
 }

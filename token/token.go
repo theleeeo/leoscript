@@ -30,6 +30,7 @@ const (
 	OperatorType
 	FnDefType
 	ReturnType
+	CommaType
 )
 
 type EOF struct{}
@@ -130,3 +131,7 @@ type Type struct {
 }
 
 func (Type) Type() TokenType { return TypeType }
+
+type Comma struct{}
+
+func (Comma) Type() TokenType { return CommaType }

@@ -956,7 +956,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 				FnDef{
 					Name:       "foo",
 					ReturnType: types.Void,
-					Args:       nil,
+					Args:       []Argument{},
 					Body:       []Statement{},
 				},
 			},
@@ -975,7 +975,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 				FnDef{
 					Name:       "foo",
 					ReturnType: types.Void,
-					Args:       nil,
+					Args:       []Argument{},
 					Body: []Statement{
 						Return{
 							Value: BinaryExpression{
@@ -990,28 +990,6 @@ func Test_FunctionDefinitions(t *testing.T) {
 		}, prog)
 	})
 
-	// t.Run("Function definition with arguments", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a, b, c) {}")
-	// 	assert.NoError(t, err)
-
-	// 	prog, err := NewParser(lx).Parse()
-	// 	assert.NoError(t, err)
-
-	// 	assert.EqualExportedValues(t, Program{
-	// 		Body: []Statement{
-	// 			FnDef{
-	// 				Name: "foo",
-	// 				Args: []Argument{
-	// 					{Name: "a", Type: types.Any},
-	// 					{Name: "b", Type: types.Any},
-	// 					{Name: "c", Type: types.Any},
-	// 				},
-	// 				Body: []Statement{},
-	// 			},
-	// 		},
-	// 	}, prog)
-	// })
-
 	t.Run("Function definition with return type", func(t *testing.T) {
 		lx, err := lexer.Tokenize("fn foo() int {}")
 		assert.NoError(t, err)
@@ -1023,7 +1001,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 			Body: []Statement{
 				FnDef{
 					Name:       "foo",
-					Args:       nil,
+					Args:       []Argument{},
 					ReturnType: types.Int,
 					Body:       []Statement{},
 				},
@@ -1031,26 +1009,69 @@ func Test_FunctionDefinitions(t *testing.T) {
 		}, prog)
 	})
 
-	// t.Run("Function definition with arguments and return type", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a, b, c) bool {}")
-	// 	assert.NoError(t, err)
+	t.Run("Function definition with one argument", func(t *testing.T) {
+		lx, err := lexer.Tokenize("fn foo(int a) {}")
+		assert.NoError(t, err)
 
-	// 	prog, err := NewParser(lx).Parse()
-	// 	assert.NoError(t, err)
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
 
-	// 	assert.EqualExportedValues(t, Program{
-	// 		Body: []Statement{
-	// 			FnDef{
-	// 				Name: "foo",
-	// 				Args: []Argument{
-	// 					{Name: "a", Type: types.Any},
-	// 					{Name: "b", Type: types.Any},
-	// 					{Name: "c", Type: types.Any},
-	// 				},
-	// 				ReturnType: types.Bool,
-	// 				Body:       []Statement{},
-	// 			},
-	// 		},
-	// 	}, prog)
-	// })
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				FnDef{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Args: []Argument{
+						{Name: "a", Type: types.Int},
+					},
+					Body: []Statement{},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Function definition with arguments", func(t *testing.T) {
+		lx, err := lexer.Tokenize("fn foo(int a, bool b, bool c) {}")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				FnDef{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Args: []Argument{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+						{Name: "c", Type: types.Bool},
+					},
+					Body: []Statement{},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Function definition with arguments and return type", func(t *testing.T) {
+		lx, err := lexer.Tokenize("fn foo(bool a, int b) bool {}")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				FnDef{
+					Name:       "foo",
+					ReturnType: types.Bool,
+					Args: []Argument{
+						{Name: "a", Type: types.Bool},
+						{Name: "b", Type: types.Int},
+					},
+					Body: []Statement{},
+				},
+			},
+		}, prog)
+	})
 }
