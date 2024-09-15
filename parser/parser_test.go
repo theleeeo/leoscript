@@ -1004,14 +1004,14 @@ func Test_FunctionDefinitions(t *testing.T) {
 	// 					{Name: "b", Type: types.Any},
 	// 					{Name: "c", Type: types.Any},
 	// 				},
-	// 				Body: Block{},
+	// 				Body: []Statement{},
 	// 			},
 	// 		},
 	// 	}, prog)
 	// })
 
 	// t.Run("Function definition with return type", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo() -> int {}")
+	// 	lx, err := lexer.Tokenize("fn foo() int {}")
 	// 	assert.NoError(t, err)
 
 	// 	prog, err := NewParser(lx).Parse()
@@ -1023,14 +1023,14 @@ func Test_FunctionDefinitions(t *testing.T) {
 	// 				Name:       "foo",
 	// 				Args:       nil,
 	// 				ReturnType: types.Int,
-	// 				Body:       Block{},
+	// 				Body:       []Statement{},
 	// 			},
 	// 		},
 	// 	}, prog)
 	// })
 
 	// t.Run("Function definition with arguments and return type", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a, b, c) -> bool {}")
+	// 	lx, err := lexer.Tokenize("fn foo(a, b, c) bool {}")
 	// 	assert.NoError(t, err)
 
 	// 	prog, err := NewParser(lx).Parse()
@@ -1046,7 +1046,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 	// 					{Name: "c", Type: types.Any},
 	// 				},
 	// 				ReturnType: types.Bool,
-	// 				Body:       Block{},
+	// 				Body:       []Statement{},
 	// 			},
 	// 		},
 	// 	}, prog)

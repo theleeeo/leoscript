@@ -1,5 +1,7 @@
 package token
 
+import "leoscript/types"
+
 type Token interface {
 	Type() TokenType
 }
@@ -21,11 +23,8 @@ const (
 	OpenBraceType
 	CloseBraceType
 
-	// Variable declarations
 	VarDeclType
-	IntDeclType
-	BoolDeclType
-
+	TypeType // lol
 	SemicolonType
 	IdentifierType
 	OperatorType
@@ -110,14 +109,6 @@ type VarDecl struct{}
 
 func (VarDecl) Type() TokenType { return VarDeclType }
 
-type IntDecl struct{}
-
-func (IntDecl) Type() TokenType { return IntDeclType }
-
-type BoolDecl struct{}
-
-func (BoolDecl) Type() TokenType { return BoolDeclType }
-
 type FnDef struct{}
 
 func (FnDef) Type() TokenType { return FnDefType }
@@ -133,3 +124,9 @@ func (CloseBrace) Type() TokenType { return CloseBraceType }
 type Return struct{}
 
 func (Return) Type() TokenType { return ReturnType }
+
+type Type struct {
+	Kind types.Type
+}
+
+func (Type) Type() TokenType { return TypeType }

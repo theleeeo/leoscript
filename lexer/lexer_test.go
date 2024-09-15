@@ -3,6 +3,7 @@ package lexer_test
 import (
 	"leoscript/lexer"
 	"leoscript/token"
+	"leoscript/types"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -220,7 +221,7 @@ func Test_VariableDeclaration(t *testing.T) {
 		lx, err := lexer.Tokenize("int foo = 123;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.IntDecl{},
+			token.Type{Kind: types.Int},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Integer{Value: 123},
@@ -232,7 +233,7 @@ func Test_VariableDeclaration(t *testing.T) {
 		lx, err := lexer.Tokenize("bool foo = true;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.BoolDecl{},
+			token.Type{Kind: types.Bool},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Boolean{Value: true},

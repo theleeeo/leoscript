@@ -9,17 +9,15 @@ import (
 func (p *Parser) parseStatement() (Statement, error) {
 	tk := p.peek()
 
-	switch tk.(type) {
+	switch tk := tk.(type) {
 	case token.EOF:
 		return nil, fmt.Errorf("unexpected EOF")
 	case token.Semicolon:
 		return nil, fmt.Errorf("unexpected semicolon")
 	case token.VarDecl:
 		return p.parseVarDecl(nil)
-	case token.IntDecl:
-		return p.parseVarDecl(types.Int)
-	case token.BoolDecl:
-		return p.parseVarDecl(types.Bool)
+	case token.Type:
+		return p.parseVarDecl(tk.Kind)
 	case token.FnDef:
 		return p.parseFnDef()
 	case token.Identifier:
