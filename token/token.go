@@ -33,6 +33,17 @@ type MathOp struct {
 
 func (t MathOp) Type() TokenType { return MathOpType }
 
+func (t MathOp) Priority() Priority {
+	switch t.Operation {
+	case "+", "-":
+		return PRIO_SUM
+	case "*", "/":
+		return PRIO_PRODUCT
+	}
+
+	panic("invalid operator in binary expression")
+}
+
 type OpenParen struct{}
 
 func (t OpenParen) String() string {

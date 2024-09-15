@@ -21,7 +21,7 @@ func (p *Parser) parseExpr() (Expression, error) {
 	for tk := p.next(); tk != nil; tk = p.next() {
 		switch tk := tk.(type) {
 		case token.Semicolon:
-			p.current-- // put the semicolon back, it might be used to end the parent
+			p.putBack() // put the semicolon back, it might be used to end the parent
 			return root, nil
 
 		case token.OpenParen:
@@ -33,7 +33,7 @@ func (p *Parser) parseExpr() (Expression, error) {
 			root = expr
 
 		case token.CloseParen:
-			p.current-- // put the close-paren back, it will be verified by the parent
+			p.putBack() // put the close-paren back, it will be verified by the parent
 			return root, nil
 
 		case token.MathOp:
@@ -59,9 +59,9 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 		return nil, fmt.Errorf("failed to parse expression: %w", err)
 	}
 
-	// If the expression is a binary expression, set the priority to 100 to that it is not reordered
+	// If the expression is a binary expression, set the priority to the max so that it is never reordered
 	if binExpr, ok := expr.(BinaryExpression); ok {
-		binExpr.Priority = 100
+		binExpr.priority = token.PRIO_PAREN
 		expr = binExpr
 	}
 
@@ -72,12 +72,15 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 	return expr, nil
 }
 
+// parseFirstExpression will parse the first part of an expression which requires special handling in some cases.
 func (p *Parser) parseFirstExpression() (Expression, error) {
 	switch tk := p.peek().(type) {
-	case token.Integer: // This will only hit if it is the first token in the expression, otherwise it will have been handled by another branch.
-		return IntegerLiteral{Value: tk.Value}, nil
 	case token.Semicolon:
 		return nil, fmt.Errorf("unexpected semicolon token with no expression")
+	case token.CloseParen:
+		return nil, fmt.Errorf("unexpected close-paren token")
+	case token.Integer:
+		return IntegerLiteral{Value: tk.Value}, nil
 	case token.MathOp:
 		expr, err := p.parseUnaryExpr()
 		if err != nil {
@@ -132,25 +135,14 @@ func (p *Parser) parseUnaryExpr() (Expression, error) {
 			Op:         binTk.Operation,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unexpected operator: %v", binTk)
+		return nil, fmt.Errorf("unexpected operator in unary expression: %v", binTk)
 	}
 }
 
 func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 	binTk := p.peek().(token.MathOp)
 
-	var left Expression = root
 	var right Expression
-
-	var priority int
-	switch binTk.Operation {
-	case "+", "-":
-		priority = 0
-	case "*", "/":
-		priority = 1
-	default:
-		panic("invalid operator in binary expression")
-	}
 
 	nextToken := p.next() // consume the operator token
 	var err error
@@ -170,24 +162,15 @@ func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 	}
 
 	// Do a right swap if the priority of the current operator is higher
-	if leftBinExpr, ok := left.(BinaryExpression); ok && priority > leftBinExpr.Priority {
-		right = BinaryExpression{
-			Left:     leftBinExpr.Right,
-			Right:    right,
-			Op:       binTk.Operation,
-			Priority: priority,
-		}
-
-		leftBinExpr.Right = right
-		root = leftBinExpr
-	} else {
-		root = BinaryExpression{
-			Left:     left,
-			Right:    right,
-			Op:       binTk.Operation,
-			Priority: priority,
-		}
+	if rootBinExpr, ok := root.(BinaryExpression); ok {
+		return rootBinExpr.PriorityMerge(binTk, right), nil
 	}
 
-	return root, nil
+	// Left side was not a binary expression.
+	return BinaryExpression{
+		Left:     root,
+		Right:    right,
+		Op:       binTk.Operation,
+		priority: binTk.Priority(),
+	}, nil
 }

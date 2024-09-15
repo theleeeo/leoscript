@@ -45,6 +45,12 @@ func (p *Parser) peek() token.Token {
 	return p.tokens[p.current]
 }
 
+// putBack will move the current token back one step
+// this is useful when we want to "undo" a token consumption
+func (p *Parser) putBack() {
+	p.current--
+}
+
 type Program struct {
 	Body []Expression
 }

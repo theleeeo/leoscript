@@ -1,8 +1,8 @@
-package parser_test
+package parser
 
 import (
 	"leoscript/lexer"
-	"leoscript/parser"
+	"leoscript/token"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,13 +13,13 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("123;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				IntegerLiteral{Value: 123},
 			},
 		}, prog)
 	})
@@ -28,15 +28,15 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("123 + 456;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left:  parser.IntegerLiteral{Value: 123},
-					Right: parser.IntegerLiteral{Value: 456},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 123},
+					Right: IntegerLiteral{Value: 456},
 					Op:    "+",
 				},
 			},
@@ -47,23 +47,23 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("123 + 2 - 789 + 4;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left: parser.BinaryExpression{
-							Left:  parser.IntegerLiteral{Value: 123},
-							Right: parser.IntegerLiteral{Value: 2},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 123},
+							Right: IntegerLiteral{Value: 2},
 							Op:    "+",
 						},
-						Right: parser.IntegerLiteral{Value: 789},
+						Right: IntegerLiteral{Value: 789},
 						Op:    "-",
 					},
-					Right: parser.IntegerLiteral{Value: 4},
+					Right: IntegerLiteral{Value: 4},
 					Op:    "+",
 				},
 			},
@@ -74,38 +74,34 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("123 + 2 * 789 / 4 - 9 * 1 / 2;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left: parser.IntegerLiteral{Value: 123},
-						Right: parser.BinaryExpression{
-							Left: parser.BinaryExpression{
-								Left:     parser.IntegerLiteral{Value: 2},
-								Right:    parser.IntegerLiteral{Value: 789},
-								Op:       "*",
-								Priority: 1,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left: IntegerLiteral{Value: 123},
+						Right: BinaryExpression{
+							Left: BinaryExpression{
+								Left:  IntegerLiteral{Value: 2},
+								Right: IntegerLiteral{Value: 789},
+								Op:    "*",
 							},
-							Right:    parser.IntegerLiteral{Value: 4},
-							Op:       "/",
-							Priority: 1,
+							Right: IntegerLiteral{Value: 4},
+							Op:    "/",
 						},
 						Op: "+",
 					},
-					Right: parser.BinaryExpression{
-						Left: parser.BinaryExpression{
-							Left:     parser.IntegerLiteral{Value: 9},
-							Right:    parser.IntegerLiteral{Value: 1},
-							Op:       "*",
-							Priority: 1,
+					Right: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 9},
+							Right: IntegerLiteral{Value: 1},
+							Op:    "*",
 						},
-						Right:    parser.IntegerLiteral{Value: 2},
-						Op:       "/",
-						Priority: 1,
+						Right: IntegerLiteral{Value: 2},
+						Op:    "/",
 					},
 					Op: "-",
 				},
@@ -117,14 +113,14 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("-123;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.UnaryExpression{
-					Expression: parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				UnaryExpression{
+					Expression: IntegerLiteral{Value: 123},
 					Op:         "-",
 				},
 			},
@@ -135,15 +131,15 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("--123;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.UnaryExpression{
-					Expression: parser.UnaryExpression{
-						Expression: parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				UnaryExpression{
+					Expression: UnaryExpression{
+						Expression: IntegerLiteral{Value: 123},
 						Op:         "-"},
 					Op: "-",
 				},
@@ -155,17 +151,17 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("+123 - 45;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.UnaryExpression{
-						Expression: parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: UnaryExpression{
+						Expression: IntegerLiteral{Value: 123},
 						Op:         "+"},
-					Right: parser.IntegerLiteral{Value: 45},
+					Right: IntegerLiteral{Value: 45},
 					Op:    "-",
 				},
 			},
@@ -176,17 +172,17 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("4 + -123;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		// Maybe in the future this can be made into a subtraction
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.IntegerLiteral{Value: 4},
-					Right: parser.UnaryExpression{
-						Expression: parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: IntegerLiteral{Value: 4},
+					Right: UnaryExpression{
+						Expression: IntegerLiteral{Value: 123},
 						Op:         "-"},
 					Op: "+",
 				},
@@ -198,13 +194,13 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("(123);")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				IntegerLiteral{Value: 123},
 			},
 		}, prog)
 	})
@@ -213,22 +209,20 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("(1 + 2) + 10;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left:     parser.IntegerLiteral{Value: 1},
-						Right:    parser.IntegerLiteral{Value: 2},
-						Op:       "+",
-						Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
 					},
-					Right:    parser.IntegerLiteral{Value: 10},
-					Op:       "+",
-					Priority: 0,
+					Right: IntegerLiteral{Value: 10},
+					Op:    "+",
 				},
 			},
 		}, prog)
@@ -238,22 +232,20 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("(1 + 2) * 10;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left:     parser.IntegerLiteral{Value: 1},
-						Right:    parser.IntegerLiteral{Value: 2},
-						Op:       "+",
-						Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
 					},
-					Right:    parser.IntegerLiteral{Value: 10},
-					Op:       "*",
-					Priority: 1,
+					Right: IntegerLiteral{Value: 10},
+					Op:    "*",
 				},
 			},
 		}, prog)
@@ -263,17 +255,16 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("(123 + 456);")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left:     parser.IntegerLiteral{Value: 123},
-					Right:    parser.IntegerLiteral{Value: 456},
-					Op:       "+",
-					Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 123},
+					Right: IntegerLiteral{Value: 456},
+					Op:    "+",
 				},
 			},
 		}, prog)
@@ -283,24 +274,23 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("(67 + 123) + 456 - 70;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left: parser.BinaryExpression{
-							Left:     parser.IntegerLiteral{Value: 67},
-							Right:    parser.IntegerLiteral{Value: 123},
-							Op:       "+",
-							Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 67},
+							Right: IntegerLiteral{Value: 123},
+							Op:    "+",
 						},
-						Right: parser.IntegerLiteral{Value: 456},
+						Right: IntegerLiteral{Value: 456},
 						Op:    "+",
 					},
-					Right: parser.IntegerLiteral{Value: 70},
+					Right: IntegerLiteral{Value: 70},
 					Op:    "-",
 				},
 			},
@@ -311,25 +301,23 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("67 * (123 - 456) - 70;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.BinaryExpression{
-						Left: parser.IntegerLiteral{Value: 67},
-						Right: parser.BinaryExpression{
-							Left:     parser.IntegerLiteral{Value: 123},
-							Right:    parser.IntegerLiteral{Value: 456},
-							Op:       "-",
-							Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left: IntegerLiteral{Value: 67},
+						Right: BinaryExpression{
+							Left:  IntegerLiteral{Value: 123},
+							Right: IntegerLiteral{Value: 456},
+							Op:    "-",
 						},
-						Op:       "*",
-						Priority: 1,
+						Op: "*",
 					},
-					Right: parser.IntegerLiteral{Value: 70},
+					Right: IntegerLiteral{Value: 70},
 					Op:    "-",
 				},
 			},
@@ -340,28 +328,94 @@ func Test_ParseExpr(t *testing.T) {
 		lx, err := lexer.Tokenize("1 + (2 + 10) * 5;")
 		assert.NoError(t, err)
 
-		p := parser.NewParser(lx)
+		p := NewParser(lx)
 		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.Equal(t, parser.Program{
-			Body: []parser.Expression{
-				parser.BinaryExpression{
-					Left: parser.IntegerLiteral{Value: 1},
-					Right: parser.BinaryExpression{
-						Left: parser.BinaryExpression{
-							Left:     parser.IntegerLiteral{Value: 2},
-							Right:    parser.IntegerLiteral{Value: 10},
-							Op:       "+",
-							Priority: 100,
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: IntegerLiteral{Value: 1},
+					Right: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 2},
+							Right: IntegerLiteral{Value: 10},
+							Op:    "+",
 						},
-						Right:    parser.IntegerLiteral{Value: 5},
-						Op:       "*",
-						Priority: 1,
+						Right: IntegerLiteral{Value: 5},
+						Op:    "*",
 					},
 					Op: "+",
 				},
 			},
 		}, prog)
+	})
+}
+
+func Test_PriotityMerge(t *testing.T) {
+	t.Run("Merge with same priority", func(t *testing.T) {
+		left := BinaryExpression{
+			Left:     IntegerLiteral{Value: 1},
+			Right:    IntegerLiteral{Value: 2},
+			Op:       "+",
+			priority: token.PRIO_SUM,
+		}
+
+		right := IntegerLiteral{Value: 3}
+
+		newExpr := left.PriorityMerge(token.MathOp{Operation: "+"}, right)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  left,
+			Right: right,
+			Op:    "+",
+		}, newExpr)
+	})
+
+	t.Run("Merge with lower priority", func(t *testing.T) {
+		left := BinaryExpression{
+			Left:     IntegerLiteral{Value: 1},
+			Right:    IntegerLiteral{Value: 2},
+			Op:       "*",
+			priority: token.PRIO_SUM,
+		}
+
+		right := IntegerLiteral{Value: 3}
+
+		newExpr := left.PriorityMerge(token.MathOp{Operation: "-"}, right)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:     left,
+			Right:    right,
+			Op:       "-",
+			priority: token.PRIO_SUM,
+		}, newExpr)
+	})
+
+	t.Run("Merge with higher priority", func(t *testing.T) {
+		left := BinaryExpression{
+			Left:     IntegerLiteral{Value: 1},
+			Right:    IntegerLiteral{Value: 2},
+			Op:       "+",
+			priority: token.PRIO_SUM,
+		}
+
+		right := IntegerLiteral{Value: 3}
+
+		newExpr := left.PriorityMerge(token.MathOp{Operation: "*"}, right)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left:  IntegerLiteral{Value: 2},
+				Right: right,
+				Op:    "*",
+			},
+			Op: "+",
+		}, newExpr)
+	})
+
+	t.Run("Merge with higher priority, multiple layers", func(t *testing.T) {
+		// TODO
 	})
 }
