@@ -7,34 +7,27 @@ import (
 	"leoscript/types"
 )
 
-func RunRaw(src string) (runtimeVal, error) {
+func (intr *Interpreter) LoadRaw(src string) error {
+	if src == "" {
+		return fmt.Errorf("empty source")
+	}
+
 	tokens, err := lexer.Tokenize(src)
 	if err != nil {
-		return nil, fmt.Errorf("failed to tokenize: %w", err)
+		return fmt.Errorf("failed to tokenize: %w", err)
 	}
 
 	program, err := parser.NewParser(tokens).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse: %w", err)
+		return fmt.Errorf("failed to parse: %w", err)
 	}
 
-	return Run(program)
+	intr.program = program
+
+	return nil
 }
 
-func Run(pg parser.Program) (val runtimeVal, err error) {
-	if len(pg.Body) == 0 {
-		return nil, fmt.Errorf("empty program")
-	}
-
-	if len(pg.Body) > 1 {
-		panic("multiple expressions not supported")
-	}
-
-	intr := &interpreter{
-		scope:   newScope(nil),
-		program: pg,
-	}
-
+func (intr *Interpreter) Run() (val runtimeVal, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			val = nil
@@ -42,21 +35,27 @@ func Run(pg parser.Program) (val runtimeVal, err error) {
 		}
 	}()
 
-	for _, st := range pg.Body {
+	for _, st := range intr.program.Body {
 		return intr.evaluateStatement(st), nil
 	}
 
 	panic("unreachable")
 }
 
-type interpreter struct {
+func New() *Interpreter {
+	return &Interpreter{
+		scope: newScope(nil),
+	}
+}
+
+type Interpreter struct {
 	scope *scope
 
 	program parser.Program
 }
 
 // Todo: Should not return runtimeVal
-func (intr *interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
+func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 	switch s := stmt.(type) {
 	case parser.Expression:
 		return intr.evaluateExpression(s)
@@ -71,7 +70,7 @@ func (intr *interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 	}
 }
 
-func (intr *interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
+func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 	switch e := expr.(type) {
 	case parser.BinaryExpression:
 		left := intr.evaluateExpression(e.Left)
