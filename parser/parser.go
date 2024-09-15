@@ -21,7 +21,7 @@ func (p *Parser) next() token.Token {
 	p.current++
 
 	if p.current >= len(p.tokens) {
-		return nil
+		return token.EOF{}
 	}
 
 	return p.tokens[p.current]
@@ -39,7 +39,7 @@ func (p *Parser) expect(tk token.TokenType) error {
 // peek will return the current token without consuming it
 func (p *Parser) peek() token.Token {
 	if p.current >= len(p.tokens) {
-		return nil
+		return token.EOF{}
 	}
 
 	return p.tokens[p.current]
@@ -56,9 +56,8 @@ type Program struct {
 }
 
 func (p *Parser) Parse() (Program, error) {
-	for tk := p.peek(); tk != nil; tk = p.peek() {
+	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
 		if _, ok := tk.(token.Semicolon); ok {
-			p.next()
 			continue
 		}
 
@@ -68,7 +67,6 @@ func (p *Parser) Parse() (Program, error) {
 		}
 
 		p.Program.Body = append(p.Program.Body, expr)
-		p.next()
 	}
 
 	return p.Program, nil

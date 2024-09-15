@@ -30,13 +30,13 @@ func Test_MathExpression(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 1},
-			token.MathOp{Operation: "+"},
+			token.Operator{Op: "+"},
 			token.Integer{Value: 2},
-			token.MathOp{Operation: "-"},
+			token.Operator{Op: "-"},
 			token.Integer{Value: 3},
-			token.MathOp{Operation: "*"},
+			token.Operator{Op: "*"},
 			token.Integer{Value: 4},
-			token.MathOp{Operation: "/"},
+			token.Operator{Op: "/"},
 			token.Integer{Value: 5},
 		}, lx)
 	})
@@ -46,12 +46,12 @@ func Test_MathExpression(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 123},
-			token.MathOp{Operation: "+"},
+			token.Operator{Op: "+"},
 			token.Integer{Value: 456789},
-			token.MathOp{Operation: "-"},
+			token.Operator{Op: "-"},
 			token.Integer{Value: 987},
 			token.Integer{Value: 7898},
-			token.MathOp{Operation: "/"},
+			token.Operator{Op: "/"},
 			token.Integer{Value: 898989},
 		}, lx)
 	})
@@ -68,10 +68,10 @@ func Test_MathExpression(t *testing.T) {
 			token.OpenParen{},
 			token.OpenParen{},
 			token.Integer{Value: 1},
-			token.MathOp{Operation: "+"},
+			token.Operator{Op: "+"},
 			token.Integer{Value: 2},
 			token.CloseParen{},
-			token.MathOp{Operation: "*"},
+			token.Operator{Op: "*"},
 			token.Integer{Value: 3},
 			token.CloseParen{},
 			token.Semicolon{},
@@ -86,9 +86,9 @@ func Test_Identifiers(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Identifier{Value: "foo"},
-			token.MathOp{Operation: "+"},
+			token.Operator{Op: "+"},
 			token.Identifier{Value: "bar"},
-			token.MathOp{Operation: "-"},
+			token.Operator{Op: "-"},
 			token.Identifier{Value: "baz"},
 		}, lx)
 	})
@@ -128,9 +128,9 @@ func Test_LogicalExpressions(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
-			token.LogicalOp{Operation: "&&"},
+			token.Operator{Op: "&&"},
 			token.Boolean{Value: false},
-			token.LogicalOp{Operation: "||"},
+			token.Operator{Op: "||"},
 			token.Boolean{Value: true},
 		}, lx)
 	})
@@ -141,10 +141,10 @@ func Test_LogicalExpressions(t *testing.T) {
 		assert.Equal(t, []token.Token{
 			token.OpenParen{},
 			token.Boolean{Value: true},
-			token.LogicalOp{Operation: "&&"},
+			token.Operator{Op: "&&"},
 			token.Boolean{Value: false},
 			token.CloseParen{},
-			token.LogicalOp{Operation: "||"},
+			token.Operator{Op: "||"},
 			token.Boolean{Value: true},
 		}, lx)
 	})
@@ -154,9 +154,9 @@ func Test_LogicalExpressions(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
-			token.LogicalOp{Operation: "&&"},
+			token.Operator{Op: "&&"},
 			token.Identifier{Value: "bar"},
-			token.LogicalOp{Operation: "||"},
+			token.Operator{Op: "||"},
 			token.Identifier{Value: "baz"},
 		}, lx)
 	})

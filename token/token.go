@@ -7,19 +7,19 @@ type Token interface {
 type TokenType string
 
 const (
-	// EOFType        TokenType = "EOF"
+	EOFType        TokenType = "EOF"
 	IntegerType    TokenType = "INTEGER"
-	MathOpType     TokenType = "MATH_OP"
+	OperatorType   TokenType = "OPERATOR"
 	OpenParenType  TokenType = "OPEN_PAREN"
 	CloseParenType TokenType = "CLOSE_PAREN"
 	SemicolonType  TokenType = "SEMICOLON"
 	IdentifierType TokenType = "IDENTIFIER"
 	BooleanType    TokenType = "BOOLEAN"
-	LogicalOpType  TokenType = "LOGICAL_OP"
 )
 
-// type EOF struct{}
-// func (t EOF) Type() TokenType { return EOFType }
+type EOF struct{}
+
+func (t EOF) Type() TokenType { return EOFType }
 
 type Integer struct {
 	Value int
@@ -27,14 +27,18 @@ type Integer struct {
 
 func (t Integer) Type() TokenType { return IntegerType }
 
-type MathOp struct {
-	Operation string
+type Operator struct {
+	Op string
 }
 
-func (t MathOp) Type() TokenType { return MathOpType }
+func (t Operator) Type() TokenType { return OperatorType }
 
-func (t MathOp) Priority() Priority {
-	switch t.Operation {
+func (t Operator) Priority() Priority {
+	switch t.Op {
+	case "&&":
+		return PRIO_AND
+	case "||":
+		return PRIO_OR
 	case "+", "-":
 		return PRIO_SUM
 	case "*", "/":
@@ -79,20 +83,3 @@ type Boolean struct {
 }
 
 func (t Boolean) Type() TokenType { return BooleanType }
-
-type LogicalOp struct {
-	Operation string
-}
-
-func (t LogicalOp) Type() TokenType { return LogicalOpType }
-
-func (t LogicalOp) Priority() Priority {
-	switch t.Operation {
-	case "||":
-		return PRIO_OR
-	case "&&":
-		return PRIO_AND
-	}
-
-	panic("invalid operator in logical expression")
-}

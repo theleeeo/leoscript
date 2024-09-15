@@ -68,7 +68,7 @@ func Tokenize(input string) ([]token.Token, error) {
 		case ' ', '\n', '\t':
 			// Skip whitespace
 		case '+', '-', '*', '/':
-			lx.pushToken(token.MathOp{Operation: string(tk)})
+			lx.pushToken(token.Operator{Op: string(tk)})
 		case '(':
 			lx.pushToken(token.OpenParen{})
 		case ')':
@@ -77,19 +77,19 @@ func Tokenize(input string) ([]token.Token, error) {
 			lx.pushToken(token.Semicolon{})
 		case '&':
 			if lx.next() == '&' {
-				lx.pushToken(token.LogicalOp{Operation: "&&"})
+				lx.pushToken(token.Operator{Op: "&&"})
 			} else {
 				return nil, fmt.Errorf("invalid character: %c", tk)
 			}
 		case '|':
 			if lx.next() == '|' {
-				lx.pushToken(token.LogicalOp{Operation: "||"})
+				lx.pushToken(token.Operator{Op: "||"})
 			} else {
 				return nil, fmt.Errorf("invalid character: %c", tk)
 			}
 
 		case '!':
-			lx.pushToken(token.LogicalOp{Operation: "!"})
+			lx.pushToken(token.Operator{Op: "!"})
 
 		default:
 			return nil, fmt.Errorf("invalid character: %c", tk)

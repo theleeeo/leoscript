@@ -12,6 +12,12 @@ type IntegerLiteral struct {
 
 func (i IntegerLiteral) isExpression() {}
 
+type BooleanLiteral struct {
+	Value bool
+}
+
+func (i BooleanLiteral) isExpression() {}
+
 type BinaryExpression struct {
 	Left     Expression
 	Right    Expression
@@ -23,7 +29,7 @@ func (b BinaryExpression) isExpression() {}
 
 // PriorityMerge will merge the current binary expression with a new expression based on the priorities of the operators
 // A new expression tree will be returned with the order of operations handled correctly.
-func (root BinaryExpression) PriorityMerge(binTk token.MathOp, newExpr Expression) Expression {
+func (root BinaryExpression) PriorityMerge(binTk token.Operator, newExpr Expression) Expression {
 	priority := binTk.Priority()
 
 	// If the new priority is lower, it should be higher in the expression tree to be evaluated later.
@@ -33,7 +39,7 @@ func (root BinaryExpression) PriorityMerge(binTk token.MathOp, newExpr Expressio
 		return BinaryExpression{
 			Left:     root,
 			Right:    newExpr,
-			Op:       binTk.Operation,
+			Op:       binTk.Op,
 			priority: priority,
 		}
 	}
@@ -49,7 +55,7 @@ func (root BinaryExpression) PriorityMerge(binTk token.MathOp, newExpr Expressio
 	newRight := BinaryExpression{
 		Left:     root.Right,
 		Right:    newExpr,
-		Op:       binTk.Operation,
+		Op:       binTk.Op,
 		priority: priority,
 	}
 	root.Right = newRight
