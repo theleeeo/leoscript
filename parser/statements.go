@@ -18,6 +18,8 @@ func (p *Parser) parseStatement() (Statement, error) {
 		return p.parseVarDef(nil)
 	case token.IntDef:
 		return p.parseVarDef(types.Int)
+	case token.BoolDef:
+		return p.parseVarDef(types.Bool)
 	case token.Identifier:
 		// return p.parseAssignment()
 		panic("assignment not implemented")
@@ -28,10 +30,6 @@ func (p *Parser) parseStatement() (Statement, error) {
 }
 
 func (p *Parser) parseVarDef(varType types.Type) (Statement, error) {
-	if varType == nil {
-		panic("untyped vardef not implemented")
-	}
-
 	if err := p.expect(token.IdentifierType); err != nil {
 		return nil, fmt.Errorf("expected identifier after intdef: %w", err)
 	}
@@ -52,6 +50,16 @@ func (p *Parser) parseVarDef(varType types.Type) (Statement, error) {
 	expr, err := p.parseExpr()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
+	}
+
+	if varType != nil {
+		// If a type is specified, verify that the expression matches the type
+		if expr.ReturnType() != varType {
+			return nil, fmt.Errorf("type mismatch: expected %v, got %v", varType, expr.ReturnType())
+		}
+	} else {
+		// If no type is specified, use the type of the expression
+		varType = expr.ReturnType()
 	}
 
 	if err := p.expect(token.SemicolonType); err != nil {

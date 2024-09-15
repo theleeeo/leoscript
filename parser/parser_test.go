@@ -804,6 +804,76 @@ func Test_Stmnt_VarDef(t *testing.T) {
 			},
 		}, prog)
 	})
+
+	t.Run("Simple boolean definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("bool a = true;")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				VarDef{
+					Name:  "a",
+					Type:  types.Bool,
+					Value: BooleanLiteral{Value: true},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Integer definition with expression", func(t *testing.T) {
+		lx, err := lexer.Tokenize("int a = 1 + 2 * 3;")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				VarDef{
+					Name: "a",
+					Type: types.Int,
+					Value: BinaryExpression{
+						Left: IntegerLiteral{Value: 1},
+						Right: BinaryExpression{
+							Left:  IntegerLiteral{Value: 2},
+							Right: IntegerLiteral{Value: 3},
+							Op:    "*",
+						},
+						Op: "+",
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Type-free var definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("var a = 1 < 2 && true;")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				VarDef{
+					Name: "a",
+					Type: types.Bool,
+					Value: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 1},
+							Right: IntegerLiteral{Value: 2},
+							Op:    "<",
+						},
+						Right: BooleanLiteral{Value: true},
+						Op:    "&&",
+					},
+				},
+			},
+		}, prog)
+	})
 }
 
 func Test_ReturnTypes(t *testing.T) {

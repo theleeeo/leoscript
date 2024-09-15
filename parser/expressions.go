@@ -81,7 +81,7 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 
 	}
 
-	return nil, fmt.Errorf("unexpected token: %v", p.peek())
+	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
 }
 
 func (p *Parser) parseUnaryExpr() (Expression, error) {
