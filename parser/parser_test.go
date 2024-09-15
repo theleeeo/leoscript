@@ -805,3 +805,50 @@ func Test_Stmnt_VarDef(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_ReturnTypes(t *testing.T) {
+	t.Run("Literals", func(t *testing.T) {
+		assert.Equal(t, types.Int, IntegerLiteral{Value: 123}.ReturnType())
+		assert.Equal(t, types.Bool, BooleanLiteral{Value: true}.ReturnType())
+	})
+
+	t.Run("Unary expressions", func(t *testing.T) {
+		assert.Equal(t, types.Int, UnaryExpression{
+			Expression: IntegerLiteral{Value: 123},
+			Op:         "-",
+		}.ReturnType())
+
+		assert.Equal(t, types.Bool, UnaryExpression{
+			Expression: BooleanLiteral{Value: true},
+			Op:         "!",
+		}.ReturnType())
+	})
+
+	t.Run("Binary expressions", func(t *testing.T) {
+		assert.Equal(t, types.Int, BinaryExpression{
+			Left:  IntegerLiteral{Value: 1},
+			Right: IntegerLiteral{Value: 2},
+			Op:    "+",
+		}.ReturnType())
+
+		assert.Equal(t, types.Bool, BinaryExpression{
+			Left:  BooleanLiteral{Value: true},
+			Right: BooleanLiteral{Value: false},
+			Op:    "&&",
+		}.ReturnType())
+	})
+
+	t.Run("Binary expressions with different types", func(t *testing.T) {
+		assert.Equal(t, types.Bool, BinaryExpression{
+			Left:  IntegerLiteral{Value: 1},
+			Right: IntegerLiteral{Value: 2},
+			Op:    "<",
+		}.ReturnType())
+
+		assert.Equal(t, types.Bool, BinaryExpression{
+			Left:  BooleanLiteral{Value: true},
+			Right: IntegerLiteral{Value: 2},
+			Op:    "==",
+		}.ReturnType())
+	})
+}

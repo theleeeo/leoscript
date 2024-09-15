@@ -1,22 +1,52 @@
 package parser
 
-import "leoscript/token"
+import (
+	"leoscript/token"
+	"leoscript/types"
+)
 
-type Expression interface{}
+type Expression interface {
+	ReturnType() types.Type
+}
 
 type IntegerLiteral struct {
 	Value int
 }
 
+func (IntegerLiteral) ReturnType() types.Type { return types.Int }
+
 type BooleanLiteral struct {
 	Value bool
 }
+
+func (BooleanLiteral) ReturnType() types.Type { return types.Bool }
 
 type BinaryExpression struct {
 	Left     Expression
 	Right    Expression
 	Op       string
 	priority token.Priority
+}
+
+// Note: Will not support other number types than int with the current setup.
+func (e BinaryExpression) ReturnType() types.Type {
+	if e.Op == "&&" || e.Op == "||" {
+		return types.Bool
+	}
+
+	if e.Op == "<" || e.Op == ">" || e.Op == "<=" || e.Op == ">=" {
+		return types.Bool
+	}
+
+	if e.Op == "==" || e.Op == "!=" {
+		return types.Bool
+	}
+
+	if e.Op == "+" || e.Op == "-" || e.Op == "*" || e.Op == "/" {
+		return types.Int
+	}
+
+	panic("unknown binary expression type")
 }
 
 // PriorityMerge will merge the current binary expression with a new expression based on the priorities of the operators
@@ -59,3 +89,5 @@ type UnaryExpression struct {
 	Expression Expression
 	Op         string
 }
+
+func (e UnaryExpression) ReturnType() types.Type { return e.Expression.ReturnType() }

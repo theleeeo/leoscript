@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"leoscript/lexer"
 	"leoscript/parser"
+	"leoscript/types"
 )
 
 func RunRaw(src string) (runtimeVal, error) {
 	tokens, err := lexer.Tokenize(src)
 	if err != nil {
-		return 0, fmt.Errorf("failed to tokenize: %w", err)
+		return nil, fmt.Errorf("failed to tokenize: %w", err)
 	}
 
 	program, err := parser.NewParser(tokens).Parse()
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse: %w", err)
+		return nil, fmt.Errorf("failed to parse: %w", err)
 	}
 
 	return Run(program)
@@ -36,21 +37,21 @@ func Run(pg parser.Program) (val runtimeVal, err error) {
 		}
 	}()
 
-	for _, expr := range pg.Body {
-		return evaluateExpression(expr), nil
+	for _, st := range pg.Body {
+		return evaluateStatement(st), nil
 	}
 
 	panic("unreachable")
 }
 
-type runtimeVal interface{}
+func evaluateStatement(stmt parser.Statement) runtimeVal {
+	switch s := stmt.(type) {
+	case parser.Expression:
+		return evaluateExpression(s)
 
-type numberVal struct {
-	value int
-}
-
-type booleanVal struct {
-	value bool
+	default:
+		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
+	}
 }
 
 func evaluateExpression(expr parser.Expression) runtimeVal {
@@ -89,12 +90,12 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 
 		// Equality
 		case "==":
-			if _, ok := left.(numberVal); ok {
+			if left.Type() == types.Int {
 				return booleanVal{value: left.(numberVal).value == right.(numberVal).value}
 			}
 			return booleanVal{value: left.(booleanVal).value == right.(booleanVal).value}
 		case "!=":
-			if _, ok := left.(numberVal); ok {
+			if left.Type() == types.Int {
 				return booleanVal{value: left.(numberVal).value != right.(numberVal).value}
 			}
 			return booleanVal{value: left.(booleanVal).value != right.(booleanVal).value}
