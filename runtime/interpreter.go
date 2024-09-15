@@ -6,7 +6,7 @@ import (
 	"leoscript/parser"
 )
 
-func RunRaw(src string) (int, error) {
+func RunRaw(src string) (runtimeVal, error) {
 	tokens, err := lexer.Tokenize(src)
 	if err != nil {
 		return 0, fmt.Errorf("failed to tokenize: %w", err)
@@ -20,7 +20,7 @@ func RunRaw(src string) (int, error) {
 	return Run(program), nil
 }
 
-func Run(pg parser.Program) int {
+func Run(pg parser.Program) runtimeVal {
 	if len(pg.Body) == 0 {
 		panic("empty program")
 	}
@@ -30,8 +30,7 @@ func Run(pg parser.Program) int {
 	}
 
 	for _, expr := range pg.Body {
-		val := evaluateExpression(expr)
-		return val.(numberVal).value
+		return evaluateExpression(expr)
 	}
 
 	return 0
@@ -41,6 +40,10 @@ type runtimeVal interface{}
 
 type numberVal struct {
 	value int
+}
+
+type booleanVal struct {
+	value bool
 }
 
 func evaluateExpression(expr parser.Expression) runtimeVal {
@@ -61,13 +64,21 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 				panic("division by zero")
 			}
 			return numberVal{value: left.(numberVal).value / right.(numberVal).value}
+		case "&&":
+			return booleanVal{value: left.(booleanVal).value && right.(booleanVal).value}
+		case "||":
+			return booleanVal{value: left.(booleanVal).value || right.(booleanVal).value}
 		default:
-			panic("unknown operator")
+			panic(fmt.Sprintf("unknown operator: %s", e.Op))
 		}
 
 	case parser.IntegerLiteral:
 		return numberVal{value: e.Value}
+
+	case parser.BooleanLiteral:
+		return booleanVal{value: e.Value}
+
 	default:
-		panic("unknown expression")
+		panic(fmt.Sprintf("unknown expression: %s", e))
 	}
 }
