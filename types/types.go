@@ -13,6 +13,6 @@ func (b BasicType) isType() {}
 const (
 	Unknown BasicType = iota
 
-	Bool // Boolean
-	Int  // Integer
+	Bool
+	Int
 )

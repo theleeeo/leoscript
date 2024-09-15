@@ -259,3 +259,33 @@ func Test_VariableDeclarations(t *testing.T) {
 		assert.Equal(t, true, val.(booleanVal).value)
 	})
 }
+
+func Test_Identifiers(t *testing.T) {
+	t.Run("Variable declaration with identifier", func(t *testing.T) {
+		i := New()
+		err := i.LoadRaw("var foo = 123; var bar = foo;")
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 123, resp.(numberVal).value)
+
+		val, ok := i.scope.GetVar("bar")
+		assert.True(t, ok)
+		assert.Equal(t, 123, val.(numberVal).value)
+	})
+
+	t.Run("Variable declaration with identifier and expression", func(t *testing.T) {
+		i := New()
+		err := i.LoadRaw("var foo = 123; var bar = foo + 1;")
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 124, resp.(numberVal).value)
+
+		val, ok := i.scope.GetVar("bar")
+		assert.True(t, ok)
+		assert.Equal(t, 124, val.(numberVal).value)
+	})
+}

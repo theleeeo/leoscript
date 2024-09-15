@@ -35,11 +35,14 @@ func (intr *Interpreter) Run() (val runtimeVal, err error) {
 		}
 	}()
 
+	// TODO: THIS IS A HACK FOR TESTING
+	var lastVal runtimeVal
+
 	for _, st := range intr.program.Body {
-		return intr.evaluateStatement(st), nil
+		lastVal = intr.evaluateStatement(st)
 	}
 
-	panic("unreachable")
+	return lastVal, nil
 }
 
 func New() *Interpreter {

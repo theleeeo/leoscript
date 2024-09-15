@@ -4,6 +4,8 @@ type Token interface {
 	Type() TokenType
 }
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type=TokenType
+
 type TokenType int
 
 const (
