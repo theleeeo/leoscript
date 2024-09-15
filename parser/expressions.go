@@ -7,16 +7,12 @@ import (
 )
 
 func (p *Parser) parseExpr() (Expression, error) {
-	var root Expression
-
-	// Parse the first part in the expression
-	// This is a special case because it can encounter cases that would never be encountered in the top of the main.
-	// For example, a unary operator or a number. Thy would be handled by the parsing of a binary expression normally.
-	firstExpr, err := p.parseFirstExpression()
+	// Parse the first part in the expression.
+	// This will be the root of the expression tree.
+	root, err := p.parsePrimaryExpression()
 	if err != nil {
 		return nil, err
 	}
-	root = firstExpr
 
 	for tk := p.next(); tk != nil; tk = p.next() {
 		switch tk := tk.(type) {
@@ -72,48 +68,17 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 	return expr, nil
 }
 
-// parseFirstExpression will parse the first part of an expression which requires special handling in some cases.
-func (p *Parser) parseFirstExpression() (Expression, error) {
-	switch tk := p.peek().(type) {
-	case token.EOF:
-		return nil, fmt.Errorf("unexpected EOF")
-	case token.Semicolon:
-		return nil, fmt.Errorf("unexpected semicolon token with no expression")
-	case token.CloseParen:
-		return nil, fmt.Errorf("unexpected close-paren token")
-	case token.Integer:
-		return IntegerLiteral{Value: tk.Value}, nil
-	case token.Boolean:
-		return BooleanLiteral{Value: tk.Value}, nil
-	case token.Operator:
-		expr, err := p.parseUnaryExpr()
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse unary expression: %w", err)
-		}
-		return expr, nil
-	case token.OpenParen:
-		expr, err := p.handleSubgroup()
-		if err != nil {
-			return nil, err
-		}
-
-		return expr, nil
-	}
-
-	// No token requiring special handling when being first was found, return nil
-	return nil, nil
-}
-
 func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	switch tk := p.peek().(type) {
-	case token.EOF:
-		return nil, fmt.Errorf("unexpected EOF")
 	case token.Integer:
 		return IntegerLiteral{Value: tk.Value}, nil
 	case token.Boolean:
 		return BooleanLiteral{Value: tk.Value}, nil
 	case token.Operator:
 		return p.parseUnaryExpr()
+	case token.OpenParen:
+		return p.handleSubgroup()
+
 	}
 
 	return nil, fmt.Errorf("unexpected token: %v", p.peek())
@@ -142,23 +107,10 @@ func (p *Parser) parseUnaryExpr() (Expression, error) {
 func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 	binTk := p.peek().(token.Operator)
 
-	var right Expression
-
-	nextToken := p.next() // consume the operator token
-	var err error
-	if _, ok := nextToken.(token.OpenParen); ok {
-		expr, err := p.handleSubgroup()
-		if err != nil {
-			return nil, err
-		}
-
-		right = expr
-
-	} else {
-		right, err = p.parsePrimaryExpression()
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse right expression: %w", err)
-		}
+	p.next() // consume the operator token
+	right, err := p.parsePrimaryExpression()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse right expression: %w", err)
 	}
 
 	// Do a right swap if the priority of the current operator is higher

@@ -10,10 +10,10 @@ const (
 	PRIO_EQUALS
 	// >, <, >=, <=
 	PRIO_COMPARISON
-	// &&
-	PRIO_AND
 	// ||
 	PRIO_OR
+	// &&
+	PRIO_AND
 	// + and -
 	PRIO_SUM
 	// * and /

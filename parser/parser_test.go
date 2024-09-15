@@ -438,13 +438,51 @@ func Test_PriotityMerge(t *testing.T) {
 	})
 
 	t.Run("Merge with higher priority, multiple layers", func(t *testing.T) {
-		// TODO
+		left := BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left: BooleanLiteral{Value: false},
+				Right: BinaryExpression{
+					Left:     BooleanLiteral{Value: true},
+					Right:    BooleanLiteral{Value: true},
+					Op:       "||",
+					priority: token.PRIO_OR,
+				},
+				Op:       "&&",
+				priority: token.PRIO_AND,
+			},
+			Op: "+",
+		}
+
+		right := IntegerLiteral{Value: 10}
+
+		newExpr := left.PriorityMerge(token.Operator{Op: "*"}, right)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left: BooleanLiteral{Value: false},
+				Right: BinaryExpression{
+					Left: BooleanLiteral{Value: true},
+					Right: BinaryExpression{
+						Left:  BooleanLiteral{Value: true},
+						Right: IntegerLiteral{Value: 10},
+						Op:    "*",
+					},
+					Op:       "||",
+					priority: token.PRIO_OR,
+				},
+				Op:       "&&",
+				priority: token.PRIO_AND,
+			},
+			Op: "+",
+		}, newExpr)
 	})
 }
 
 func Test_LogicalExpr(t *testing.T) {
 	t.Run("Logical expression, no change of order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true || false && true;")
+		lx, err := lexer.Tokenize("true && false || true;")
 		assert.NoError(t, err)
 
 		p := NewParser(lx)
@@ -457,17 +495,17 @@ func Test_LogicalExpr(t *testing.T) {
 					Left: BinaryExpression{
 						Left:  BooleanLiteral{Value: true},
 						Right: BooleanLiteral{Value: false},
-						Op:    "||",
+						Op:    "&&",
 					},
 					Right: BooleanLiteral{Value: true},
-					Op:    "&&",
+					Op:    "||",
 				},
 			},
 		}, prog)
 	})
 
 	t.Run("Logical expression, changing order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true && false || true;")
+		lx, err := lexer.Tokenize("true || false && true;")
 		assert.NoError(t, err)
 
 		p := NewParser(lx)
@@ -481,9 +519,36 @@ func Test_LogicalExpr(t *testing.T) {
 					Right: BinaryExpression{
 						Left:  BooleanLiteral{Value: false},
 						Right: BooleanLiteral{Value: true},
-						Op:    "||",
+						Op:    "&&",
 					},
-					Op: "&&",
+					Op: "||",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Mixed logical and arithmetic expression", func(t *testing.T) {
+		lx, err := lexer.Tokenize("true && 1 + 2 || false;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left: BooleanLiteral{Value: true},
+						Right: BinaryExpression{
+							Left:  IntegerLiteral{Value: 1},
+							Right: IntegerLiteral{Value: 2},
+							Op:    "+",
+						},
+						Op: "&&",
+					},
+					Right: BooleanLiteral{Value: false},
+					Op:    "||",
 				},
 			},
 		}, prog)
