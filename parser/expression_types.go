@@ -96,4 +96,4 @@ type Identifier struct {
 	Name string
 }
 
-func (Identifier) ReturnType() types.Type { return types.Unknown } // Todo: Implement type resolution of identifiers
+func (Identifier) ReturnType() types.Type { return types.Void } // Todo: Implement type resolution of identifiers

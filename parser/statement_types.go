@@ -11,10 +11,10 @@ type VarDecl struct {
 }
 
 type FnDef struct {
-	Name string
-	// ReturnType types.Type
-	Args []string
-	Body []Statement
+	Name       string
+	ReturnType types.Type
+	Args       []string
+	Body       []Statement
 }
 
 type Return struct {

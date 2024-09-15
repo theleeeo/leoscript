@@ -11,7 +11,10 @@ type BasicType int
 func (b BasicType) isType() {}
 
 const (
-	Unknown BasicType = iota
+	_ BasicType = iota
+
+	// No type. Used for void functions
+	Void
 
 	Bool
 	Int

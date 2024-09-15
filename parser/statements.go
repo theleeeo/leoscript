@@ -58,16 +58,28 @@ func (p *Parser) parseFnDef() (Statement, error) {
 		return nil, fmt.Errorf("expected open parenthesis after identifier: %w", err)
 	}
 
-	// Parse the function arguments
+	// TODO: Parse the function arguments here
 
 	if err := p.expect(token.CloseParenType); err != nil {
 		return nil, fmt.Errorf("expected close parenthesis after open parenthesis: %w", err)
 	}
 
-	if err := p.expect(token.OpenBraceType); err != nil {
-		return nil, fmt.Errorf("expected open brace after close parenthesis: %w", err)
+	var returnType types.Type
+
+	// Check if the function has a return type
+	if tk, ok := p.next().(token.Type); ok {
+		returnType = tk.Kind
+		p.next() // Consume the type token
+	} else {
+		// No return type is specified
+		returnType = types.Void
 	}
 
+	if _, ok := p.peek().(token.OpenBrace); !ok {
+		return nil, fmt.Errorf("expected open brace after arguments in function definition")
+	}
+
+	// Consume the opening brace
 	p.next()
 
 	// Parse the function body
@@ -77,9 +89,10 @@ func (p *Parser) parseFnDef() (Statement, error) {
 	}
 
 	return FnDef{
-		Name: identifier.Value,
-		Args: nil,
-		Body: body,
+		Name:       identifier.Value,
+		ReturnType: returnType,
+		Args:       nil,
+		Body:       body,
 	}, nil
 }
 
