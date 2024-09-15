@@ -71,3 +71,18 @@ func (p *Parser) Parse() (Program, error) {
 
 	return p.Program, nil
 }
+
+func (p *Parser) parseBlock() ([]Statement, error) {
+	stmts := []Statement{}
+
+	for tk := p.peek(); tk.Type() != token.CloseBraceType; tk = p.next() {
+		stmt, err := p.parseStatement()
+		if err != nil {
+			return nil, err
+		}
+
+		stmts = append(stmts, stmt)
+	}
+
+	return stmts, nil
+}

@@ -11,7 +11,19 @@ var keywords = map[string]token.Token{
 	"false": token.Boolean{Value: false},
 	"var":   token.VarDecl{},
 	"int":   token.IntDecl{},
-	"bool":  token.BoolDecl{},
+	// "int":    token.Type{Type: "int"},
+	"bool": token.BoolDecl{},
+	// "bool":   token.Type{Type: "bool"},
+	"fn":     token.FnDef{},
+	"return": token.Return{},
+	// "if":       token.If{},
+	// "else":     token.Else{},
+	// "return":   token.Return{},
+	// "while":    token.While{},
+	// "for":      token.For{},
+	//"in": token.In{},
+	// "break":    token.Break{},
+	// "continue": token.Continue{},
 }
 
 type lexer struct {
@@ -76,6 +88,10 @@ func Tokenize(input string) ([]token.Token, error) {
 			lx.pushToken(token.OpenParen{})
 		case ')':
 			lx.pushToken(token.CloseParen{})
+		case '{':
+			lx.pushToken(token.OpenBrace{})
+		case '}':
+			lx.pushToken(token.CloseBrace{})
 		case ';':
 			lx.pushToken(token.Semicolon{})
 		case '&':

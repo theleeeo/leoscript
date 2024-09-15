@@ -10,20 +10,23 @@ func _() {
 	var x [1]struct{}
 	_ = x[EOFType-0]
 	_ = x[IntegerType-1]
-	_ = x[OperatorType-2]
+	_ = x[BooleanType-2]
 	_ = x[OpenParenType-3]
 	_ = x[CloseParenType-4]
-	_ = x[SemicolonType-5]
-	_ = x[IdentifierType-6]
-	_ = x[BooleanType-7]
-	_ = x[VarDeclType-8]
-	_ = x[IntDeclType-9]
-	_ = x[BoolDeclType-10]
+	_ = x[OpenBraceType-5]
+	_ = x[CloseBraceType-6]
+	_ = x[VarDeclType-7]
+	_ = x[IntDeclType-8]
+	_ = x[BoolDeclType-9]
+	_ = x[SemicolonType-10]
+	_ = x[IdentifierType-11]
+	_ = x[OperatorType-12]
+	_ = x[FnDefType-13]
 }
 
-const _TokenType_name = "EOFTypeIntegerTypeOperatorTypeOpenParenTypeCloseParenTypeSemicolonTypeIdentifierTypeBooleanTypeVarDeclTypeIntDeclTypeBoolDeclType"
+const _TokenType_name = "EOFTypeIntegerTypeBooleanTypeOpenParenTypeCloseParenTypeOpenBraceTypeCloseBraceTypeVarDeclTypeIntDeclTypeBoolDeclTypeSemicolonTypeIdentifierTypeOperatorTypeFnDefType"
 
-var _TokenType_index = [...]uint8{0, 7, 18, 30, 43, 57, 70, 84, 95, 106, 117, 129}
+var _TokenType_index = [...]uint8{0, 7, 18, 29, 42, 56, 69, 83, 94, 105, 117, 130, 144, 156, 165}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

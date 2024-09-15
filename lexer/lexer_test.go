@@ -252,3 +252,39 @@ func Test_VariableDeclaration(t *testing.T) {
 	// 	}, lx)
 	// })
 }
+
+func Test_FunctionDefinition(t *testing.T) {
+	t.Run("Function definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("fn foo() {}")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.FnDef{},
+			token.Identifier{Value: "foo"},
+			token.OpenParen{},
+			token.CloseParen{},
+			token.OpenBrace{},
+			token.CloseBrace{},
+		}, lx)
+	})
+
+	// t.Run("Function definition, single argument", func(t *testing.T) {
+	// 	lx, err := lexer.Tokenize("fn foo(a) {}")
+	// 	assert.NoError(t, err)
+	// })
+
+	// t.Run("Function definition, return type", func(t *testing.T) {
+	// 	lx, err := lexer.Tokenize("fn foo(a) int {}")
+	// 	assert.NoError(t, err)
+	// 	}, lx)
+	// })
+
+	// t.Run("Function definition, multiple arguments", func(t *testing.T) {
+	// 	lx, err := lexer.Tokenize("fn foo(a, b) {}")
+	// 	assert.NoError(t, err)
+	// })
+
+	// t.Run("Function definition, body", func(t *testing.T) {
+	// 	lx, err := lexer.Tokenize("fn foo(a) { return 1 + 2; }")
+	// 	assert.NoError(t, err)
+	// })
+}

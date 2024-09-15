@@ -10,16 +10,27 @@ type TokenType int
 
 const (
 	EOFType TokenType = iota
+
+	// Literals
 	IntegerType
-	OperatorType
+	BooleanType
+
+	// Parentheses
 	OpenParenType
 	CloseParenType
-	SemicolonType
-	IdentifierType
-	BooleanType
+	OpenBraceType
+	CloseBraceType
+
+	// Variable declarations
 	VarDeclType
 	IntDeclType
 	BoolDeclType
+
+	SemicolonType
+	IdentifierType
+	OperatorType
+	FnDefType
+	ReturnType
 )
 
 type EOF struct{}
@@ -106,3 +117,19 @@ func (IntDecl) Type() TokenType { return IntDeclType }
 type BoolDecl struct{}
 
 func (BoolDecl) Type() TokenType { return BoolDeclType }
+
+type FnDef struct{}
+
+func (FnDef) Type() TokenType { return FnDefType }
+
+type OpenBrace struct{}
+
+func (OpenBrace) Type() TokenType { return OpenBraceType }
+
+type CloseBrace struct{}
+
+func (CloseBrace) Type() TokenType { return CloseBraceType }
+
+type Return struct{}
+
+func (Return) Type() TokenType { return ReturnType }
