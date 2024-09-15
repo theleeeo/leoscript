@@ -15,9 +15,9 @@ const (
 	SemicolonType
 	IdentifierType
 	BooleanType
-	VarDefType
-	IntDefType
-	BoolDefType
+	VarDeclType
+	IntDeclType
+	BoolDeclType
 )
 
 type EOF struct{}
@@ -93,14 +93,14 @@ type Boolean struct {
 
 func (Boolean) Type() TokenType { return BooleanType }
 
-type VarDef struct{}
+type VarDecl struct{}
 
-func (VarDef) Type() TokenType { return VarDefType }
+func (VarDecl) Type() TokenType { return VarDeclType }
 
-type IntDef struct{}
+type IntDecl struct{}
 
-func (IntDef) Type() TokenType { return IntDefType }
+func (IntDecl) Type() TokenType { return IntDeclType }
 
-type BoolDef struct{}
+type BoolDecl struct{}
 
-func (BoolDef) Type() TokenType { return BoolDefType }
+func (BoolDecl) Type() TokenType { return BoolDeclType }

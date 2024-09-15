@@ -14,12 +14,12 @@ func (p *Parser) parseStatement() (Statement, error) {
 		return nil, fmt.Errorf("unexpected EOF")
 	case token.Semicolon:
 		return nil, fmt.Errorf("unexpected semicolon")
-	case token.VarDef:
-		return p.parseVarDef(nil)
-	case token.IntDef:
-		return p.parseVarDef(types.Int)
-	case token.BoolDef:
-		return p.parseVarDef(types.Bool)
+	case token.VarDecl:
+		return p.parseVarDecl(nil)
+	case token.IntDecl:
+		return p.parseVarDecl(types.Int)
+	case token.BoolDecl:
+		return p.parseVarDecl(types.Bool)
 	case token.Identifier:
 		// return p.parseAssignment()
 		panic("assignment not implemented")
@@ -29,7 +29,7 @@ func (p *Parser) parseStatement() (Statement, error) {
 	}
 }
 
-func (p *Parser) parseVarDef(varType types.Type) (Statement, error) {
+func (p *Parser) parseVarDecl(varType types.Type) (Statement, error) {
 	if err := p.expect(token.IdentifierType); err != nil {
 		return nil, fmt.Errorf("expected identifier after intdef: %w", err)
 	}
@@ -66,7 +66,7 @@ func (p *Parser) parseVarDef(varType types.Type) (Statement, error) {
 		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
 
-	return VarDef{
+	return VarDecl{
 		Name:  identifier.Value,
 		Type:  varType,
 		Value: expr,

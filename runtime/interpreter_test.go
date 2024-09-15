@@ -135,3 +135,23 @@ func Test_Boolean_Comparisons(t *testing.T) {
 		assert.Equal(t, true, resp.(booleanVal).value)
 	})
 }
+
+func Test_VariableDeclarations(t *testing.T) {
+	t.Run("Variable declaration", func(t *testing.T) {
+		resp, err := RunRaw("var foo = 123;")
+		assert.NoError(t, err)
+		assert.Equal(t, 123, resp.(numberVal).value)
+	})
+
+	t.Run("Variable declaration with expression", func(t *testing.T) {
+		resp, err := RunRaw("var foo = 1 + 2 * 3;")
+		assert.NoError(t, err)
+		assert.Equal(t, 7, resp.(numberVal).value)
+	})
+
+	t.Run("Variable declaration with boolean expression", func(t *testing.T) {
+		resp, err := RunRaw("var foo = true && false || true;")
+		assert.NoError(t, err)
+		assert.Equal(t, true, resp.(booleanVal).value)
+	})
+}

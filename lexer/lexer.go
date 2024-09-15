@@ -9,9 +9,9 @@ import (
 var keywords = map[string]token.Token{
 	"true":  token.Boolean{Value: true},
 	"false": token.Boolean{Value: false},
-	"var":   token.VarDef{},
-	"int":   token.IntDef{},
-	"bool":  token.BoolDef{},
+	"var":   token.VarDecl{},
+	"int":   token.IntDecl{},
+	"bool":  token.BoolDecl{},
 }
 
 type lexer struct {

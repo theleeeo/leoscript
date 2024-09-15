@@ -786,8 +786,8 @@ func Test_Expr_Comparisons(t *testing.T) {
 	})
 }
 
-func Test_Stmnt_VarDef(t *testing.T) {
-	t.Run("Simple integer definition", func(t *testing.T) {
+func Test_Stmnt_VarDecl(t *testing.T) {
+	t.Run("Simple integer declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("int a = 123;")
 		assert.NoError(t, err)
 
@@ -796,7 +796,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 
 		assert.EqualExportedValues(t, Program{
 			Body: []Statement{
-				VarDef{
+				VarDecl{
 					Name:  "a",
 					Type:  types.Int,
 					Value: IntegerLiteral{Value: 123},
@@ -805,7 +805,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("Simple boolean definition", func(t *testing.T) {
+	t.Run("Simple boolean declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("bool a = true;")
 		assert.NoError(t, err)
 
@@ -814,7 +814,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 
 		assert.EqualExportedValues(t, Program{
 			Body: []Statement{
-				VarDef{
+				VarDecl{
 					Name:  "a",
 					Type:  types.Bool,
 					Value: BooleanLiteral{Value: true},
@@ -823,7 +823,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("Integer definition with expression", func(t *testing.T) {
+	t.Run("Integer declaration with expression", func(t *testing.T) {
 		lx, err := lexer.Tokenize("int a = 1 + 2 * 3;")
 		assert.NoError(t, err)
 
@@ -832,7 +832,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 
 		assert.EqualExportedValues(t, Program{
 			Body: []Statement{
-				VarDef{
+				VarDecl{
 					Name: "a",
 					Type: types.Int,
 					Value: BinaryExpression{
@@ -849,7 +849,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("Type-free var definition", func(t *testing.T) {
+	t.Run("Type-free var declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("var a = 1 < 2 && true;")
 		assert.NoError(t, err)
 
@@ -858,7 +858,7 @@ func Test_Stmnt_VarDef(t *testing.T) {
 
 		assert.EqualExportedValues(t, Program{
 			Body: []Statement{
-				VarDef{
+				VarDecl{
 					Name: "a",
 					Type: types.Bool,
 					Value: BinaryExpression{

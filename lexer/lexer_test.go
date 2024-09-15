@@ -187,12 +187,12 @@ func Test_LogicalExpressions(t *testing.T) {
 	})
 }
 
-func Test_VariableDefinition(t *testing.T) {
-	t.Run("Variable definition", func(t *testing.T) {
+func Test_VariableDeclaration(t *testing.T) {
+	t.Run("Variable declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("var foo = 123;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.VarDef{},
+			token.VarDecl{},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Integer{Value: 123},
@@ -200,11 +200,11 @@ func Test_VariableDefinition(t *testing.T) {
 		}, lx)
 	})
 
-	t.Run("Variable definition with expression", func(t *testing.T) {
+	t.Run("Variable declaration with expression", func(t *testing.T) {
 		lx, err := lexer.Tokenize("var foo = 1 + 2 * 3;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.VarDef{},
+			token.VarDecl{},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Integer{Value: 1},
@@ -216,11 +216,11 @@ func Test_VariableDefinition(t *testing.T) {
 		}, lx)
 	})
 
-	t.Run("Integer variable definition", func(t *testing.T) {
+	t.Run("Integer variable declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("int foo = 123;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.IntDef{},
+			token.IntDecl{},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Integer{Value: 123},
@@ -228,11 +228,11 @@ func Test_VariableDefinition(t *testing.T) {
 		}, lx)
 	})
 
-	t.Run("Boolean variable definition", func(t *testing.T) {
+	t.Run("Boolean variable declaration", func(t *testing.T) {
 		lx, err := lexer.Tokenize("bool foo = true;")
 		assert.NoError(t, err)
 		assert.Equal(t, []token.Token{
-			token.BoolDef{},
+			token.BoolDecl{},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Boolean{Value: true},
@@ -240,11 +240,11 @@ func Test_VariableDefinition(t *testing.T) {
 		}, lx)
 	})
 
-	// t.Run("String variable definition", func(t *testing.T) {
+	// t.Run("String variable declaration", func(t *testing.T) {
 	// 	lx, err := lexer.Tokenize("string foo = \"bar\";")
 	// 	assert.NoError(t, err)
 	// 	assert.Equal(t, []token.Token{
-	// 		token.StringDef{},
+	// 		token.StringDecl{},
 	// 		token.Identifier{Value: "foo"},
 	// 		token.Operator{Op: "="},
 	// 		token.String{Value: "bar"},

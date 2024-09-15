@@ -30,6 +30,11 @@ func Run(pg parser.Program) (val runtimeVal, err error) {
 		panic("multiple expressions not supported")
 	}
 
+	intr := &interpreter{
+		scope:   newScope(nil),
+		program: pg,
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			val = nil
@@ -38,27 +43,39 @@ func Run(pg parser.Program) (val runtimeVal, err error) {
 	}()
 
 	for _, st := range pg.Body {
-		return evaluateStatement(st), nil
+		return intr.evaluateStatement(st), nil
 	}
 
 	panic("unreachable")
 }
 
-func evaluateStatement(stmt parser.Statement) runtimeVal {
+type interpreter struct {
+	scope *scope
+
+	program parser.Program
+}
+
+// Todo: Should not return runtimeVal
+func (intr *interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 	switch s := stmt.(type) {
 	case parser.Expression:
-		return evaluateExpression(s)
+		return intr.evaluateExpression(s)
+	case parser.VarDecl:
+		val := intr.evaluateExpression(s.Value)
+		intr.scope.DeclareVar(s.Name, val)
+		return val
+	// case parser.Assignment:
 
 	default:
 		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
 	}
 }
 
-func evaluateExpression(expr parser.Expression) runtimeVal {
+func (intr *interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 	switch e := expr.(type) {
 	case parser.BinaryExpression:
-		left := evaluateExpression(e.Left)
-		right := evaluateExpression(e.Right)
+		left := intr.evaluateExpression(e.Left)
+		right := intr.evaluateExpression(e.Right)
 
 		switch e.Op {
 		// Arithmetic
@@ -105,7 +122,7 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 		}
 
 	case parser.UnaryExpression:
-		val := evaluateExpression(e.Expression)
+		val := intr.evaluateExpression(e.Expression)
 
 		switch e.Op {
 		case "-":
@@ -123,6 +140,14 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 
 	case parser.BooleanLiteral:
 		return booleanVal{value: e.Value}
+
+	case parser.Identifier:
+		val, ok := intr.scope.GetVar(e.Name)
+		if !ok {
+			// TODO: Handle this better
+			panic(fmt.Sprintf("variable %s not defined", e.Name))
+		}
+		return val
 
 	default:
 		panic(fmt.Sprintf("unknown expression: %T, v=%+v", e, e))
