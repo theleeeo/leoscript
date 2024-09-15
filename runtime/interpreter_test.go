@@ -109,3 +109,29 @@ func Test_Boolean_UnaryExpr(t *testing.T) {
 		assert.Equal(t, false, resp.(booleanVal).value)
 	})
 }
+
+func Test_Boolean_Comparisons(t *testing.T) {
+	t.Run("Single comparison", func(t *testing.T) {
+		resp, err := RunRaw("1 == 1;")
+		assert.NoError(t, err)
+		assert.Equal(t, true, resp.(booleanVal).value)
+	})
+
+	t.Run("Multiple comparison", func(t *testing.T) {
+		resp, err := RunRaw("1 == 1 && 2 != 1;")
+		assert.NoError(t, err)
+		assert.Equal(t, true, resp.(booleanVal).value)
+	})
+
+	t.Run("Multiple comparison with parentheses", func(t *testing.T) {
+		resp, err := RunRaw("false == true && 2 != 1;")
+		assert.NoError(t, err)
+		assert.Equal(t, false, resp.(booleanVal).value)
+	})
+
+	t.Run("Multiple comparison with parentheses, order changed", func(t *testing.T) {
+		resp, err := RunRaw("1 == 1 && 2 != 1 || 3 > 1;")
+		assert.NoError(t, err)
+		assert.Equal(t, true, resp.(booleanVal).value)
+	})
+}

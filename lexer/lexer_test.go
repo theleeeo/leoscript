@@ -165,4 +165,24 @@ func Test_LogicalExpressions(t *testing.T) {
 		_, err := lexer.Tokenize("true & false | true")
 		assert.ErrorContains(t, err, "invalid character: &")
 	})
+
+	t.Run("Comparison operators", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 < 2 > 3 <= 4 >= 5 == 6 != 7")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.Integer{Value: 1},
+			token.Operator{Op: "<"},
+			token.Integer{Value: 2},
+			token.Operator{Op: ">"},
+			token.Integer{Value: 3},
+			token.Operator{Op: "<="},
+			token.Integer{Value: 4},
+			token.Operator{Op: ">="},
+			token.Integer{Value: 5},
+			token.Operator{Op: "=="},
+			token.Integer{Value: 6},
+			token.Operator{Op: "!="},
+			token.Integer{Value: 7},
+		}, lx)
+	})
 }

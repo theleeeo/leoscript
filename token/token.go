@@ -35,6 +35,10 @@ func (t Operator) Type() TokenType { return OperatorType }
 
 func (t Operator) Priority() Priority {
 	switch t.Op {
+	case "==", "!=":
+		return PRIO_EQUALS
+	case "<", ">", "<=", ">=":
+		return PRIO_COMPARISON
 	case "&&":
 		return PRIO_AND
 	case "||":

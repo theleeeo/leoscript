@@ -60,6 +60,7 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 		right := evaluateExpression(e.Right)
 
 		switch e.Op {
+		// Arithmetic
 		case "+":
 			return numberVal{value: left.(numberVal).value + right.(numberVal).value}
 		case "-":
@@ -71,10 +72,33 @@ func evaluateExpression(expr parser.Expression) runtimeVal {
 				panic("division by zero")
 			}
 			return numberVal{value: left.(numberVal).value / right.(numberVal).value}
+
+		// Boolean
 		case "&&":
 			return booleanVal{value: left.(booleanVal).value && right.(booleanVal).value}
 		case "||":
 			return booleanVal{value: left.(booleanVal).value || right.(booleanVal).value}
+		case "<":
+			return booleanVal{value: left.(numberVal).value < right.(numberVal).value}
+		case ">":
+			return booleanVal{value: left.(numberVal).value > right.(numberVal).value}
+		case "<=":
+			return booleanVal{value: left.(numberVal).value <= right.(numberVal).value}
+		case ">=":
+			return booleanVal{value: left.(numberVal).value >= right.(numberVal).value}
+
+		// Equality
+		case "==":
+			if _, ok := left.(numberVal); ok {
+				return booleanVal{value: left.(numberVal).value == right.(numberVal).value}
+			}
+			return booleanVal{value: left.(booleanVal).value == right.(booleanVal).value}
+		case "!=":
+			if _, ok := left.(numberVal); ok {
+				return booleanVal{value: left.(numberVal).value != right.(numberVal).value}
+			}
+			return booleanVal{value: left.(booleanVal).value != right.(booleanVal).value}
+
 		default:
 			panic(fmt.Sprintf("unknown operator: %s", e.Op))
 		}

@@ -582,3 +582,205 @@ func Test_BooleanExpr(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_Comparisons(t *testing.T) {
+	t.Run("simple equality", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 == 2;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 2},
+					Op:    "==",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("equality with arithmetic", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + 2 == 3 * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
+					},
+					Right: BinaryExpression{
+						Left:  IntegerLiteral{Value: 3},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "==",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("equality with parentheses", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(1 + 2) == 3 * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
+					},
+					Right: BinaryExpression{
+						Left:  IntegerLiteral{Value: 3},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "==",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("equality with parentheses, order changed", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + (2 == 3) * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: IntegerLiteral{Value: 1},
+					Right: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 2},
+							Right: IntegerLiteral{Value: 3},
+							Op:    "==",
+						},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "+",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("simple comparison", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 < 2;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 2},
+					Op:    "<",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("comparison with arithmetic", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + 2 <= 3 * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
+					},
+					Right: BinaryExpression{
+						Left:  IntegerLiteral{Value: 3},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "<=",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("comparison with parentheses", func(t *testing.T) {
+		lx, err := lexer.Tokenize("(1 >= 2) < 3 * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    ">=",
+					},
+					Right: BinaryExpression{
+						Left:  IntegerLiteral{Value: 3},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "<",
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("comparison with parentheses, order changed", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + (2 < 3) * 4;")
+		assert.NoError(t, err)
+
+		p := NewParser(lx)
+		prog, err := p.Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Expression{
+				BinaryExpression{
+					Left: IntegerLiteral{Value: 1},
+					Right: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 2},
+							Right: IntegerLiteral{Value: 3},
+							Op:    "<",
+						},
+						Right: IntegerLiteral{Value: 4},
+						Op:    "*",
+					},
+					Op: "+",
+				},
+			},
+		}, prog)
+	})
+}

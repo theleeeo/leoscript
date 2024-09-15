@@ -89,7 +89,34 @@ func Tokenize(input string) ([]token.Token, error) {
 			}
 
 		case '!':
-			lx.pushToken(token.Operator{Op: "!"})
+			if lx.next() == '=' {
+				lx.pushToken(token.Operator{Op: "!="})
+			} else {
+				lx.pushToken(token.Operator{Op: "!"})
+				lx.putBack()
+			}
+
+		case '>':
+			if lx.next() == '=' {
+				lx.pushToken(token.Operator{Op: ">="})
+			} else {
+				lx.pushToken(token.Operator{Op: ">"})
+				lx.putBack()
+			}
+		case '<':
+			if lx.next() == '=' {
+				lx.pushToken(token.Operator{Op: "<="})
+			} else {
+				lx.pushToken(token.Operator{Op: "<"})
+				lx.putBack()
+			}
+
+		case '=':
+			if lx.next() == '=' {
+				lx.pushToken(token.Operator{Op: "=="})
+			} else {
+				return nil, fmt.Errorf("invalid character: %c", tk)
+			}
 
 		default:
 			return nil, fmt.Errorf("invalid character: %c", tk)
