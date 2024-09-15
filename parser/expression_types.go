@@ -91,3 +91,9 @@ type UnaryExpression struct {
 }
 
 func (e UnaryExpression) ReturnType() types.Type { return e.Expression.ReturnType() }
+
+type Identifier struct {
+	Name string
+}
+
+func (Identifier) ReturnType() types.Type { return types.Unknown } // Todo: Implement type resolution of identifiers

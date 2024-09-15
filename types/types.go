@@ -11,7 +11,7 @@ type BasicType int
 func (b BasicType) isType() {}
 
 const (
-	_ BasicType = iota
+	Unknown BasicType = iota
 
 	Bool // Boolean
 	Int  // Integer

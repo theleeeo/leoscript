@@ -922,3 +922,23 @@ func Test_ReturnTypes(t *testing.T) {
 		}.ReturnType())
 	})
 }
+
+func Test_Identifiers(t *testing.T) {
+	t.Run("Simple identifier in binary expr", func(t *testing.T) {
+		lx, err := lexer.Tokenize("1 + a;")
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: Identifier{Name: "a"},
+					Op:    "+",
+				},
+			},
+		}, prog)
+	})
+}

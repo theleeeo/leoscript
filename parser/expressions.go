@@ -78,7 +78,8 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 		return p.parseUnaryExpr()
 	case token.OpenParen:
 		return p.handleSubgroup()
-
+	case token.Identifier:
+		return Identifier{Name: tk.Value}, nil
 	}
 
 	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
