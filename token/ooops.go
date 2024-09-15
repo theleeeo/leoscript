@@ -6,25 +6,15 @@ package token
 type Priority int
 
 const (
-	PRIO_LOWEST Priority = iota
+	_ Priority = iota
 
-	// ||
-	PRIO_OR
-	// &&
-	PRIO_AND
-	// ==, !=
-	PRIO_EQUALS
-	// >, <, >=, <=
-	PRIO_COMPARISON
-	// + and -
-	PRIO_SUM
-	// * and /
-	PRIO_PRODUCT
-	// // unary operators
-	// PREFIX
-	// // function calls
-	// CALL
+	PRIO_ASSIGN     // =, +=, -=, *=, /=
+	PRIO_OR         // ||
+	PRIO_AND        // &&
+	PRIO_EQUALS     // ==, !=
+	PRIO_COMPARISON // >, <, >=, <=
+	PRIO_SUM        // + and -
+	PRIO_PRODUCT    // * and /
 
-	// ()
-	PRIO_PAREN Priority = 100
+	PRIO_PAREN Priority = 100 // ()
 )

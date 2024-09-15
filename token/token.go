@@ -4,37 +4,42 @@ type Token interface {
 	Type() TokenType
 }
 
-type TokenType string
+type TokenType int
 
 const (
-	EOFType        TokenType = "EOF"
-	IntegerType    TokenType = "INTEGER"
-	OperatorType   TokenType = "OPERATOR"
-	OpenParenType  TokenType = "OPEN_PAREN"
-	CloseParenType TokenType = "CLOSE_PAREN"
-	SemicolonType  TokenType = "SEMICOLON"
-	IdentifierType TokenType = "IDENTIFIER"
-	BooleanType    TokenType = "BOOLEAN"
+	EOFType TokenType = iota
+	IntegerType
+	OperatorType
+	OpenParenType
+	CloseParenType
+	SemicolonType
+	IdentifierType
+	BooleanType
+	VarDefType
+	IntDefType
+	BoolDefType
 )
 
 type EOF struct{}
 
-func (t EOF) Type() TokenType { return EOFType }
+func (EOF) Type() TokenType { return EOFType }
 
 type Integer struct {
 	Value int
 }
 
-func (t Integer) Type() TokenType { return IntegerType }
+func (Integer) Type() TokenType { return IntegerType }
 
 type Operator struct {
 	Op string
 }
 
-func (t Operator) Type() TokenType { return OperatorType }
+func (Operator) Type() TokenType { return OperatorType }
 
 func (t Operator) Priority() Priority {
 	switch t.Op {
+	case "=":
+		return PRIO_ASSIGN
 	case "==", "!=":
 		return PRIO_EQUALS
 	case "<", ">", "<=", ">=":
@@ -54,36 +59,48 @@ func (t Operator) Priority() Priority {
 
 type OpenParen struct{}
 
-func (t OpenParen) String() string {
+func (OpenParen) String() string {
 	return "{(}"
 }
 
-func (t OpenParen) Type() TokenType { return OpenParenType }
+func (OpenParen) Type() TokenType { return OpenParenType }
 
 type CloseParen struct{}
 
-func (t CloseParen) String() string {
+func (CloseParen) String() string {
 	return "{)}"
 }
 
-func (t CloseParen) Type() TokenType { return CloseParenType }
+func (CloseParen) Type() TokenType { return CloseParenType }
 
 type Semicolon struct{}
 
-func (t Semicolon) String() string {
+func (Semicolon) String() string {
 	return "{;}"
 }
 
-func (t Semicolon) Type() TokenType { return SemicolonType }
+func (Semicolon) Type() TokenType { return SemicolonType }
 
 type Identifier struct {
 	Value string
 }
 
-func (t Identifier) Type() TokenType { return IdentifierType }
+func (Identifier) Type() TokenType { return IdentifierType }
 
 type Boolean struct {
 	Value bool
 }
 
-func (t Boolean) Type() TokenType { return BooleanType }
+func (Boolean) Type() TokenType { return BooleanType }
+
+type VarDef struct{}
+
+func (VarDef) Type() TokenType { return VarDefType }
+
+type IntDef struct{}
+
+func (IntDef) Type() TokenType { return IntDefType }
+
+type BoolDef struct{}
+
+func (BoolDef) Type() TokenType { return BoolDefType }

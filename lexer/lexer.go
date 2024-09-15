@@ -9,6 +9,9 @@ import (
 var keywords = map[string]token.Token{
 	"true":  token.Boolean{Value: true},
 	"false": token.Boolean{Value: false},
+	"var":   token.VarDef{},
+	"int":   token.IntDef{},
+	"bool":  token.BoolDef{},
 }
 
 type lexer struct {
@@ -92,30 +95,31 @@ func Tokenize(input string) ([]token.Token, error) {
 			if lx.next() == '=' {
 				lx.pushToken(token.Operator{Op: "!="})
 			} else {
-				lx.pushToken(token.Operator{Op: "!"})
 				lx.putBack()
+				lx.pushToken(token.Operator{Op: "!"})
 			}
 
 		case '>':
 			if lx.next() == '=' {
 				lx.pushToken(token.Operator{Op: ">="})
 			} else {
-				lx.pushToken(token.Operator{Op: ">"})
 				lx.putBack()
+				lx.pushToken(token.Operator{Op: ">"})
 			}
 		case '<':
 			if lx.next() == '=' {
 				lx.pushToken(token.Operator{Op: "<="})
 			} else {
-				lx.pushToken(token.Operator{Op: "<"})
 				lx.putBack()
+				lx.pushToken(token.Operator{Op: "<"})
 			}
 
 		case '=':
 			if lx.next() == '=' {
 				lx.pushToken(token.Operator{Op: "=="})
 			} else {
-				return nil, fmt.Errorf("invalid character: %c", tk)
+				lx.putBack()
+				lx.pushToken(token.Operator{Op: "="})
 			}
 
 		default:

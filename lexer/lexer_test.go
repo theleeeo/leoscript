@@ -186,3 +186,69 @@ func Test_LogicalExpressions(t *testing.T) {
 		}, lx)
 	})
 }
+
+func Test_VariableDefinition(t *testing.T) {
+	t.Run("Variable definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("var foo = 123;")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.VarDef{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 123},
+			token.Semicolon{},
+		}, lx)
+	})
+
+	t.Run("Variable definition with expression", func(t *testing.T) {
+		lx, err := lexer.Tokenize("var foo = 1 + 2 * 3;")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.VarDef{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 1},
+			token.Operator{Op: "+"},
+			token.Integer{Value: 2},
+			token.Operator{Op: "*"},
+			token.Integer{Value: 3},
+			token.Semicolon{},
+		}, lx)
+	})
+
+	t.Run("Integer variable definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("int foo = 123;")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.IntDef{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 123},
+			token.Semicolon{},
+		}, lx)
+	})
+
+	t.Run("Boolean variable definition", func(t *testing.T) {
+		lx, err := lexer.Tokenize("bool foo = true;")
+		assert.NoError(t, err)
+		assert.Equal(t, []token.Token{
+			token.BoolDef{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Boolean{Value: true},
+			token.Semicolon{},
+		}, lx)
+	})
+
+	// t.Run("String variable definition", func(t *testing.T) {
+	// 	lx, err := lexer.Tokenize("string foo = \"bar\";")
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, []token.Token{
+	// 		token.StringDef{},
+	// 		token.Identifier{Value: "foo"},
+	// 		token.Operator{Op: "="},
+	// 		token.String{Value: "bar"},
+	// 		token.Semicolon{},
+	// 	}, lx)
+	// })
+}
