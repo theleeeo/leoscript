@@ -9,16 +9,16 @@ import (
 func (p *Parser) parseStatement() (Statement, error) {
 	tk := p.peek()
 
-	switch tk := tk.(type) {
+	switch tk.(type) {
 	case token.EOF:
 		return nil, fmt.Errorf("unexpected EOF")
 	case token.Semicolon:
 		return nil, fmt.Errorf("unexpected semicolon")
 	case token.VarDecl:
-		return p.parseVarDecl(nil)
+		return p.parseVarDecl()
 	case token.Type:
-		return p.parseVarDecl(tk.Kind)
-	case token.FnDef:
+		return p.parseVarDecl()
+	case token.FnDef: // TODO: Not a regular statement, only valid at the file level
 		return p.parseFnDef()
 	case token.Identifier:
 		// return p.parseAssignment()
@@ -174,7 +174,18 @@ func (p *Parser) parseFnDef() (Statement, error) {
 	}, nil
 }
 
-func (p *Parser) parseVarDecl(varType types.Type) (Statement, error) {
+func (p *Parser) parseVarDecl() (Statement, error) {
+	var varType types.Type
+
+	switch tk := p.peek().(type) {
+	case token.Type:
+		varType = tk.Kind
+	case token.VarDecl:
+		varType = nil
+	default:
+		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
+	}
+
 	if err := p.expect(token.IdentifierType); err != nil {
 		return nil, fmt.Errorf("expected identifier after intdef: %w", err)
 	}

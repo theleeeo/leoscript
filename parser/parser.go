@@ -57,16 +57,26 @@ type Program struct {
 
 func (p *Parser) Parse() (Program, error) {
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
-		if _, ok := tk.(token.Semicolon); ok {
+		var stmt Statement
+		var err error
+		switch tk.(type) {
+		case token.VarDecl:
+			stmt, err = p.parseVarDecl()
+		case token.FnDef:
+			stmt, err = p.parseFnDef()
+		case token.Semicolon: // Todo: remove this case, dependant on the expression parsing below
+			// Skip semicolons
 			continue
+		default:
+			// Todo: do not fall back to statement parsing
+			stmt, err = p.parseStatement()
 		}
 
-		expr, err := p.parseStatement()
 		if err != nil {
 			return Program{}, err
 		}
 
-		p.Program.Body = append(p.Program.Body, expr)
+		p.Program.Body = append(p.Program.Body, stmt)
 	}
 
 	return p.Program, nil
