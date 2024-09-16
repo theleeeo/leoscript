@@ -97,3 +97,10 @@ type Identifier struct {
 }
 
 func (Identifier) ReturnType() types.Type { return types.Void } // Todo: Implement type resolution of identifiers
+
+type Call struct {
+	Name string
+	Args []Expression
+}
+
+func (Call) ReturnType() types.Type { return types.Void } // Todo: Implement type resolution of calls

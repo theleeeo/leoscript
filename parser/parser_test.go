@@ -1075,3 +1075,70 @@ func Test_FunctionDefinitions(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_ParseFile(t *testing.T) {
+	t.Run("Simple file", func(t *testing.T) {
+		lx, err := lexer.Tokenize(`
+			fn foo() int {
+				bar();
+				return 123;
+			}
+
+			fn bar() {
+				return;
+			}
+
+			fn main() int {
+				return foo() + 1;
+			}
+		`)
+		assert.NoError(t, err)
+
+		prog, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Program{
+			Body: []Statement{
+				FnDef{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Args:       []Argument{},
+					Body: []Statement{
+						Call{
+							Name: "bar",
+							Args: []Expression{},
+						},
+						Return{
+							Value: IntegerLiteral{Value: 123},
+						},
+					},
+				},
+				FnDef{
+					Name:       "bar",
+					ReturnType: types.Void,
+					Args:       []Argument{},
+					Body: []Statement{
+						Return{},
+					},
+				},
+				FnDef{
+					Name:       "main",
+					ReturnType: types.Int,
+					Args:       []Argument{},
+					Body: []Statement{
+						Return{
+							Value: BinaryExpression{
+								Left: Call{
+									Name: "foo",
+									Args: []Expression{},
+								},
+								Right: IntegerLiteral{Value: 1},
+								Op:    "+",
+							},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+}

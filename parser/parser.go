@@ -60,7 +60,7 @@ func (p *Parser) Parse() (Program, error) {
 		var stmt Statement
 		var err error
 		switch tk.(type) {
-		case token.VarDecl:
+		case token.VarDecl: // TODO: Should be global var decl, currently used for old test cases
 			stmt, err = p.parseVarDecl()
 		case token.FnDef:
 			stmt, err = p.parseFnDef()
@@ -88,6 +88,10 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 	for tk := p.peek(); tk.Type() != token.CloseBraceType; tk = p.next() {
 		stmt, err := p.parseStatement()
 		if err != nil {
+			return nil, err
+		}
+
+		if err := p.expect(token.SemicolonType); err != nil {
 			return nil, err
 		}
 

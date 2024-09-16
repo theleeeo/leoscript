@@ -25,3 +25,8 @@ type Argument struct {
 	Name string
 	Type types.Type
 }
+
+type Assignment struct {
+	Name  string
+	Value Expression
+}

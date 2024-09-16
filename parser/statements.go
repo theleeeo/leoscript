@@ -21,8 +21,18 @@ func (p *Parser) parseStatement() (Statement, error) {
 	case token.FnDef: // TODO: Not a regular statement, only valid at the file level
 		return p.parseFnDef()
 	case token.Identifier:
-		// return p.parseAssignment()
-		panic("assignment not implemented")
+		// todo: peekAhead to see if it's a function call
+		if _, ok := p.next().(token.OpenParen); ok {
+			p.putBack() // Put back the open parenthesis
+			return p.parseFnCall()
+		}
+
+		p.putBack() // Not a function call, put us back on the identifier
+		return p.parseAssignment()
+	// case token.OpenBrace:
+	// 	return p.parseBlock()
+	// case token.If:
+	// 	return p.parseIf()
 	case token.Return:
 		return p.parseReturn()
 	default:
@@ -33,6 +43,12 @@ func (p *Parser) parseStatement() (Statement, error) {
 
 func (p *Parser) parseReturn() (Statement, error) {
 	p.next() // Consume the return token
+
+	if _, ok := p.peek().(token.Semicolon); ok {
+		p.putBack() // Put back the semicolon for the parent function to consume
+		return Return{}, nil
+	}
+
 	expr, err := p.parseExpr()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse return expression: %w", err)
@@ -42,45 +58,43 @@ func (p *Parser) parseReturn() (Statement, error) {
 		return nil, fmt.Errorf("expected semicolon after return expression: %w", err)
 	}
 
+	p.putBack() // Put back the semicolon for the parent function to consume
+
 	return Return{
 		Value: expr,
 	}, nil
 }
 
-// func (p *Parser) parseAssignment() (Statement, error) {
-// 	if err := p.expect(token.IdentifierType); err != nil {
-// 		return nil, fmt.Errorf("expected identifier after assignment: %w", err)
-// 	}
+func (p *Parser) parseAssignment() (Statement, error) {
+	identifier := p.peek().(token.Identifier)
 
-// 	identifier := p.peek().(token.Identifier)
+	if err := p.expect(token.OperatorType); err != nil {
+		return nil, fmt.Errorf("expected assignment operator after identifier: %w", err)
+	}
 
-// 	if err := p.expect(token.OperatorType); err != nil {
-// 		return nil, fmt.Errorf("expected assignment operator after identifier: %w", err)
-// 	}
+	if op := p.peek().(token.Operator).Op; op != "=" {
+		return nil, fmt.Errorf("expected assignment operator, got %v", op)
+	}
 
-// 	if op := p.peek().(token.Operator).Op; op != "=" {
-// 		return nil, fmt.Errorf("expected assignment operator, got %v", op)
-// 	}
+	p.next() // Consume the assignment operator
 
-// 	p.next() // Consume the assignment operator
+	// Parse the expression on the right side of the assignment
+	expr, err := p.parseExpr()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
+	}
 
-// 	// Parse the expression on the right side of the assignment
-// 	expr, err := p.parseExpr()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
-// 	}
+	if err := p.expect(token.SemicolonType); err != nil {
+		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
+	}
 
-// 	if err := p.expect(token.SemicolonType); err != nil {
-// 		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
-// 	}
+	return Assignment{
+		Name:  identifier.Value,
+		Value: expr,
+	}, nil
+}
 
-// 	return Assignment{
-// 		Name:  identifier.Value,
-// 		Value: expr,
-// 	}, nil
-// }
-
-func (p *Parser) parseArgs() ([]Argument, error) {
+func (p *Parser) parseFnParams() ([]Argument, error) {
 	// Check if the function has no arguments
 	if _, ok := p.next().(token.CloseParen); ok {
 		p.putBack() // Put back the close parenthesis for the parent function to consume
@@ -133,11 +147,12 @@ func (p *Parser) parseFnDef() (Statement, error) {
 		return nil, fmt.Errorf("expected open parenthesis after identifier: %w", err)
 	}
 
-	args, err := p.parseArgs()
+	args, err := p.parseFnParams()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
+	// Todo: Move this into the parseFnParams function
 	if err := p.expect(token.CloseParenType); err != nil {
 		return nil, fmt.Errorf("expected close parenthesis after open parenthesis: %w", err)
 	}
