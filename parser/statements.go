@@ -18,16 +18,12 @@ func (p *Parser) parseStatement() (Statement, error) {
 		return p.parseVarDecl()
 	case token.Type:
 		return p.parseVarDecl()
-	case token.FnDef: // TODO: Not a regular statement, only valid at the file level
+	case token.FnDef: // TODO: Not a regular statement, only valid at the file level. Or Is it?? Hello, VSauce, Michael here.
 		return p.parseFnDef()
 	case token.Identifier:
-		// todo: peekAhead to see if it's a function call
-		if _, ok := p.next().(token.OpenParen); ok {
-			p.putBack() // Put back the open parenthesis
+		if _, ok := p.peekNext().(token.OpenParen); ok {
 			return p.parseFnCall()
 		}
-
-		p.putBack() // Not a function call, put us back on the identifier
 		return p.parseAssignment()
 	// case token.OpenBrace:
 	// 	return p.parseBlock()
@@ -42,23 +38,20 @@ func (p *Parser) parseStatement() (Statement, error) {
 }
 
 func (p *Parser) parseReturn() (Statement, error) {
-	p.next() // Consume the return token
-
-	if _, ok := p.peek().(token.Semicolon); ok {
-		p.putBack() // Put back the semicolon for the parent function to consume
+	if _, ok := p.peekNext().(token.Semicolon); ok {
 		return Return{}, nil
 	}
+
+	p.next() // Consume the return token
 
 	expr, err := p.parseExpr()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse return expression: %w", err)
 	}
 
-	if err := p.expect(token.SemicolonType); err != nil {
-		return nil, fmt.Errorf("expected semicolon after return expression: %w", err)
+	if _, ok := p.peekNext().(token.Semicolon); !ok {
+		return nil, fmt.Errorf("expected semicolon after return expression")
 	}
-
-	p.putBack() // Put back the semicolon for the parent function to consume
 
 	return Return{
 		Value: expr,
@@ -96,12 +89,9 @@ func (p *Parser) parseAssignment() (Statement, error) {
 
 func (p *Parser) parseFnParams() ([]Argument, error) {
 	// Check if the function has no arguments
-	if _, ok := p.next().(token.CloseParen); ok {
-		p.putBack() // Put back the close parenthesis for the parent function to consume
+	if _, ok := p.peekNext().(token.CloseParen); ok {
 		return []Argument{}, nil
 	}
-
-	p.putBack() // Not a close parenthesis, put it back
 
 	args := make([]Argument, 0)
 	for {
@@ -122,14 +112,12 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 			Type: argType,
 		})
 
-		tk := p.next()
-		if _, ok := tk.(token.CloseParen); ok {
-			p.putBack() // Put back the close parenthesis for the parent function to consume
+		if _, ok := p.peekNext().(token.CloseParen); ok {
 			break
 		}
 
-		if _, ok := tk.(token.Comma); !ok {
-			return nil, fmt.Errorf("expected comma after argument in argument list")
+		if err := p.expect(token.CommaType); err != nil {
+			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
 	}
 

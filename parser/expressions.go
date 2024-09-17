@@ -79,13 +79,10 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	case token.OpenParen:
 		return p.handleSubgroup()
 	case token.Identifier:
-		// TODO: PeekAhead to see if it is a function call
-		if p.next().Type() == token.OpenParenType {
-			p.putBack() // put back the open parenthesis
+		if p.peekNext().Type() == token.OpenParenType {
 			return p.parseFnCall()
 		}
 
-		p.putBack() // put back to the identifier
 		return Identifier{Name: tk.Value}, nil
 	}
 
@@ -104,7 +101,6 @@ func (p *Parser) parseFnCall() (Expression, error) {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
-	// Todo: Move this into the parseArgs function
 	if err := p.expect(token.CloseParenType); err != nil {
 		return nil, fmt.Errorf("expected close parenthesis after function call: %w", err)
 	}
@@ -116,12 +112,9 @@ func (p *Parser) parseFnCall() (Expression, error) {
 }
 
 func (p *Parser) parseArgs() ([]Expression, error) {
-	if _, ok := p.next().(token.CloseParen); ok {
-		p.putBack() // Put back the close parenthesis for the parent function to consume
+	if _, ok := p.peekNext().(token.CloseParen); ok {
 		return []Expression{}, nil
 	}
-
-	p.putBack() // Not a close parenthesis, put it back
 
 	args := make([]Expression, 0)
 	for {
@@ -132,14 +125,12 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 
 		args = append(args, expr)
 
-		tk := p.next()
-		if _, ok := tk.(token.CloseParen); ok {
-			p.putBack() // Put back the close parenthesis for the parent function to consume
+		if _, ok := p.peekNext().(token.CloseParen); ok {
 			break
 		}
 
-		if _, ok := tk.(token.Comma); !ok {
-			return nil, errors.New("expected comma after argument in argument list")
+		if err := p.expect(token.CommaType); err != nil {
+			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
 	}
 

@@ -45,6 +45,14 @@ func (p *Parser) peek() token.Token {
 	return p.tokens[p.current]
 }
 
+func (p *Parser) peekNext() token.Token {
+	if p.current+1 >= len(p.tokens) {
+		return token.EOF{}
+	}
+
+	return p.tokens[p.current+1]
+}
+
 // putBack will move the current token back one step
 // this is useful when we want to "undo" a token consumption
 func (p *Parser) putBack() {
