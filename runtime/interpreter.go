@@ -17,12 +17,14 @@ func (intr *Interpreter) LoadRaw(src string) error {
 		return fmt.Errorf("failed to tokenize: %w", err)
 	}
 
-	program, err := parser.NewParser(tokens).Parse()
+	program, err := parser.NewParser(tokens, nil).ParseFile()
 	if err != nil {
 		return fmt.Errorf("failed to parse: %w", err)
 	}
 
-	intr.program = program
+	for _, stmt := range program.Body {
+		intr.evaluateStatement(stmt)
+	}
 
 	return nil
 }
@@ -35,39 +37,47 @@ func (intr *Interpreter) Run() (val runtimeVal, err error) {
 		}
 	}()
 
-	// TODO: THIS IS A HACK FOR TESTING
-	var lastVal runtimeVal
-
-	for _, st := range intr.program.Body {
-		lastVal = intr.evaluateStatement(st)
+	for fnName, fnDef := range intr.activeScope.functions {
+		if fnName == "main" {
+			val = intr.callFunction(intr.activeScope, fnDef, nil)
+		}
 	}
 
-	return lastVal, nil
+	if val == nil {
+		return nil, fmt.Errorf("main function not found")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return val, nil
 }
 
 func New() *Interpreter {
+	globalScope := newScope(nil)
 	return &Interpreter{
-		scope: newScope(nil),
+		globalScope: globalScope,
+		activeScope: globalScope,
 	}
 }
 
 type Interpreter struct {
-	scope *scope
-
-	program parser.Program
+	globalScope *scope
+	activeScope *scope
 }
 
-// Todo: Should not return runtimeVal
-func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
+func (intr *Interpreter) evaluateStatement(stmt parser.Statement) {
 	switch s := stmt.(type) {
-	case parser.Expression:
-		return intr.evaluateExpression(s)
 	case parser.VarDecl:
 		val := intr.evaluateExpression(s.Value)
-		intr.scope.DeclareVar(s.Name, val)
-		return val
-	// case parser.Assignment:
-
+		if err := intr.activeScope.DeclareVar(s.Name, val); err != nil {
+			panic(err)
+		}
+	case parser.FnDef:
+		if err := intr.activeScope.RegisterFn(s.Name, s); err != nil {
+			panic(err)
+		}
 	default:
 		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
 	}
@@ -144,14 +154,58 @@ func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 		return booleanVal{value: e.Value}
 
 	case parser.Identifier:
-		val, ok := intr.scope.GetVar(e.Name)
+		val, ok := intr.activeScope.GetVar(e.Name)
 		if !ok {
 			// TODO: Handle this better
 			panic(fmt.Sprintf("variable %s not defined", e.Name))
 		}
 		return val
 
+	case parser.Call:
+		fn, ok := intr.activeScope.GetFn(e.Name)
+		if !ok {
+			panic(fmt.Sprintf("function %s not defined", e.Name))
+		}
+
+		var parameters []runtimeVal
+		for _, arg := range e.Args {
+			parameters = append(parameters, intr.evaluateExpression(arg))
+		}
+
+		return intr.callFunction(intr.activeScope, fn, parameters)
+
 	default:
 		panic(fmt.Sprintf("unknown expression: %T, v=%+v", e, e))
 	}
+}
+
+func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, parameters []runtimeVal) runtimeVal {
+	if len(parameters) != len(fn.Args) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Args), len(parameters)))
+	}
+
+	// Create a new scope for the function
+	fnScope := newScope(parentScope)
+
+	// Add arguments to the scope
+	for i, arg := range fn.Args {
+		fnScope.DeclareVar(arg.Name, parameters[i])
+	}
+
+	// Set the active scope to the function scope
+	intr.activeScope = fnScope
+
+	// Evaluate the function body
+	for _, stmt := range fn.Body {
+		if retStmt, ok := stmt.(parser.Return); ok {
+			return intr.evaluateExpression(retStmt.Value)
+		}
+
+		intr.evaluateStatement(stmt)
+	}
+
+	// Reset the active scope to the parent scope
+	intr.activeScope = parentScope
+
+	return nil
 }

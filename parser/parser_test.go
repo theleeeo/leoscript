@@ -11,366 +11,270 @@ import (
 
 func Test_Expr_Parse(t *testing.T) {
 	t.Run("Single integer", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123;")
+		lx := lexer.MustTokenize("123;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				IntegerLiteral{Value: 123},
-			},
-		}, prog)
+		assert.EqualExportedValues(t, IntegerLiteral{Value: 123}, prog)
 	})
 
 	t.Run("Single binary expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 456;")
+		lx := lexer.MustTokenize("123 + 456;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left:  IntegerLiteral{Value: 123},
-					Right: IntegerLiteral{Value: 456},
-					Op:    "+",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  IntegerLiteral{Value: 123},
+			Right: IntegerLiteral{Value: 456},
+			Op:    "+",
 		}, prog)
 	})
 
 	t.Run("Multiple binary expression, no order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 2 - 789 + 4;")
+		lx := lexer.MustTokenize("123 + 2 - 789 + 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 123},
-							Right: IntegerLiteral{Value: 2},
-							Op:    "+",
-						},
-						Right: IntegerLiteral{Value: 789},
-						Op:    "-",
-					},
-					Right: IntegerLiteral{Value: 4},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 123},
+					Right: IntegerLiteral{Value: 2},
 					Op:    "+",
 				},
+				Right: IntegerLiteral{Value: 789},
+				Op:    "-",
 			},
+			Right: IntegerLiteral{Value: 4},
+			Op:    "+",
 		}, prog)
 	})
 
 	t.Run("Multiple binary expression, order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123 + 2 * 789 / 4 - 9 * 1 / 2;")
+		lx := lexer.MustTokenize("123 + 2 * 789 / 4 - 9 * 1 / 2;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left: IntegerLiteral{Value: 123},
+				Right: BinaryExpression{
 					Left: BinaryExpression{
-						Left: IntegerLiteral{Value: 123},
-						Right: BinaryExpression{
-							Left: BinaryExpression{
-								Left:  IntegerLiteral{Value: 2},
-								Right: IntegerLiteral{Value: 789},
-								Op:    "*",
-							},
-							Right: IntegerLiteral{Value: 4},
-							Op:    "/",
-						},
-						Op: "+",
+						Left:  IntegerLiteral{Value: 2},
+						Right: IntegerLiteral{Value: 789},
+						Op:    "*",
 					},
-					Right: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 9},
-							Right: IntegerLiteral{Value: 1},
-							Op:    "*",
-						},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "/",
-					},
-					Op: "-",
+					Right: IntegerLiteral{Value: 4},
+					Op:    "/",
 				},
+				Op: "+",
 			},
+			Right: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 9},
+					Right: IntegerLiteral{Value: 1},
+					Op:    "*",
+				},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "/",
+			},
+			Op: "-",
 		}, prog)
 	})
 
 	t.Run("Negation of integer", func(t *testing.T) {
-		lx, err := lexer.Tokenize("-123;")
+		lx := lexer.MustTokenize("-123;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				UnaryExpression{
-					Expression: IntegerLiteral{Value: 123},
-					Op:         "-",
-				},
-			},
+		assert.EqualExportedValues(t, UnaryExpression{
+			Expression: IntegerLiteral{Value: 123},
+			Op:         "-",
 		}, prog)
 	})
 
 	t.Run("Double negation of integer", func(t *testing.T) {
-		lx, err := lexer.Tokenize("--123;")
+		lx := lexer.MustTokenize("--123;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				UnaryExpression{
-					Expression: UnaryExpression{
-						Expression: IntegerLiteral{Value: 123},
-						Op:         "-"},
-					Op: "-",
-				},
-			},
+		assert.EqualExportedValues(t, UnaryExpression{
+			Expression: UnaryExpression{
+				Expression: IntegerLiteral{Value: 123},
+				Op:         "-"},
+			Op: "-",
 		}, prog)
 	})
 
 	t.Run("Unneccessary plus sign", func(t *testing.T) {
-		lx, err := lexer.Tokenize("+123 - 45;")
+		lx := lexer.MustTokenize("+123 - 45;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: UnaryExpression{
-						Expression: IntegerLiteral{Value: 123},
-						Op:         "+"},
-					Right: IntegerLiteral{Value: 45},
-					Op:    "-",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: UnaryExpression{
+				Expression: IntegerLiteral{Value: 123},
+				Op:         "+"},
+			Right: IntegerLiteral{Value: 45},
+			Op:    "-",
 		}, prog)
 	})
 
 	t.Run("Negation of integer in operation", func(t *testing.T) {
-		lx, err := lexer.Tokenize("4 + -123;")
-		assert.NoError(t, err)
-
-		p := NewParser(lx)
-		prog, err := p.Parse()
+		lx := lexer.MustTokenize("4 + -123;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
 		// Maybe in the future this can be made into a subtraction
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: IntegerLiteral{Value: 4},
-					Right: UnaryExpression{
-						Expression: IntegerLiteral{Value: 123},
-						Op:         "-"},
-					Op: "+",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 4},
+			Right: UnaryExpression{
+				Expression: IntegerLiteral{Value: 123},
+				Op:         "-"},
+			Op: "+",
 		}, prog)
 	})
 
 	t.Run("Unneccessary parentheses on integer", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(123);")
+		lx := lexer.MustTokenize("(123);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				IntegerLiteral{Value: 123},
-			},
-		}, prog)
+		assert.EqualExportedValues(t, IntegerLiteral{Value: 123}, prog)
 	})
 
 	t.Run("Parentheses first in top-level with more afterwards", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(1 + 2) + 10;")
+		lx := lexer.MustTokenize("(1 + 2) + 10;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Right: IntegerLiteral{Value: 10},
-					Op:    "+",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Right: IntegerLiteral{Value: 10},
+			Op:    "+",
 		}, prog)
 	})
 
 	t.Run("Parentheses first in top-level with more afterwards, order changed", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(1 + 2) * 10;")
+		lx := lexer.MustTokenize("(1 + 2) * 10;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Right: IntegerLiteral{Value: 10},
-					Op:    "*",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Right: IntegerLiteral{Value: 10},
+			Op:    "*",
 		}, prog)
 	})
 
 	t.Run("Parentheses on binary expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(123 + 456);")
+		lx := lexer.MustTokenize("(123 + 456);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left:  IntegerLiteral{Value: 123},
-					Right: IntegerLiteral{Value: 456},
-					Op:    "+",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  IntegerLiteral{Value: 123},
+			Right: IntegerLiteral{Value: 456},
+			Op:    "+",
 		}, prog)
 	})
 
 	t.Run("Parentheses inside binary expression, not changing order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(67 + 123) + 456 - 70;")
+		lx := lexer.MustTokenize("(67 + 123) + 456 - 70;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 67},
-							Right: IntegerLiteral{Value: 123},
-							Op:    "+",
-						},
-						Right: IntegerLiteral{Value: 456},
-						Op:    "+",
-					},
-					Right: IntegerLiteral{Value: 70},
-					Op:    "-",
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 67},
+					Right: IntegerLiteral{Value: 123},
+					Op:    "+",
 				},
+				Right: IntegerLiteral{Value: 456},
+				Op:    "+",
 			},
+			Right: IntegerLiteral{Value: 70},
+			Op:    "-",
 		}, prog)
 	})
 
 	t.Run("Parentheses inside binary expression, changing order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("67 * (123 - 456) - 70;")
+		lx := lexer.MustTokenize("67 * (123 - 456) - 70;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left: IntegerLiteral{Value: 67},
-						Right: BinaryExpression{
-							Left:  IntegerLiteral{Value: 123},
-							Right: IntegerLiteral{Value: 456},
-							Op:    "-",
-						},
-						Op: "*",
-					},
-					Right: IntegerLiteral{Value: 70},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left: IntegerLiteral{Value: 67},
+				Right: BinaryExpression{
+					Left:  IntegerLiteral{Value: 123},
+					Right: IntegerLiteral{Value: 456},
 					Op:    "-",
 				},
+				Op: "*",
 			},
+			Right: IntegerLiteral{Value: 70},
+			Op:    "-",
 		}, prog)
 	})
 
 	t.Run("another case", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + (2 + 10) * 5;")
+		lx := lexer.MustTokenize("1 + (2 + 10) * 5;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: IntegerLiteral{Value: 1},
-					Right: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 2},
-							Right: IntegerLiteral{Value: 10},
-							Op:    "+",
-						},
-						Right: IntegerLiteral{Value: 5},
-						Op:    "*",
-					},
-					Op: "+",
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 2},
+					Right: IntegerLiteral{Value: 10},
+					Op:    "+",
 				},
+				Right: IntegerLiteral{Value: 5},
+				Op:    "*",
 			},
+			Op: "+",
 		}, prog)
 	})
 
 	t.Run("unary with parentheses", func(t *testing.T) {
-		lx, err := lexer.Tokenize("-(1 + 2);")
+		lx := lexer.MustTokenize("-(1 + 2);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				UnaryExpression{
-					Expression: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Op: "-",
-				},
+		assert.EqualExportedValues(t, UnaryExpression{
+			Expression: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Op: "-",
 		}, prog)
 	})
 }
@@ -483,395 +387,319 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 
 func Test_Expr_Boolean(t *testing.T) {
 	t.Run("Boolean expression, no change of order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true && false || true;")
+		lx := lexer.MustTokenize("true && false || true;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  BooleanLiteral{Value: true},
-						Right: BooleanLiteral{Value: false},
-						Op:    "&&",
-					},
-					Right: BooleanLiteral{Value: true},
-					Op:    "||",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  BooleanLiteral{Value: true},
+				Right: BooleanLiteral{Value: false},
+				Op:    "&&",
 			},
+			Right: BooleanLiteral{Value: true},
+			Op:    "||",
 		}, prog)
 	})
 
 	t.Run("Boolean expression, changing order", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true || false && true;")
+		lx := lexer.MustTokenize("true || false && true;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BooleanLiteral{Value: true},
-					Right: BinaryExpression{
-						Left:  BooleanLiteral{Value: false},
-						Right: BooleanLiteral{Value: true},
-						Op:    "&&",
-					},
-					Op: "||",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BooleanLiteral{Value: true},
+			Right: BinaryExpression{
+				Left:  BooleanLiteral{Value: false},
+				Right: BooleanLiteral{Value: true},
+				Op:    "&&",
 			},
+			Op: "||",
 		}, prog)
 	})
 
 	t.Run("Mixed boolean and arithmetic expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true && 1 + 2 || false;")
+		lx := lexer.MustTokenize("true && 1 + 2 || false;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left: BooleanLiteral{Value: true},
-						Right: BinaryExpression{
-							Left:  IntegerLiteral{Value: 1},
-							Right: IntegerLiteral{Value: 2},
-							Op:    "+",
-						},
-						Op: "&&",
-					},
-					Right: BooleanLiteral{Value: false},
-					Op:    "||",
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left: BooleanLiteral{Value: true},
+				Right: BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 2},
+					Op:    "+",
 				},
+				Op: "&&",
 			},
+			Right: BooleanLiteral{Value: false},
+			Op:    "||",
 		}, prog)
 	})
 
 	t.Run("Multiple boolean unary expressions", func(t *testing.T) {
-		lx, err := lexer.Tokenize("!true && !!false;")
+		lx := lexer.MustTokenize("!true && !!false;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: UnaryExpression{
-						Expression: BooleanLiteral{Value: true},
-						Op:         "!",
-					},
-					Right: UnaryExpression{
-						Expression: UnaryExpression{
-							Expression: BooleanLiteral{Value: false},
-							Op:         "!",
-						},
-						Op: "!",
-					},
-					Op: "&&",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: UnaryExpression{
+				Expression: BooleanLiteral{Value: true},
+				Op:         "!",
 			},
+			Right: UnaryExpression{
+				Expression: UnaryExpression{
+					Expression: BooleanLiteral{Value: false},
+					Op:         "!",
+				},
+				Op: "!",
+			},
+			Op: "&&",
 		}, prog)
 	})
 }
 
 func Test_Expr_Comparisons(t *testing.T) {
 	t.Run("simple equality", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 == 2;")
+		lx := lexer.MustTokenize("1 == 2;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left:  IntegerLiteral{Value: 1},
-					Right: IntegerLiteral{Value: 2},
-					Op:    "==",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  IntegerLiteral{Value: 1},
+			Right: IntegerLiteral{Value: 2},
+			Op:    "==",
 		}, prog)
 	})
 
 	t.Run("equality with arithmetic", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + 2 == 3 * 4;")
+		lx := lexer.MustTokenize("1 + 2 == 3 * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Right: BinaryExpression{
-						Left:  IntegerLiteral{Value: 3},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "==",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Right: BinaryExpression{
+				Left:  IntegerLiteral{Value: 3},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
+			},
+			Op: "==",
 		}, prog)
 	})
 
 	t.Run("equality with parentheses", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(1 + 2) == 3 * 4;")
+		lx := lexer.MustTokenize("(1 + 2) == 3 * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Right: BinaryExpression{
-						Left:  IntegerLiteral{Value: 3},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "==",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Right: BinaryExpression{
+				Left:  IntegerLiteral{Value: 3},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
+			},
+			Op: "==",
 		}, prog)
 	})
 
 	t.Run("equality with parentheses, order changed", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + (2 == 3) * 4;")
+		lx := lexer.MustTokenize("1 + (2 == 3) * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: IntegerLiteral{Value: 1},
-					Right: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 2},
-							Right: IntegerLiteral{Value: 3},
-							Op:    "==",
-						},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "+",
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 2},
+					Right: IntegerLiteral{Value: 3},
+					Op:    "==",
 				},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
 			},
+			Op: "+",
 		}, prog)
 	})
 
 	t.Run("simple comparison", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 < 2;")
+		lx := lexer.MustTokenize("1 < 2;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left:  IntegerLiteral{Value: 1},
-					Right: IntegerLiteral{Value: 2},
-					Op:    "<",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  IntegerLiteral{Value: 1},
+			Right: IntegerLiteral{Value: 2},
+			Op:    "<",
 		}, prog)
 	})
 
 	t.Run("comparison with arithmetic", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + 2 <= 3 * 4;")
+		lx := lexer.MustTokenize("1 + 2 <= 3 * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
-					},
-					Right: BinaryExpression{
-						Left:  IntegerLiteral{Value: 3},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "<=",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "+",
 			},
+			Right: BinaryExpression{
+				Left:  IntegerLiteral{Value: 3},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
+			},
+			Op: "<=",
 		}, prog)
 	})
 
 	t.Run("comparison with parentheses", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(1 >= 2) < 3 * 4;")
+		lx := lexer.MustTokenize("(1 >= 2) < 3 * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    ">=",
-					},
-					Right: BinaryExpression{
-						Left:  IntegerLiteral{Value: 3},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "<",
-				},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    ">=",
 			},
+			Right: BinaryExpression{
+				Left:  IntegerLiteral{Value: 3},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
+			},
+			Op: "<",
 		}, prog)
 	})
 
 	t.Run("comparison with parentheses, order changed", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + (2 < 3) * 4;")
+		lx := lexer.MustTokenize("1 + (2 < 3) * 4;")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left: IntegerLiteral{Value: 1},
-					Right: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 2},
-							Right: IntegerLiteral{Value: 3},
-							Op:    "<",
-						},
-						Right: IntegerLiteral{Value: 4},
-						Op:    "*",
-					},
-					Op: "+",
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: IntegerLiteral{Value: 1},
+			Right: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 2},
+					Right: IntegerLiteral{Value: 3},
+					Op:    "<",
 				},
+				Right: IntegerLiteral{Value: 4},
+				Op:    "*",
 			},
+			Op: "+",
 		}, prog)
 	})
 }
 
 func Test_Stmnt_VarDecl(t *testing.T) {
 	t.Run("Simple integer declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("int a = 123;")
+		lx := lexer.MustTokenize("int a = 123;")
+		p := Parser{
+			tokens: lx,
+			scope:  NewScope(nil),
+		}
+		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				VarDecl{
-					Name:  "a",
-					Type:  types.Int,
-					Value: IntegerLiteral{Value: 123},
-				},
-			},
+		assert.EqualExportedValues(t, VarDecl{
+			Name:  "a",
+			Type:  types.Int,
+			Value: IntegerLiteral{Value: 123},
 		}, prog)
 	})
 
 	t.Run("Simple boolean declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("bool a = true;")
+		lx := lexer.MustTokenize("bool a = true;")
+		p := Parser{tokens: lx, scope: NewScope(nil)}
+		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				VarDecl{
-					Name:  "a",
-					Type:  types.Bool,
-					Value: BooleanLiteral{Value: true},
-				},
-			},
+		assert.EqualExportedValues(t, VarDecl{
+			Name:  "a",
+			Type:  types.Bool,
+			Value: BooleanLiteral{Value: true},
 		}, prog)
 	})
 
 	t.Run("Integer declaration with expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("int a = 1 + 2 * 3;")
+		lx := lexer.MustTokenize("int a = 1 + 2 * 3;")
+		p := Parser{tokens: lx, scope: NewScope(nil)}
+		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				VarDecl{
-					Name: "a",
-					Type: types.Int,
-					Value: BinaryExpression{
-						Left: IntegerLiteral{Value: 1},
-						Right: BinaryExpression{
-							Left:  IntegerLiteral{Value: 2},
-							Right: IntegerLiteral{Value: 3},
-							Op:    "*",
-						},
-						Op: "+",
-					},
+		assert.EqualExportedValues(t, VarDecl{
+			Name: "a",
+			Type: types.Int,
+			Value: BinaryExpression{
+				Left: IntegerLiteral{Value: 1},
+				Right: BinaryExpression{
+					Left:  IntegerLiteral{Value: 2},
+					Right: IntegerLiteral{Value: 3},
+					Op:    "*",
 				},
+				Op: "+",
 			},
 		}, prog)
 	})
 
 	t.Run("Type-free var declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("var a = 1 < 2 && true;")
+		lx := lexer.MustTokenize("var a = 1 < 2 && true;")
+		p := Parser{tokens: lx, scope: NewScope(nil)}
+		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				VarDecl{
-					Name: "a",
-					Type: types.Bool,
-					Value: BinaryExpression{
-						Left: BinaryExpression{
-							Left:  IntegerLiteral{Value: 1},
-							Right: IntegerLiteral{Value: 2},
-							Op:    "<",
-						},
-						Right: BooleanLiteral{Value: true},
-						Op:    "&&",
-					},
+		assert.EqualExportedValues(t, VarDecl{
+			Name: "a",
+			Type: types.Bool,
+			Value: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 2},
+					Op:    "<",
 				},
+				Right: BooleanLiteral{Value: true},
+				Op:    "&&",
 			},
+		}, prog)
+	})
+
+	t.Run("Identifier declaration", func(t *testing.T) {
+		lx := lexer.MustTokenize("int a = abc;")
+		p := Parser{tokens: lx, scope: &Scope{varDecls: map[string]VarDecl{"abc": {Name: "a", Type: types.Int}}}}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name:  "a",
+			Type:  types.Int,
+			Value: Identifier{Name: "abc"},
 		}, prog)
 	})
 }
@@ -925,62 +753,210 @@ func Test_ReturnTypes(t *testing.T) {
 
 func Test_Identifiers(t *testing.T) {
 	t.Run("Simple identifier in binary expr", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 + a;")
+		lx := lexer.MustTokenize("1 + a;")
+		p := Parser{tokens: lx, scope: &Scope{varDecls: map[string]VarDecl{"a": {Name: "a", Type: types.Int}}}}
+		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				BinaryExpression{
-					Left:  IntegerLiteral{Value: 1},
-					Right: Identifier{Name: "a"},
-					Op:    "+",
-				},
-			},
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  IntegerLiteral{Value: 1},
+			Right: Identifier{Name: "a"},
+			Op:    "+",
 		}, prog)
 	})
 }
 
 func Test_FunctionDefinitions(t *testing.T) {
 	t.Run("Simple function definition", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo() {}")
+		lx := lexer.MustTokenize("fn foo() {}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
+		fn, err := fnDef.parseBody(new(Scope))
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
-					Name:       "foo",
-					ReturnType: types.Void,
-					Args:       []Argument{},
-					Body:       []Statement{},
-				},
-			},
-		}, prog)
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args:       []Argument{},
+			Body:       []Statement{},
+		}, fn)
 	})
 
 	t.Run("Simple function definition with body", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo() {return 1 + 2;}")
+		lx := lexer.MustTokenize("fn foo() {return 1 + 2;}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
+		fn, err := fnDef.parseBody(new(Scope))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args:       []Argument{},
+			Body: []Statement{
+				Return{
+					Value: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "+",
+					},
+				},
+			},
+		}, fn)
+	})
+
+	t.Run("Function definition with return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo() int {}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(new(Scope))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			Args:       []Argument{},
+			ReturnType: types.Int,
+			Body:       []Statement{},
+		}, fn)
+	})
+
+	t.Run("Function definition with one argument", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo(int a) {}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(new(Scope))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+			},
+			Body: []Statement{},
+		}, fn)
+	})
+
+	t.Run("Function definition with arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo(int a, bool b, bool c) {}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(new(Scope))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+				{Name: "b", Type: types.Bool},
+				{Name: "c", Type: types.Bool},
+			},
+			Body: []Statement{},
+		}, fn)
+	})
+
+	t.Run("Function definition with arguments and return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo(bool a, int b) bool {}")
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(new(Scope))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Bool,
+			Args: []Argument{
+				{Name: "a", Type: types.Bool},
+				{Name: "b", Type: types.Int},
+			},
+			Body: []Statement{},
+		}, fn)
+	})
+
+	t.Run("function using local scope", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			fn foo() {
+				var a = 123;
+				return 1 + a;
+			}
+		`)
+
+		p := NewParser(lx, nil)
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(NewScope(nil))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args:       []Argument{},
+			Body: []Statement{
+				VarDecl{
+					Name:  "a",
+					Type:  types.Int,
+					Value: IntegerLiteral{Value: 123},
+				},
+				Return{
+					Value: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: Identifier{Name: "a"},
+						Op:    "+",
+					},
+				},
+			},
+		}, fn)
+	})
+
+	t.Run("function using global and local scope", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			var a = 10;
+
+			fn main() {
+				var b = 11;
+				return a + b;
+			}
+		`)
+
+		p := NewParser(lx, nil)
+		prog, err := p.ParseFile()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, Program{
 			Body: []Statement{
+				VarDecl{
+					Name:  "a",
+					Type:  types.Int,
+					Value: IntegerLiteral{Value: 10},
+				},
 				FnDef{
-					Name:       "foo",
+					Name:       "main",
 					ReturnType: types.Void,
 					Args:       []Argument{},
 					Body: []Statement{
+						VarDecl{
+							Name:  "b",
+							Type:  types.Int,
+							Value: IntegerLiteral{Value: 11},
+						},
 						Return{
 							Value: BinaryExpression{
-								Left:  IntegerLiteral{Value: 1},
-								Right: IntegerLiteral{Value: 2},
+								Left:  Identifier{Name: "a"},
+								Right: Identifier{Name: "b"},
 								Op:    "+",
 							},
 						},
@@ -989,96 +965,11 @@ func Test_FunctionDefinitions(t *testing.T) {
 			},
 		}, prog)
 	})
-
-	t.Run("Function definition with return type", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo() int {}")
-		assert.NoError(t, err)
-
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
-					Name:       "foo",
-					Args:       []Argument{},
-					ReturnType: types.Int,
-					Body:       []Statement{},
-				},
-			},
-		}, prog)
-	})
-
-	t.Run("Function definition with one argument", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo(int a) {}")
-		assert.NoError(t, err)
-
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
-					Name:       "foo",
-					ReturnType: types.Void,
-					Args: []Argument{
-						{Name: "a", Type: types.Int},
-					},
-					Body: []Statement{},
-				},
-			},
-		}, prog)
-	})
-
-	t.Run("Function definition with arguments", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo(int a, bool b, bool c) {}")
-		assert.NoError(t, err)
-
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
-					Name:       "foo",
-					ReturnType: types.Void,
-					Args: []Argument{
-						{Name: "a", Type: types.Int},
-						{Name: "b", Type: types.Bool},
-						{Name: "c", Type: types.Bool},
-					},
-					Body: []Statement{},
-				},
-			},
-		}, prog)
-	})
-
-	t.Run("Function definition with arguments and return type", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo(bool a, int b) bool {}")
-		assert.NoError(t, err)
-
-		prog, err := NewParser(lx).Parse()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
-					Name:       "foo",
-					ReturnType: types.Bool,
-					Args: []Argument{
-						{Name: "a", Type: types.Bool},
-						{Name: "b", Type: types.Int},
-					},
-					Body: []Statement{},
-				},
-			},
-		}, prog)
-	})
 }
 
 func Test_ParseFile(t *testing.T) {
 	t.Run("Simple file", func(t *testing.T) {
-		lx, err := lexer.Tokenize(`
+		lx := lexer.MustTokenize(`
 			fn foo() int {
 				bar();
 				return 123;
@@ -1092,9 +983,9 @@ func Test_ParseFile(t *testing.T) {
 				return foo() + 1;
 			}
 		`)
-		assert.NoError(t, err)
 
-		prog, err := NewParser(lx).Parse()
+		p := Parser{tokens: lx}
+		prog, err := p.ParseFile()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, Program{
@@ -1140,5 +1031,15 @@ func Test_ParseFile(t *testing.T) {
 				},
 			},
 		}, prog)
+	})
+
+	t.Run("no main function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			fn bar() {}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseFile()
+		assert.ErrorContains(t, err, "no main function")
+		assert.Empty(t, prog)
 	})
 }

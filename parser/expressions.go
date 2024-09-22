@@ -6,7 +6,7 @@ import (
 	"leoscript/token"
 )
 
-func (p *Parser) parseExpr() (Expression, error) {
+func (p *Parser) ParseExpr() (Expression, error) {
 	// Parse the first part in the expression.
 	// This will be the root of the expression tree.
 	root, err := p.parsePrimaryExpression()
@@ -50,7 +50,7 @@ func (p *Parser) parseExpr() (Expression, error) {
 
 func (p *Parser) handleSubgroup() (Expression, error) {
 	p.next() // consume the open-paren token
-	expr, err := p.parseExpr()
+	expr, err := p.ParseExpr()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse expression: %w", err)
 	}
@@ -83,14 +83,30 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 			return p.parseFnCall()
 		}
 
-		return Identifier{Name: tk.Value}, nil
+		return p.parseIdentifier()
 	}
 
 	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
 }
 
+func (p *Parser) parseIdentifier() (Expression, error) {
+	identifier := p.peek().(token.Identifier)
+
+	varDecl, ok := p.scope.ResolveVar(identifier.Value)
+	if !ok {
+		return nil, fmt.Errorf("undeclared variable: %s", identifier.Value)
+	}
+
+	return Identifier{Name: identifier.Value, returnType: varDecl.Type}, nil
+}
+
 func (p *Parser) parseFnCall() (Expression, error) {
 	identifier := p.peek().(token.Identifier)
+
+	funcDef, ok := p.scope.ResolveFn(identifier.Value)
+	if !ok {
+		return nil, fmt.Errorf("undeclared function: %s", identifier.Value)
+	}
 
 	if err := p.expect(token.OpenParenType); err != nil {
 		return nil, fmt.Errorf("expected open parenthesis after function call: %w", err)
@@ -106,8 +122,9 @@ func (p *Parser) parseFnCall() (Expression, error) {
 	}
 
 	return Call{
-		Name: identifier.Value,
-		Args: args,
+		Name:       identifier.Value,
+		Args:       args,
+		returnType: funcDef.ReturnType,
 	}, nil
 }
 
@@ -118,7 +135,7 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 
 	args := make([]Expression, 0)
 	for {
-		expr, err := p.parseExpr()
+		expr, err := p.ParseExpr()
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse argument: %w", err)
 		}

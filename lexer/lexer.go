@@ -54,6 +54,15 @@ func (lx *lexer) pushToken(tk token.Token) {
 	lx.tokens = append(lx.tokens, tk)
 }
 
+func MustTokenize(input string) []token.Token {
+	tokens, err := Tokenize(input)
+	if err != nil {
+		panic(err)
+	}
+
+	return tokens
+}
+
 func Tokenize(input string) ([]token.Token, error) {
 	lx := lexer{input: input}
 

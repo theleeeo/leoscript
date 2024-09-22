@@ -93,14 +93,28 @@ type UnaryExpression struct {
 func (e UnaryExpression) ReturnType() types.Type { return e.Expression.ReturnType() }
 
 type Identifier struct {
-	Name string
+	Name       string
+	returnType types.Type
 }
 
-func (Identifier) ReturnType() types.Type { return types.Void } // Todo: Implement type resolution of identifiers
+func (i Identifier) ReturnType() types.Type {
+	if i.returnType == nil {
+		panic("return type not set")
+	}
+
+	return i.returnType
+}
 
 type Call struct {
-	Name string
-	Args []Expression
+	Name       string
+	Args       []Expression
+	returnType types.Type
 }
 
-func (Call) ReturnType() types.Type { return types.Void } // Todo: Implement type resolution of calls
+func (c Call) ReturnType() types.Type {
+	if c.returnType == nil {
+		panic("return type not set")
+	}
+
+	return types.Void
+}

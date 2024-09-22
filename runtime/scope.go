@@ -1,15 +1,23 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"leoscript/parser"
+)
 
 type scope struct {
 	parent *scope
 
 	variables map[string]runtimeVal
+	functions map[string]parser.FnDef
 }
 
 func newScope(parent *scope) *scope {
-	return &scope{parent: parent, variables: make(map[string]runtimeVal)}
+	return &scope{
+		parent:    parent,
+		variables: make(map[string]runtimeVal),
+		functions: make(map[string]parser.FnDef),
+	}
 }
 
 func (s *scope) GetVar(name string) (runtimeVal, bool) {
@@ -41,4 +49,22 @@ func (s *scope) SetVar(name string, val runtimeVal) error {
 
 	s.variables[name] = val
 	return nil
+}
+
+func (s *scope) RegisterFn(name string, fn parser.FnDef) error {
+	if _, ok := s.functions[name]; ok {
+		return fmt.Errorf("function %s already declared", name)
+	}
+
+	s.functions[name] = fn
+	return nil
+}
+
+func (s *scope) GetFn(name string) (parser.FnDef, bool) {
+	fn, ok := s.functions[name]
+	if !ok && s.parent != nil {
+		return s.parent.GetFn(name)
+	}
+
+	return fn, ok
 }

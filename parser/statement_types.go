@@ -1,6 +1,9 @@
 package parser
 
-import "leoscript/types"
+import (
+	"leoscript/token"
+	"leoscript/types"
+)
 
 type Statement interface{}
 
@@ -15,6 +18,8 @@ type FnDef struct {
 	ReturnType types.Type
 	Args       []Argument
 	Body       []Statement
+	// The unprocessed source code of the function body.
+	bodySrc []token.Token
 }
 
 type Return struct {

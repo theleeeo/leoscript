@@ -11,24 +11,21 @@ import (
 
 func Test_MathExpression(t *testing.T) {
 	t.Run("Single digit", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("1")
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 1},
 		}, lx)
 	})
 
 	t.Run("Single number", func(t *testing.T) {
-		lx, err := lexer.Tokenize("12345")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("12345")
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 12345},
 		}, lx)
 	})
 
 	t.Run("Binary ops with whitespace", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1+ 2- 3 *4/ 5")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("1+ 2- 3 *4/ 5")
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 1},
 			token.Operator{Op: "+"},
@@ -43,8 +40,7 @@ func Test_MathExpression(t *testing.T) {
 	})
 
 	t.Run("Multiple digit numbers", func(t *testing.T) {
-		lx, err := lexer.Tokenize("123+456789-987 7898 / 898989")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("123+456789-987 7898 / 898989")
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 123},
 			token.Operator{Op: "+"},
@@ -63,8 +59,7 @@ func Test_MathExpression(t *testing.T) {
 	})
 
 	t.Run("Parentheses", func(t *testing.T) {
-		lx, err := lexer.Tokenize("((1+2)*3);")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("((1+2)*3);")
 		assert.Equal(t, []token.Token{
 			token.OpenParen{},
 			token.OpenParen{},
@@ -83,8 +78,7 @@ func Test_MathExpression(t *testing.T) {
 
 func Test_Identifiers(t *testing.T) {
 	t.Run("Identifiers", func(t *testing.T) {
-		lx, err := lexer.Tokenize("foo + bar-baz")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("foo + bar-baz")
 		assert.Equal(t, []token.Token{
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "+"},
@@ -95,8 +89,7 @@ func Test_Identifiers(t *testing.T) {
 	})
 
 	t.Run("Reserved keywords", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true false")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("true false")
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
 			token.Boolean{Value: false},
@@ -104,16 +97,14 @@ func Test_Identifiers(t *testing.T) {
 	})
 
 	t.Run("Combined keywords, fine", func(t *testing.T) {
-		lx, err := lexer.Tokenize("truefalse")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("truefalse")
 		assert.Equal(t, []token.Token{
 			token.Identifier{Value: "truefalse"},
 		}, lx)
 	})
 
 	t.Run("Mixed identifiers and keywords", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true foo false bar")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("true foo false bar")
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
 			token.Identifier{Value: "foo"},
@@ -125,8 +116,7 @@ func Test_Identifiers(t *testing.T) {
 
 func Test_LogicalExpressions(t *testing.T) {
 	t.Run("Logical operators", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true && false || true")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("true && false || true")
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
 			token.Operator{Op: "&&"},
@@ -137,8 +127,7 @@ func Test_LogicalExpressions(t *testing.T) {
 	})
 
 	t.Run("Parentheses", func(t *testing.T) {
-		lx, err := lexer.Tokenize("(true && false) || true")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("(true && false) || true")
 		assert.Equal(t, []token.Token{
 			token.OpenParen{},
 			token.Boolean{Value: true},
@@ -151,8 +140,7 @@ func Test_LogicalExpressions(t *testing.T) {
 	})
 
 	t.Run("With identifiers", func(t *testing.T) {
-		lx, err := lexer.Tokenize("true && bar || baz")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("true && bar || baz")
 		assert.Equal(t, []token.Token{
 			token.Boolean{Value: true},
 			token.Operator{Op: "&&"},
@@ -168,8 +156,7 @@ func Test_LogicalExpressions(t *testing.T) {
 	})
 
 	t.Run("Comparison operators", func(t *testing.T) {
-		lx, err := lexer.Tokenize("1 < 2 > 3 <= 4 >= 5 == 6 != 7")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("1 < 2 > 3 <= 4 >= 5 == 6 != 7")
 		assert.Equal(t, []token.Token{
 			token.Integer{Value: 1},
 			token.Operator{Op: "<"},
@@ -190,8 +177,7 @@ func Test_LogicalExpressions(t *testing.T) {
 
 func Test_VariableDeclaration(t *testing.T) {
 	t.Run("Variable declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("var foo = 123;")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("var foo = 123;")
 		assert.Equal(t, []token.Token{
 			token.VarDecl{},
 			token.Identifier{Value: "foo"},
@@ -202,8 +188,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	})
 
 	t.Run("Variable declaration with expression", func(t *testing.T) {
-		lx, err := lexer.Tokenize("var foo = 1 + 2 * 3;")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("var foo = 1 + 2 * 3;")
 		assert.Equal(t, []token.Token{
 			token.VarDecl{},
 			token.Identifier{Value: "foo"},
@@ -218,8 +203,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	})
 
 	t.Run("Integer variable declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("int foo = 123;")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("int foo = 123;")
 		assert.Equal(t, []token.Token{
 			token.Type{Kind: types.Int},
 			token.Identifier{Value: "foo"},
@@ -230,8 +214,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	})
 
 	t.Run("Boolean variable declaration", func(t *testing.T) {
-		lx, err := lexer.Tokenize("bool foo = true;")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("bool foo = true;")
 		assert.Equal(t, []token.Token{
 			token.Type{Kind: types.Bool},
 			token.Identifier{Value: "foo"},
@@ -242,8 +225,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	})
 
 	// t.Run("String variable declaration", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("string foo = \"bar\";")
-	// 	assert.NoError(t, err)
+	// err := lexer.MustTokenize("string foo = \"bar\";"
 	// 	assert.Equal(t, []token.Token{
 	// 		token.StringDecl{},
 	// 		token.Identifier{Value: "foo"},
@@ -256,8 +238,7 @@ func Test_VariableDeclaration(t *testing.T) {
 
 func Test_FunctionDefinition(t *testing.T) {
 	t.Run("Function definition", func(t *testing.T) {
-		lx, err := lexer.Tokenize("fn foo() {}")
-		assert.NoError(t, err)
+		lx := lexer.MustTokenize("fn foo() {}")
 		assert.Equal(t, []token.Token{
 			token.FnDef{},
 			token.Identifier{Value: "foo"},
@@ -269,23 +250,19 @@ func Test_FunctionDefinition(t *testing.T) {
 	})
 
 	// t.Run("Function definition, single argument", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a) {}")
-	// 	assert.NoError(t, err)
+	// err := lexer.MustTokenize("fn foo(a) {}"
 	// })
 
 	// t.Run("Function definition, return type", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a) int {}")
-	// 	assert.NoError(t, err)
+	// err := lexer.MustTokenize("fn foo(a) int {}"
 	// 	}, lx)
 	// })
 
 	// t.Run("Function definition, multiple arguments", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a, b) {}")
-	// 	assert.NoError(t, err)
+	// err := lexer.MustTokenize("fn foo(a, b) {}"
 	// })
 
 	// t.Run("Function definition, body", func(t *testing.T) {
-	// 	lx, err := lexer.Tokenize("fn foo(a) { return 1 + 2; }")
-	// 	assert.NoError(t, err)
+	// err := lexer.MustTokenize("fn foo(a) { return 1 + 2; }"
 	// })
 }
