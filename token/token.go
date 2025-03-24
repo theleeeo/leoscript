@@ -31,6 +31,9 @@ const (
 	FnDefType
 	ReturnType
 	CommaType
+
+	// Control Flow
+	IfType
 )
 
 type EOF struct{}
@@ -135,3 +138,7 @@ func (Type) Type() TokenType { return TypeType }
 type Comma struct{}
 
 func (Comma) Type() TokenType { return CommaType }
+
+type If struct{}
+
+func (If) Type() TokenType { return IfType }

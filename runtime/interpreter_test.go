@@ -365,3 +365,63 @@ func Test_RunCompleteFile(t *testing.T) {
 		assert.Equal(t, 11, resp.(numberVal).value)
 	})
 }
+
+func Test_IfStatements(t *testing.T) {
+	t.Run("Simple if statement", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				if true {
+					return 1;
+				}
+				return 0;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, resp.(numberVal).value)
+	})
+
+	// t.Run("Simple if else statement", func(t *testing.T) {
+	// 	i := New()
+
+	// 	err := i.LoadRaw(`
+	// 		fn main() int {
+	// 			if false {
+	// 				return 1;
+	// 			} else {
+	// 				return 0;
+	// 			}
+	// 		}
+	// 	`)
+	// 	assert.NoError(t, err)
+
+	// 	resp, err := i.Run()
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 0, resp.(numberVal).value)
+	// })
+
+	// t.Run("Simple if else if else statement", func(t *testing.T) {
+	// 	i := New()
+
+	// 	err := i.LoadRaw(`
+	// 		fn main() int {
+	// 			if false {
+	// 				return 1;
+	// 			} else if true {
+	// 				return 0;
+	// 			} else {
+	// 				return -1;
+	// 			}
+	// 		}
+	// 	`)
+	// 	assert.NoError(t, err)
+
+	// 	resp, err := i.Run()
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 0, resp.(numberVal).value)
+	// })
+}

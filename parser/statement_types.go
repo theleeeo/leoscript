@@ -35,3 +35,8 @@ type Assignment struct {
 	Name  string
 	Value Expression
 }
+
+type If struct {
+	Cond Expression
+	Body []Statement
+}

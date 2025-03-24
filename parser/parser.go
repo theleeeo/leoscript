@@ -29,6 +29,7 @@ func (p *Parser) Scope() *Scope {
 // next will consume the current token and return the next one
 func (p *Parser) next() token.Token {
 	p.current++
+	// fmt.Println("consumed token", p.tokens[p.current-1].Type(), "next token is", p.peek().Type())
 
 	if p.current >= len(p.tokens) {
 		return token.EOF{}
@@ -66,6 +67,7 @@ func (p *Parser) peekNext() token.Token {
 // putBack will move the current token back one step
 // this is useful when we want to "undo" a token consumption
 func (p *Parser) putBack() {
+	// fmt.Println("putting back token", p.tokens[p.current].Type())
 	p.current--
 }
 
@@ -80,7 +82,6 @@ func (p *Parser) ParseFile() (Program, error) {
 		var stmt Statement
 		switch tk.(type) {
 		case token.VarDecl:
-			fmt.Println("Parsing variable declaration")
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return Program{}, err
@@ -93,7 +94,6 @@ func (p *Parser) ParseFile() (Program, error) {
 			}
 
 		case token.FnDef:
-			fmt.Println("Parsing function definition")
 			fnDef, err := p.parseFnDef()
 			if err != nil {
 				return Program{}, err
@@ -144,18 +144,21 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 			return nil, err
 		}
 
-		if err := p.expect(token.SemicolonType); err != nil {
-			return nil, err
+		if _, ok := stmt.(If); !ok {
+			if err := p.expect(token.SemicolonType); err != nil {
+				return nil, err
+			}
 		}
 
 		stmts = append(stmts, stmt)
 	}
 
+	p.putBack() // Put back the closing brace
+
 	return stmts, nil
 }
 
 func (fn FnDef) parseBody(s *Scope) (FnDef, error) {
-	fmt.Println("Scope: ", s.varDecls)
 	p := Parser{
 		tokens: fn.bodySrc,
 		scope:  NewScope(s),

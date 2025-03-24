@@ -28,6 +28,8 @@ func (p *Parser) ParseStatement() (Statement, error) {
 		return p.parseAssignment()
 	case token.Return:
 		return p.parseReturn()
+	case token.If:
+		return p.parseIf()
 	default:
 		return nil, fmt.Errorf("unexpected token type %T", tk)
 	}
@@ -76,6 +78,8 @@ func (p *Parser) parseAssignment() (Statement, error) {
 	if err := p.expect(token.SemicolonType); err != nil {
 		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
+
+	p.putBack() // Put back semicolon. // TODO Fix this
 
 	return Assignment{
 		Name:  identifier.Value,
@@ -250,5 +254,34 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		Name:  identifier.Value,
 		Type:  varType,
 		Value: expr,
+	}, nil
+}
+
+func (p *Parser) parseIf() (If, error) {
+	p.next() // Consume the if token
+
+	expr, err := p.ParseExpr()
+	if err != nil {
+		return If{}, fmt.Errorf("failed to parse if condition: %w", err)
+	}
+
+	if err := p.expect(token.OpenBraceType); err != nil {
+		return If{}, fmt.Errorf("expected open brace after if condition: %w", err)
+	}
+
+	p.next() // Consume the open brace
+
+	stmts, err := p.parseBlock()
+	if err != nil {
+		return If{}, fmt.Errorf("failed to parse if block: %w", err)
+	}
+
+	if err := p.expect(token.CloseBraceType); err != nil {
+		return If{}, fmt.Errorf("expected close brace after if block: %w", err)
+	}
+
+	return If{
+		Cond: expr,
+		Body: stmts,
 	}, nil
 }

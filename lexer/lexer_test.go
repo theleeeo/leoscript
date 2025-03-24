@@ -266,3 +266,37 @@ func Test_FunctionDefinition(t *testing.T) {
 	// err := lexer.MustTokenize("fn foo(a) { return 1 + 2; }"
 	// })
 }
+
+func Test_ControlFlow(t *testing.T) {
+	t.Run("If block, empty body", func(t *testing.T) {
+		lx := lexer.MustTokenize("if a==b {}")
+		assert.Equal(t, []token.Token{
+			token.If{},
+			token.Identifier{Value: "a"},
+			token.Operator{Op: "=="},
+			token.Identifier{Value: "b"},
+			token.OpenBrace{},
+			token.CloseBrace{},
+		}, lx)
+	})
+
+	t.Run("If block, with body", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if foo >= bar {
+			foo = 10;
+		}
+		`)
+		assert.Equal(t, []token.Token{
+			token.If{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: ">="},
+			token.Identifier{Value: "bar"},
+			token.OpenBrace{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 10},
+			token.Semicolon{},
+			token.CloseBrace{},
+		}, lx)
+	})
+}

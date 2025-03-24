@@ -67,7 +67,9 @@ type Interpreter struct {
 	activeScope *scope
 }
 
-func (intr *Interpreter) evaluateStatement(stmt parser.Statement) {
+// Evaluates a statement. If the statement contains a return, it es evaluates and its value is returned from this function.
+// That means that if this functions return value is != nil, the caller should return.
+func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 	switch s := stmt.(type) {
 	case parser.VarDecl:
 		val := intr.evaluateExpression(s.Value)
@@ -78,9 +80,26 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) {
 		if err := intr.activeScope.RegisterFn(s.Name, s); err != nil {
 			panic(err)
 		}
+	case parser.If:
+		cond := intr.evaluateExpression(s.Cond)
+		if cond.Type() != types.Bool {
+			panic("if condition must be a boolean")
+		}
+
+		if cond.(booleanVal).value {
+			for _, stmt := range s.Body {
+				if ret := intr.evaluateStatement(stmt); ret != nil {
+					return ret
+				}
+			}
+		}
+	case parser.Return:
+		return intr.evaluateExpression(s.Value)
 	default:
 		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
 	}
+
+	return nil
 }
 
 func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
@@ -197,11 +216,9 @@ func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, param
 
 	// Evaluate the function body
 	for _, stmt := range fn.Body {
-		if retStmt, ok := stmt.(parser.Return); ok {
-			return intr.evaluateExpression(retStmt.Value)
+		if retVal := intr.evaluateStatement(stmt); retVal != nil {
+			return retVal
 		}
-
-		intr.evaluateStatement(stmt)
 	}
 
 	// Reset the active scope to the parent scope

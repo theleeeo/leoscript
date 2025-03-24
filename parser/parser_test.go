@@ -1043,3 +1043,63 @@ func Test_ParseFile(t *testing.T) {
 		assert.Empty(t, prog)
 	})
 }
+
+func Test_If(t *testing.T) {
+	t.Run("if, compare static ints", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if 1 > 0 {
+			foo = 10;
+		}
+		`)
+		p := Parser{tokens: lx, scope: NewScope(nil)}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, If{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 0},
+				Op:    ">",
+			},
+			Body: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 10},
+				},
+			},
+		}, prog)
+
+	})
+
+	t.Run("if in func", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() int {
+			if true {
+				return 1;
+			}
+			return 0;
+		}
+		`)
+		p := Parser{tokens: lx, scope: NewScope(nil)}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := fnDef.parseBody(NewScope(nil))
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "main",
+			ReturnType: types.Int,
+			Args:       []Argument{},
+			Body: []Statement{
+				If{
+					Cond: BooleanLiteral{Value: true},
+					Body: []Statement{
+						Return{Value: IntegerLiteral{Value: 1}},
+					},
+				},
+				Return{Value: IntegerLiteral{Value: 0}},
+			},
+		}, fn)
+	})
+}

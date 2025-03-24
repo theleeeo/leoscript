@@ -40,6 +40,10 @@ func (p *Parser) ParseExpr() (Expression, error) {
 
 			root = expr
 
+		case token.OpenBrace:
+			p.putBack() // put the open-brace back, it will be verified by the parent
+			return root, nil
+
 		default:
 			return nil, fmt.Errorf("unexpected token in expression: T=%T V=%v", tk, tk)
 		}
