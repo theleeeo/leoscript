@@ -29,7 +29,7 @@ func (p *Parser) Scope() *Scope {
 // next will consume the current token and return the next one
 func (p *Parser) next() token.Token {
 	p.current++
-	// fmt.Println("consumed token", p.tokens[p.current-1].Type(), "next token is", p.peek().Type())
+	// fmt.Println("consumed: ", p.tokens[p.current-1].Type(), "new: ", p.peek().Type())
 
 	if p.current >= len(p.tokens) {
 		return token.EOF{}
@@ -38,9 +38,18 @@ func (p *Parser) next() token.Token {
 	return p.tokens[p.current]
 }
 
-// expect will return an error if the next token is not of the expected type
-func (p *Parser) expect(tk token.TokenType) error {
+// expectNext will consume the token and return an error if the next one is not of the expected type
+func (p *Parser) expectNext(tk token.TokenType) error {
 	if tk != p.next().Type() {
+		return fmt.Errorf("expected token type %v, got %v", tk, p.peek().Type())
+	}
+
+	return nil
+}
+
+// expectConsume will return an error if the current token is not of the expected type
+func (p *Parser) expectCurrent(tk token.TokenType) error {
+	if tk != p.peek().Type() {
 		return fmt.Errorf("expected token type %v, got %v", tk, p.peek().Type())
 	}
 
@@ -66,10 +75,10 @@ func (p *Parser) peekNext() token.Token {
 
 // putBack will move the current token back one step
 // this is useful when we want to "undo" a token consumption
-func (p *Parser) putBack() {
-	// fmt.Println("putting back token", p.tokens[p.current].Type())
-	p.current--
-}
+// func (p *Parser) putBack() {
+// 	// fmt.Println("putting back token", p.tokens[p.current].Type())
+// 	p.current--
+// }
 
 type Program struct {
 	Body []Statement
@@ -141,19 +150,17 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 	for tk := p.peek(); tk.Type() != token.CloseBraceType; tk = p.next() {
 		stmt, err := p.ParseStatement()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parsing statement: %w", err)
 		}
 
 		if _, ok := stmt.(If); !ok {
-			if err := p.expect(token.SemicolonType); err != nil {
+			if err := p.expectCurrent(token.SemicolonType); err != nil {
 				return nil, err
 			}
 		}
 
 		stmts = append(stmts, stmt)
 	}
-
-	p.putBack() // Put back the closing brace
 
 	return stmts, nil
 }

@@ -17,7 +17,6 @@ func (p *Parser) ParseExpr() (Expression, error) {
 	for tk := p.next(); tk != nil; tk = p.next() {
 		switch tk := tk.(type) {
 		case token.Semicolon:
-			p.putBack() // put the semicolon back, it might be used to end the parent
 			return root, nil
 
 		case token.OpenParen:
@@ -29,7 +28,6 @@ func (p *Parser) ParseExpr() (Expression, error) {
 			root = expr
 
 		case token.CloseParen:
-			p.putBack() // put the close-paren back, it will be verified by the parent
 			return root, nil
 
 		case token.Operator:
@@ -41,7 +39,6 @@ func (p *Parser) ParseExpr() (Expression, error) {
 			root = expr
 
 		case token.OpenBrace:
-			p.putBack() // put the open-brace back, it will be verified by the parent
 			return root, nil
 
 		default:
@@ -65,7 +62,7 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 		expr = binExpr
 	}
 
-	if err := p.expect(token.CloseParenType); err != nil {
+	if err := p.expectCurrent(token.CloseParenType); err != nil {
 		return nil, fmt.Errorf("failed to parse expression: %w", err)
 	}
 
@@ -112,7 +109,7 @@ func (p *Parser) parseFnCall() (Expression, error) {
 		return nil, fmt.Errorf("undeclared function: %s", identifier.Value)
 	}
 
-	if err := p.expect(token.OpenParenType); err != nil {
+	if err := p.expectNext(token.OpenParenType); err != nil {
 		return nil, fmt.Errorf("expected open parenthesis after function call: %w", err)
 	}
 
@@ -121,7 +118,7 @@ func (p *Parser) parseFnCall() (Expression, error) {
 		return nil, fmt.Errorf("failed to parse arguments: %w", err)
 	}
 
-	if err := p.expect(token.CloseParenType); err != nil {
+	if err := p.expectCurrent(token.CloseParenType); err != nil {
 		return nil, fmt.Errorf("expected close parenthesis after function call: %w", err)
 	}
 
@@ -134,6 +131,9 @@ func (p *Parser) parseFnCall() (Expression, error) {
 
 func (p *Parser) parseArgs() ([]Expression, error) {
 	if _, ok := p.peekNext().(token.CloseParen); ok {
+		// TODO: Do this at the start of the function, always, when the parsing is refactored to always start a parsing function at its first token
+		p.next()
+
 		return []Expression{}, nil
 	}
 
@@ -146,11 +146,11 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 
 		args = append(args, expr)
 
-		if _, ok := p.peekNext().(token.CloseParen); ok {
+		if _, ok := p.peek().(token.CloseParen); ok {
 			break
 		}
 
-		if err := p.expect(token.CommaType); err != nil {
+		if err := p.expectNext(token.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
 	}

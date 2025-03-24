@@ -9,7 +9,7 @@ import (
 func (p *Parser) ParseStatement() (Statement, error) {
 	tk := p.peek()
 
-	switch tk.(type) {
+	switch tk := tk.(type) {
 	case token.EOF:
 		return nil, fmt.Errorf("unexpected EOF")
 	case token.Semicolon:
@@ -19,11 +19,23 @@ func (p *Parser) ParseStatement() (Statement, error) {
 		if err == nil {
 			p.scope.RegisterVar(varDecl)
 		}
-		p.putBack() // Put back semicolon. // TODO Fix this
 		return varDecl, err
 	case token.Identifier:
 		if _, ok := p.peekNext().(token.OpenParen); ok {
-			return p.parseFnCall()
+			fc, err := p.parseFnCall()
+			if err != nil {
+				return nil, err
+			}
+
+			// A function call is ended by its closing parenthesis.
+			// When used in an expression, that is that.
+			// When used in a statement however, it is only a valid statement termination if it is a semicolon afterwards.
+			// TODO: This is better handled as it being considered an expression, always. p.parseExpr should be used instead of p.parseFnCall
+			if err := p.expectNext(token.SemicolonType); err != nil {
+				return nil, fmt.Errorf("expected semicolon after function call statement")
+			}
+
+			return fc, nil
 		}
 		return p.parseAssignment()
 	case token.Return:
@@ -36,18 +48,18 @@ func (p *Parser) ParseStatement() (Statement, error) {
 }
 
 func (p *Parser) parseReturn() (Statement, error) {
-	if _, ok := p.peekNext().(token.Semicolon); ok {
+	p.next() // Consume the return token
+
+	if _, ok := p.peek().(token.Semicolon); ok {
 		return Return{}, nil
 	}
-
-	p.next() // Consume the return token
 
 	expr, err := p.ParseExpr()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse return expression: %w", err)
 	}
 
-	if _, ok := p.peekNext().(token.Semicolon); !ok {
+	if _, ok := p.peek().(token.Semicolon); !ok {
 		return nil, fmt.Errorf("expected semicolon after return expression")
 	}
 
@@ -59,7 +71,7 @@ func (p *Parser) parseReturn() (Statement, error) {
 func (p *Parser) parseAssignment() (Statement, error) {
 	identifier := p.peek().(token.Identifier)
 
-	if err := p.expect(token.OperatorType); err != nil {
+	if err := p.expectNext(token.OperatorType); err != nil {
 		return nil, fmt.Errorf("expected assignment operator after identifier: %w", err)
 	}
 
@@ -75,11 +87,9 @@ func (p *Parser) parseAssignment() (Statement, error) {
 		return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
 	}
 
-	if err := p.expect(token.SemicolonType); err != nil {
+	if err := p.expectCurrent(token.SemicolonType); err != nil {
 		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
-
-	p.putBack() // Put back semicolon. // TODO Fix this
 
 	return Assignment{
 		Name:  identifier.Value,
@@ -95,13 +105,13 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 
 	args := make([]Argument, 0)
 	for {
-		if err := p.expect(token.TypeType); err != nil {
+		if err := p.expectNext(token.TypeType); err != nil {
 			return nil, fmt.Errorf("expected type in argument list: %w", err)
 		}
 
 		argType := p.peek().(token.Type).Kind
 
-		if err := p.expect(token.IdentifierType); err != nil {
+		if err := p.expectNext(token.IdentifierType); err != nil {
 			return nil, fmt.Errorf("expected identifier after type in argument list: %w", err)
 		}
 
@@ -116,7 +126,7 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 			break
 		}
 
-		if err := p.expect(token.CommaType); err != nil {
+		if err := p.expectNext(token.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
 	}
@@ -125,13 +135,13 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 }
 
 func (p *Parser) parseFnDef() (FnDef, error) {
-	if err := p.expect(token.IdentifierType); err != nil {
+	if err := p.expectNext(token.IdentifierType); err != nil {
 		return FnDef{}, fmt.Errorf("expected identifier after fn: %w", err)
 	}
 
 	identifier := p.peek().(token.Identifier)
 
-	if err := p.expect(token.OpenParenType); err != nil {
+	if err := p.expectNext(token.OpenParenType); err != nil {
 		return FnDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
 	}
 
@@ -141,7 +151,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	}
 
 	// Todo: Move this into the parseFnParams function
-	if err := p.expect(token.CloseParenType); err != nil {
+	if err := p.expectNext(token.CloseParenType); err != nil {
 		return FnDef{}, fmt.Errorf("expected close parenthesis after open parenthesis: %w", err)
 	}
 
@@ -214,13 +224,13 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
 	}
 
-	if err := p.expect(token.IdentifierType); err != nil {
+	if err := p.expectNext(token.IdentifierType); err != nil {
 		return VarDecl{}, fmt.Errorf("expected identifier after intdef: %w", err)
 	}
 
 	identifier := p.peek().(token.Identifier)
 
-	if err := p.expect(token.OperatorType); err != nil {
+	if err := p.expectNext(token.OperatorType); err != nil {
 		return VarDecl{}, fmt.Errorf("expected assignment operator after identifier: %w", err)
 	}
 
@@ -246,7 +256,7 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		varType = expr.ReturnType()
 	}
 
-	if err := p.expect(token.SemicolonType); err != nil {
+	if err := p.expectCurrent(token.SemicolonType); err != nil {
 		return VarDecl{}, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
 
@@ -265,7 +275,7 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("failed to parse if condition: %w", err)
 	}
 
-	if err := p.expect(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(token.OpenBraceType); err != nil {
 		return If{}, fmt.Errorf("expected open brace after if condition: %w", err)
 	}
 
@@ -276,7 +286,7 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("failed to parse if block: %w", err)
 	}
 
-	if err := p.expect(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(token.CloseBraceType); err != nil {
 		return If{}, fmt.Errorf("expected close brace after if block: %w", err)
 	}
 
