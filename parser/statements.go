@@ -56,7 +56,7 @@ func (p *Parser) parseReturn() (Statement, error) {
 
 	expr, err := p.ParseExpr()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse return expression: %w", err)
+		return nil, fmt.Errorf("parsing return expression: %w", err)
 	}
 
 	if _, ok := p.peek().(token.Semicolon); !ok {
@@ -84,7 +84,7 @@ func (p *Parser) parseAssignment() (Statement, error) {
 	// Parse the expression on the right side of the assignment
 	expr, err := p.ParseExpr()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
+		return nil, fmt.Errorf("parsing right hand expression: %w", err)
 	}
 
 	if err := p.expectCurrent(token.SemicolonType); err != nil {
@@ -147,7 +147,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	args, err := p.parseFnParams()
 	if err != nil {
-		return FnDef{}, fmt.Errorf("failed to parse arguments: %w", err)
+		return FnDef{}, fmt.Errorf("parsing arguments: %w", err)
 	}
 
 	// Todo: Move this into the parseFnParams function
@@ -177,7 +177,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	// This is to parse it later when the full global scope is available.
 	bodySrc, err := p.getFnBodySource()
 	if err != nil {
-		return FnDef{}, fmt.Errorf("failed to get function body source: %w", err)
+		return FnDef{}, fmt.Errorf("getting function body source: %w", err)
 	}
 
 	return FnDef{
@@ -243,7 +243,7 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	// Parse the expression on the right side of the assignment
 	expr, err := p.ParseExpr()
 	if err != nil {
-		return VarDecl{}, fmt.Errorf("failed to parse right hand expression: %w", err)
+		return VarDecl{}, fmt.Errorf("parsing right hand expression: %w", err)
 	}
 
 	if varType != nil {
@@ -272,7 +272,7 @@ func (p *Parser) parseIf() (If, error) {
 
 	expr, err := p.ParseExpr()
 	if err != nil {
-		return If{}, fmt.Errorf("failed to parse if condition: %w", err)
+		return If{}, fmt.Errorf("parsing if condition: %w", err)
 	}
 
 	if err := p.expectCurrent(token.OpenBraceType); err != nil {
@@ -283,7 +283,7 @@ func (p *Parser) parseIf() (If, error) {
 
 	stmts, err := p.parseBlock()
 	if err != nil {
-		return If{}, fmt.Errorf("failed to parse if block: %w", err)
+		return If{}, fmt.Errorf("parsing if block: %w", err)
 	}
 
 	if err := p.expectCurrent(token.CloseBraceType); err != nil {

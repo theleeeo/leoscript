@@ -126,7 +126,7 @@ func (p *Parser) ParseFile() (Program, error) {
 		if fnDef, ok := fnDef.(FnDef); ok {
 			parsedFnDef, err := fnDef.parseBody(globalScope)
 			if err != nil {
-				return Program{}, fmt.Errorf("failed to parse function body for %s: %w", fnDef.Name, err)
+				return Program{}, fmt.Errorf("parsing function body for %s: %w", fnDef.Name, err)
 			}
 			p.Program.Body[i] = parsedFnDef
 		}
@@ -173,7 +173,7 @@ func (fn FnDef) parseBody(s *Scope) (FnDef, error) {
 
 	stmts, err := p.parseBlock()
 	if err != nil {
-		return FnDef{}, fmt.Errorf("failed to parse function body: %w", err)
+		return FnDef{}, fmt.Errorf("parsing function body: %w", err)
 	}
 
 	fn.Body = stmts

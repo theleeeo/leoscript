@@ -14,12 +14,12 @@ func (intr *Interpreter) LoadRaw(src string) error {
 
 	tokens, err := lexer.Tokenize(src)
 	if err != nil {
-		return fmt.Errorf("failed to tokenize: %w", err)
+		return fmt.Errorf("tokenizing: %w", err)
 	}
 
 	program, err := parser.NewParser(tokens, nil).ParseFile()
 	if err != nil {
-		return fmt.Errorf("failed to parse: %w", err)
+		return fmt.Errorf("parsing: %w", err)
 	}
 
 	for _, stmt := range program.Body {

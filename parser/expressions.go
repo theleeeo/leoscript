@@ -53,7 +53,7 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 	p.next() // consume the open-paren token
 	expr, err := p.ParseExpr()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse expression: %w", err)
+		return nil, fmt.Errorf("parsing expression: %w", err)
 	}
 
 	// If the expression is a binary expression, set the priority to the max so that it is never reordered
@@ -63,7 +63,7 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 	}
 
 	if err := p.expectCurrent(token.CloseParenType); err != nil {
-		return nil, fmt.Errorf("failed to parse expression: %w", err)
+		return nil, fmt.Errorf("parsing expression: %w", err)
 	}
 
 	return expr, nil
@@ -115,7 +115,7 @@ func (p *Parser) parseFnCall() (Expression, error) {
 
 	args, err := p.parseArgs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse arguments: %w", err)
+		return nil, fmt.Errorf("parsing arguments: %w", err)
 	}
 
 	if err := p.expectCurrent(token.CloseParenType); err != nil {
@@ -141,7 +141,7 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 	for {
 		expr, err := p.ParseExpr()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse argument: %w", err)
+			return nil, fmt.Errorf("parsing argument: %w", err)
 		}
 
 		args = append(args, expr)
@@ -161,12 +161,13 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 func (p *Parser) parseUnaryExpr() (Expression, error) {
 	binTk := p.peek().(token.Operator)
 
+	p.next() // consume the operator token
+
 	switch binTk.Op {
 	case "-", "+", "!":
-		p.next() // consume the operator token
 		expr, err := p.parsePrimaryExpression()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse right hand expression: %w", err)
+			return nil, fmt.Errorf("parsing right hand expression: %w", err)
 		}
 
 		return UnaryExpression{
@@ -183,9 +184,10 @@ func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 	binTk := p.peek().(token.Operator)
 
 	p.next() // consume the operator token
+
 	right, err := p.parsePrimaryExpression()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse right expression: %w", err)
+		return nil, fmt.Errorf("parsing right expression: %w", err)
 	}
 
 	// Do a right swap if the priority of the current operator is higher
