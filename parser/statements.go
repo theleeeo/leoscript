@@ -18,20 +18,7 @@ func (p *Parser) ParseStatement() (Statement, error) {
 		return p.parseVarDecl()
 	case token.Identifier:
 		if _, ok := p.peekNext().(token.OpenParen); ok {
-			fc, err := p.parseFnCall()
-			if err != nil {
-				return nil, err
-			}
-
-			// A function call is ended by its closing parenthesis.
-			// When used in an expression, that is that.
-			// When used in a statement however, it is only a valid statement termination if it is a semicolon afterwards.
-			// TODO: This is better handled as it being considered an expression, always. p.parseExpr should be used instead of p.parseFnCall
-			if err := p.expectNext(token.SemicolonType); err != nil {
-				return nil, fmt.Errorf("expected semicolon after function call statement")
-			}
-
-			return fc, nil
+			return p.ParseExpr()
 		}
 		return p.parseAssignment()
 	case token.Return:
