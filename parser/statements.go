@@ -95,19 +95,21 @@ func (p *Parser) parseAssignment() (Statement, error) {
 
 func (p *Parser) parseFnParams() ([]Argument, error) {
 	// Check if the function has no arguments
-	if _, ok := p.peekNext().(token.CloseParen); ok {
+	if _, ok := p.next().(token.CloseParen); ok {
 		return []Argument{}, nil
 	}
 
 	args := make([]Argument, 0)
 	for {
-		if err := p.expectNext(token.TypeType); err != nil {
+		if err := p.expectCurrent(token.TypeType); err != nil {
 			return nil, fmt.Errorf("expected type in argument list: %w", err)
 		}
 
 		argType := p.peek().(token.Type).Kind
 
-		if err := p.expectNext(token.IdentifierType); err != nil {
+		p.next() // Consume the type
+
+		if err := p.expectCurrent(token.IdentifierType); err != nil {
 			return nil, fmt.Errorf("expected identifier after type in argument list: %w", err)
 		}
 
@@ -118,13 +120,20 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 			Type: argType,
 		})
 
-		if _, ok := p.peekNext().(token.CloseParen); ok {
+		p.next() // Consume the identifier
+
+		// If we have hit the close parenthesis, we have parsed all arguments
+		if _, ok := p.peek().(token.CloseParen); ok {
 			break
 		}
 
-		if err := p.expectNext(token.CommaType); err != nil {
+		// If there is another argument, there should be a comma
+		if err := p.expectCurrent(token.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
+
+		// Consume the comma
+		p.next()
 	}
 
 	return args, nil
@@ -144,11 +153,6 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	args, err := p.parseFnParams()
 	if err != nil {
 		return FnDef{}, fmt.Errorf("parsing arguments: %w", err)
-	}
-
-	// Todo: Move this into the parseFnParams function
-	if err := p.expectNext(token.CloseParenType); err != nil {
-		return FnDef{}, fmt.Errorf("expected close parenthesis after open parenthesis: %w", err)
 	}
 
 	var returnType types.Type
