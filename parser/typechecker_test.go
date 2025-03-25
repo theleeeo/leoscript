@@ -25,14 +25,11 @@ func Test_ResolveTypes(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody()
-		assert.NoError(t, err)
-
-		assert.Equal(t, types.Unspecified, fn.Body[0].(Return).Value.ReturnType())
+		assert.Equal(t, types.Unspecified, fnDef.Body[0].(Return).Value.ReturnType())
 
 		pg := Program{
 			VarDecls: []VarDecl{varDef},
-			FnDefs:   []FnDef{fn},
+			FnDefs:   []FnDef{fnDef},
 		}
 
 		pg, err = TypeResolvingPass(pg, NewScope(nil))

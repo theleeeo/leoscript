@@ -706,10 +706,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		var a = foo();
 		`)
 		p := Parser{tokens: lx}
-		stmt, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := stmt.parseBody()
+		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -721,7 +718,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 					Value: IntegerLiteral{Value: 0},
 				},
 			},
-		}, fn)
+		}, fnDef)
 
 		p.next()
 
@@ -807,24 +804,18 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody()
-		assert.NoError(t, err)
-
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
 			Args:       []Argument{},
 			Body:       []Statement{},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("Simple function definition with body", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() {return 1 + 2;}")
 		p := Parser{tokens: lx}
 		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -840,7 +831,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 					},
 				},
 			},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("Function definition with return type", func(t *testing.T) {
@@ -849,24 +840,18 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody()
-		assert.NoError(t, err)
-
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			Args:       []Argument{},
 			ReturnType: types.Int,
 			Body:       []Statement{},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("Function definition with one argument", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a) {}")
 		p := Parser{tokens: lx}
 		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -876,16 +861,13 @@ func Test_FunctionDefinitions(t *testing.T) {
 				{Name: "a", Type: types.Int},
 			},
 			Body: []Statement{},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("Function definition with arguments", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a, bool b, bool c) {}")
 		p := Parser{tokens: lx}
 		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -897,16 +879,13 @@ func Test_FunctionDefinitions(t *testing.T) {
 				{Name: "c", Type: types.Bool},
 			},
 			Body: []Statement{},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("Function definition with arguments and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(bool a, int b) bool {}")
 		p := Parser{tokens: lx}
 		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -917,7 +896,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 				{Name: "b", Type: types.Int},
 			},
 			Body: []Statement{},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("function using local scope", func(t *testing.T) {
@@ -930,9 +909,6 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -952,7 +928,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 					},
 				},
 			},
-		}, fn)
+		}, fnDef)
 	})
 
 	t.Run("function using global and local scope", func(t *testing.T) {
@@ -1118,9 +1094,6 @@ func Test_If(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody()
-		assert.NoError(t, err)
-
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "main",
 			ReturnType: types.Int,
@@ -1134,6 +1107,6 @@ func Test_If(t *testing.T) {
 				},
 				Return{Value: IntegerLiteral{Value: 0}},
 			},
-		}, fn)
+		}, fnDef)
 	})
 }

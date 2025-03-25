@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"leoscript/token"
 	"leoscript/types"
 )
 
@@ -18,8 +17,6 @@ type FnDef struct {
 	ReturnType types.Type
 	Args       []Argument
 	Body       []Statement
-	// The unprocessed source code of the function body.
-	bodySrc []token.Token
 }
 
 type Return struct {

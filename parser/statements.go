@@ -10,10 +10,6 @@ func (p *Parser) ParseStatement() (Statement, error) {
 	tk := p.peek()
 
 	switch tk := tk.(type) {
-	case token.EOF:
-		return nil, fmt.Errorf("unexpected EOF")
-	case token.Semicolon:
-		return nil, fmt.Errorf("unexpected semicolon")
 	case token.VarDecl, token.Type:
 		return p.parseVarDecl()
 	case token.Identifier:
@@ -33,6 +29,7 @@ func (p *Parser) ParseStatement() (Statement, error) {
 func (p *Parser) parseReturn() (Statement, error) {
 	p.next() // Consume the return token
 
+	// An empty return statement
 	if _, ok := p.peek().(token.Semicolon); ok {
 		return Return{}, nil
 	}
@@ -42,7 +39,7 @@ func (p *Parser) parseReturn() (Statement, error) {
 		return nil, fmt.Errorf("parsing return expression: %w", err)
 	}
 
-	if _, ok := p.peek().(token.Semicolon); !ok {
+	if err := p.expectCurrent(token.SemicolonType); err != nil {
 		return nil, fmt.Errorf("expected semicolon after return expression")
 	}
 
@@ -162,41 +159,23 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	// Get the raw source code of the function body.
 	// This is to parse it later when the full global scope is available.
-	bodySrc, err := p.getFnBodySource()
+	// bodySrc, err := p.getFnBodySource()
+	// if err != nil {
+	// 	return FnDef{}, fmt.Errorf("getting function body source: %w", err)
+	// }
+
+	body, err := p.parseBlock()
 	if err != nil {
-		return FnDef{}, fmt.Errorf("getting function body source: %w", err)
+		return FnDef{}, fmt.Errorf("parsing function body: %w", err)
 	}
 
 	return FnDef{
 		Name:       identifier.Value,
 		ReturnType: returnType,
 		Args:       args,
-		bodySrc:    bodySrc,
+		// bodySrc:    bodySrc,
+		Body: body,
 	}, nil
-}
-
-func (p *Parser) getFnBodySource() ([]token.Token, error) {
-	bodySource := make([]token.Token, 0)
-	scopeDepth := 1
-
-	for tk := p.peek(); scopeDepth > 0; tk = p.next() {
-		switch tk.(type) {
-		case token.OpenBrace:
-			scopeDepth++
-		case token.CloseBrace:
-			scopeDepth--
-		case token.EOF:
-			return nil, fmt.Errorf("unexpected EOF")
-		}
-
-		bodySource = append(bodySource, tk)
-
-		if scopeDepth == 0 {
-			break
-		}
-	}
-
-	return bodySource, nil
 }
 
 func (p *Parser) parseVarDecl() (VarDecl, error) {
