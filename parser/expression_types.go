@@ -92,14 +92,14 @@ type UnaryExpression struct {
 
 func (e UnaryExpression) ReturnType() types.Type { return e.Expression.ReturnType() }
 
-type Identifier struct {
+type VarIdentifier struct {
 	Name       string
 	returnType types.Type
 }
 
-func (i Identifier) ReturnType() types.Type {
+func (i VarIdentifier) ReturnType() types.Type {
 	if i.returnType == nil {
-		panic("return type not set")
+		return types.Unspecified
 	}
 
 	return i.returnType
@@ -113,8 +113,8 @@ type Call struct {
 
 func (c Call) ReturnType() types.Type {
 	if c.returnType == nil {
-		panic("return type not set")
+		return types.Unspecified
 	}
 
-	return types.Void
+	return c.returnType
 }

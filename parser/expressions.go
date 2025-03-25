@@ -84,30 +84,20 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 			return p.parseFnCall()
 		}
 
-		return p.parseIdentifier()
+		return p.parseVarIdentifier()
 	}
 
 	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
 }
 
-func (p *Parser) parseIdentifier() (Expression, error) {
-	identifier := p.peek().(token.Identifier)
+func (p *Parser) parseVarIdentifier() (Expression, error) {
+	varIden := p.peek().(token.Identifier)
 
-	varDecl, ok := p.scope.ResolveVar(identifier.Value)
-	if !ok {
-		return nil, fmt.Errorf("undeclared variable: %s", identifier.Value)
-	}
-
-	return Identifier{Name: identifier.Value, returnType: varDecl.Type}, nil
+	return VarIdentifier{Name: varIden.Value}, nil
 }
 
 func (p *Parser) parseFnCall() (Expression, error) {
 	identifier := p.peek().(token.Identifier)
-
-	funcDef, ok := p.scope.ResolveFn(identifier.Value)
-	if !ok {
-		return nil, fmt.Errorf("undeclared function: %s", identifier.Value)
-	}
 
 	if err := p.expectNext(token.OpenParenType); err != nil {
 		return nil, fmt.Errorf("expected open parenthesis after function call: %w", err)
@@ -123,9 +113,8 @@ func (p *Parser) parseFnCall() (Expression, error) {
 	}
 
 	return Call{
-		Name:       identifier.Value,
-		Args:       args,
-		returnType: funcDef.ReturnType,
+		Name: identifier.Value,
+		Args: args,
 	}, nil
 }
 

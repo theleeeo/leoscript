@@ -621,10 +621,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 func Test_Stmnt_VarDecl(t *testing.T) {
 	t.Run("Simple integer declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 123;")
-		p := Parser{
-			tokens: lx,
-			scope:  NewScope(nil),
-		}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -637,7 +634,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Simple boolean declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("bool a = true;")
-		p := Parser{tokens: lx, scope: NewScope(nil)}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -650,7 +647,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Integer declaration with expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 1 + 2 * 3;")
-		p := Parser{tokens: lx, scope: NewScope(nil)}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -671,13 +668,12 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Type-free var declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("var a = 1 < 2 && true;")
-		p := Parser{tokens: lx, scope: NewScope(nil)}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, VarDecl{
 			Name: "a",
-			Type: types.Bool,
 			Value: BinaryExpression{
 				Left: BinaryExpression{
 					Left:  IntegerLiteral{Value: 1},
@@ -692,15 +688,53 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Identifier declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = abc;")
-		p := Parser{tokens: lx, scope: &Scope{varDecls: map[string]VarDecl{"abc": {Name: "a", Type: types.Int}}}}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, VarDecl{
 			Name:  "a",
 			Type:  types.Int,
-			Value: Identifier{Name: "abc"},
+			Value: VarIdentifier{Name: "abc"},
 		}, prog)
+	})
+
+	t.Run("Declare with return of function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() int {return 0;}
+
+		var a = foo();
+		`)
+		p := Parser{tokens: lx}
+		stmt, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		fn, err := stmt.parseBody()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Int,
+			Args:       []Argument{},
+			Body: []Statement{
+				Return{
+					Value: IntegerLiteral{Value: 0},
+				},
+			},
+		}, fn)
+
+		p.next()
+
+		vardef, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name: "a",
+			Value: Call{
+				Name: "foo",
+				Args: []Expression{},
+			},
+		}, vardef)
 	})
 }
 
@@ -754,13 +788,13 @@ func Test_ReturnTypes(t *testing.T) {
 func Test_Identifiers(t *testing.T) {
 	t.Run("Simple identifier in binary expr", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + a;")
-		p := Parser{tokens: lx, scope: &Scope{varDecls: map[string]VarDecl{"a": {Name: "a", Type: types.Int}}}}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, BinaryExpression{
 			Left:  IntegerLiteral{Value: 1},
-			Right: Identifier{Name: "a"},
+			Right: VarIdentifier{Name: "a"},
 			Op:    "+",
 		}, prog)
 	})
@@ -773,7 +807,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -790,7 +824,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -815,7 +849,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -832,7 +866,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -851,7 +885,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -872,7 +906,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(new(Scope))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -894,11 +928,11 @@ func Test_FunctionDefinitions(t *testing.T) {
 			}
 		`)
 
-		p := NewParser(lx, nil)
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(NewScope(nil))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -908,13 +942,12 @@ func Test_FunctionDefinitions(t *testing.T) {
 			Body: []Statement{
 				VarDecl{
 					Name:  "a",
-					Type:  types.Int,
 					Value: IntegerLiteral{Value: 123},
 				},
 				Return{
 					Value: BinaryExpression{
 						Left:  IntegerLiteral{Value: 1},
-						Right: Identifier{Name: "a"},
+						Right: VarIdentifier{Name: "a"},
 						Op:    "+",
 					},
 				},
@@ -932,31 +965,32 @@ func Test_FunctionDefinitions(t *testing.T) {
 			}
 		`)
 
-		p := NewParser(lx, nil)
+		p := NewParser(lx)
 		prog, err := p.ParseFile()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				VarDecl{
+			VarDecls: []VarDecl{
+				{
 					Name:  "a",
-					Type:  types.Int,
 					Value: IntegerLiteral{Value: 10},
 				},
-				FnDef{
+			},
+			FnDefs: []FnDef{
+				{
+
 					Name:       "main",
 					ReturnType: types.Void,
 					Args:       []Argument{},
 					Body: []Statement{
 						VarDecl{
 							Name:  "b",
-							Type:  types.Int,
 							Value: IntegerLiteral{Value: 11},
 						},
 						Return{
 							Value: BinaryExpression{
-								Left:  Identifier{Name: "a"},
-								Right: Identifier{Name: "b"},
+								Left:  VarIdentifier{Name: "a"},
+								Right: VarIdentifier{Name: "b"},
 								Op:    "+",
 							},
 						},
@@ -989,8 +1023,8 @@ func Test_ParseFile(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, Program{
-			Body: []Statement{
-				FnDef{
+			FnDefs: []FnDef{
+				{
 					Name:       "foo",
 					ReturnType: types.Int,
 					Args:       []Argument{},
@@ -1004,7 +1038,7 @@ func Test_ParseFile(t *testing.T) {
 						},
 					},
 				},
-				FnDef{
+				{
 					Name:       "bar",
 					ReturnType: types.Void,
 					Args:       []Argument{},
@@ -1012,7 +1046,7 @@ func Test_ParseFile(t *testing.T) {
 						Return{},
 					},
 				},
-				FnDef{
+				{
 					Name:       "main",
 					ReturnType: types.Int,
 					Args:       []Argument{},
@@ -1051,7 +1085,7 @@ func Test_If(t *testing.T) {
 			foo = 10;
 		}
 		`)
-		p := Parser{tokens: lx, scope: NewScope(nil)}
+		p := Parser{tokens: lx}
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1080,11 +1114,11 @@ func Test_If(t *testing.T) {
 			return 0;
 		}
 		`)
-		p := Parser{tokens: lx, scope: NewScope(nil)}
+		p := Parser{tokens: lx}
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		fn, err := fnDef.parseBody(NewScope(nil))
+		fn, err := fnDef.parseBody()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{

@@ -6,24 +6,15 @@ import (
 	"slices"
 )
 
-func NewParser(tokens []token.Token, scope *Scope) *Parser {
-	if scope == nil {
-		scope = NewScope(nil)
-	}
-	return &Parser{tokens: tokens, current: 0, scope: scope}
+func NewParser(tokens []token.Token) *Parser {
+	return &Parser{tokens: tokens, current: 0}
 }
 
 type Parser struct {
 	tokens  []token.Token
 	current int
 
-	scope *Scope
-
 	Program Program
-}
-
-func (p *Parser) Scope() *Scope {
-	return p.scope
 }
 
 // next will consume the current token and return the next one
@@ -81,62 +72,60 @@ func (p *Parser) peekNext() token.Token {
 // }
 
 type Program struct {
-	Body []Statement
+	// Global variable declarations
+	VarDecls []VarDecl
+
+	// Global function definitions
+	FnDefs []FnDef
 }
 
 func (p *Parser) ParseFile() (Program, error) {
-	globalScope := NewScope(p.scope)
+	// globalScope := NewScope(p.scope)
 
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
-		var stmt Statement
 		switch tk.(type) {
 		case token.VarDecl:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return Program{}, err
 			}
-			stmt = varDecl
 
-			err = globalScope.RegisterVar(varDecl)
-			if err != nil {
-				return Program{}, err
-			}
+			p.Program.VarDecls = append(p.Program.VarDecls, varDecl)
+
+			// err = globalScope.RegisterVar(varDecl)
+			// if err != nil {
+			// 	return Program{}, err
+			// }
 
 		case token.FnDef:
 			fnDef, err := p.parseFnDef()
 			if err != nil {
 				return Program{}, err
 			}
-			stmt = fnDef
 
-			err = globalScope.RegisterFn(fnDef)
-			if err != nil {
-				return Program{}, err
-			}
+			p.Program.FnDefs = append(p.Program.FnDefs, fnDef)
+
+			// err = globalScope.RegisterFn(fnDef)
+			// if err != nil {
+			// 	return Program{}, err
+			// }
 
 		default:
 			return Program{}, fmt.Errorf("unexpected token type %T", tk)
 		}
-
-		p.Program.Body = append(p.Program.Body, stmt)
 	}
 
 	// Parse all the function bodies in the file now that the global scope has been built.
-	for i, fnDef := range p.Program.Body {
-		if fnDef, ok := fnDef.(FnDef); ok {
-			parsedFnDef, err := fnDef.parseBody(globalScope)
-			if err != nil {
-				return Program{}, fmt.Errorf("parsing function body for %s: %w", fnDef.Name, err)
-			}
-			p.Program.Body[i] = parsedFnDef
+	for i, fnDef := range p.Program.FnDefs {
+		parsedFnDef, err := fnDef.parseBody()
+		if err != nil {
+			return Program{}, fmt.Errorf("parsing function body for %s: %w", fnDef.Name, err)
 		}
+		p.Program.FnDefs[i] = parsedFnDef
 	}
 
-	if !slices.ContainsFunc(p.Program.Body, func(stmt Statement) bool {
-		if fnDef, ok := stmt.(FnDef); ok {
-			return fnDef.Name == "main"
-		}
-		return false
+	if !slices.ContainsFunc(p.Program.FnDefs, func(fnDef FnDef) bool {
+		return fnDef.Name == "main"
 	}) {
 		return Program{}, fmt.Errorf("no main function found in file")
 	}
@@ -165,10 +154,9 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 	return stmts, nil
 }
 
-func (fn FnDef) parseBody(s *Scope) (FnDef, error) {
+func (fn FnDef) parseBody() (FnDef, error) {
 	p := Parser{
 		tokens: fn.bodySrc,
-		scope:  NewScope(s),
 	}
 
 	stmts, err := p.parseBlock()

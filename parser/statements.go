@@ -15,11 +15,7 @@ func (p *Parser) ParseStatement() (Statement, error) {
 	case token.Semicolon:
 		return nil, fmt.Errorf("unexpected semicolon")
 	case token.VarDecl, token.Type:
-		varDecl, err := p.parseVarDecl()
-		if err == nil {
-			p.scope.RegisterVar(varDecl)
-		}
-		return varDecl, err
+		return p.parseVarDecl()
 	case token.Identifier:
 		if _, ok := p.peekNext().(token.OpenParen); ok {
 			fc, err := p.parseFnCall()
@@ -244,16 +240,6 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	expr, err := p.ParseExpr()
 	if err != nil {
 		return VarDecl{}, fmt.Errorf("parsing right hand expression: %w", err)
-	}
-
-	if varType != nil {
-		// If a type is specified, verify that the expression matches the type
-		if expr.ReturnType() != varType {
-			return VarDecl{}, fmt.Errorf("type mismatch: expected %v, got %v", varType, expr.ReturnType())
-		}
-	} else {
-		// If no type is specified, use the type of the expression
-		varType = expr.ReturnType()
 	}
 
 	if err := p.expectCurrent(token.SemicolonType); err != nil {

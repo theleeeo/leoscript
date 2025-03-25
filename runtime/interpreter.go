@@ -17,12 +17,16 @@ func (intr *Interpreter) LoadRaw(src string) error {
 		return fmt.Errorf("tokenizing: %w", err)
 	}
 
-	program, err := parser.NewParser(tokens, nil).ParseFile()
+	program, err := parser.NewParser(tokens).ParseFile()
 	if err != nil {
 		return fmt.Errorf("parsing: %w", err)
 	}
 
-	for _, stmt := range program.Body {
+	for _, stmt := range program.FnDefs {
+		intr.evaluateStatement(stmt)
+	}
+
+	for _, stmt := range program.VarDecls {
 		intr.evaluateStatement(stmt)
 	}
 
@@ -172,7 +176,7 @@ func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 	case parser.BooleanLiteral:
 		return booleanVal{value: e.Value}
 
-	case parser.Identifier:
+	case parser.VarIdentifier:
 		val, ok := intr.activeScope.GetVar(e.Name)
 		if !ok {
 			// TODO: Handle this better
