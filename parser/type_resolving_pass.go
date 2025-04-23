@@ -2,29 +2,42 @@ package parser
 
 import "fmt"
 
-func TypeResolvingPass(program Program, scope *Scope) (pg Program, err error) {
+func TypeResolvingPass(program Program) (pg Program, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
 
+	globalScope := NewScope(nil)
+
 	for _, varDecl := range program.VarDecls {
-		scope.RegisterVar(varDecl)
+		globalScope.RegisterVar(varDecl)
 	}
 
 	for _, fn := range program.FnDefs {
-		scope.RegisterFn(fn)
+		globalScope.RegisterFn(fn)
 	}
 
 	for i := range program.FnDefs {
+		functionScope := NewScope(globalScope)
+
+		// Register function parameters in the function scope
+		for _, param := range program.FnDefs[i].Args {
+			functionScope.RegisterVar(VarDecl{
+				Name: param.Name,
+				Type: param.Type,
+			})
+		}
+
+		// Resolve types of function body statements
 		for j := range program.FnDefs[i].Body {
-			program.FnDefs[i].Body[j] = resolveTypesOfStmt(program.FnDefs[i].Body[j], scope)
+			program.FnDefs[i].Body[j] = resolveTypesOfStmt(program.FnDefs[i].Body[j], functionScope)
 		}
 	}
 
 	for i := range program.VarDecls {
-		program.VarDecls[i].Value = resolveTypesOfExpr(program.VarDecls[i].Value, scope)
+		program.VarDecls[i].Value = resolveTypesOfExpr(program.VarDecls[i].Value, globalScope)
 	}
 
 	return program, nil
@@ -62,7 +75,7 @@ func resolveTypesOfExpr(expr Expression, scope *Scope) Expression {
 	case Call:
 		resFn, ok := scope.ResolveFn(expr.Name)
 		if !ok {
-			panic(fmt.Sprint("unknown function", "name", expr.Name))
+			panic(fmt.Sprint("unknown function:", expr.Name))
 		}
 
 		expr.returnType = resFn.ReturnType
@@ -71,15 +84,13 @@ func resolveTypesOfExpr(expr Expression, scope *Scope) Expression {
 	case VarIdentifier:
 		varIdent, ok := scope.ResolveVar(expr.Name)
 		if !ok {
-			panic(fmt.Sprint("unknown variable", "name", expr.Name))
+			panic(fmt.Sprint("unknown variable:", expr.Name))
 		}
 
-		expr.returnType = varIdent.Value.ReturnType()
+		expr.returnType = varIdent.Type
 
 		return expr
 	default:
 		return expr
 	}
 }
-
-// func TypeValidationPass(program Program, scope *Scope) { }

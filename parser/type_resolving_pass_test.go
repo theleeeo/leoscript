@@ -32,9 +32,37 @@ func Test_ResolveTypes(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg, NewScope(nil))
+		pg, err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
 		assert.Equal(t, types.Int, pg.FnDefs[0].Body[0].(Return).Value.ReturnType())
+	})
+
+	t.Run("Resolve function call type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn add(int a, int b) int {
+			return a + b;
+		}
+
+		fn main() int {
+			return add(1, 2);
+		}
+		`)
+		p := Parser{tokens: lx}
+		fnDef1, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		p.next()
+		fnDef2, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		pg := Program{
+			FnDefs: []FnDef{fnDef1, fnDef2},
+		}
+
+		pg, err = TypeResolvingPass(pg)
+		assert.NoError(t, err)
+
+		assert.Equal(t, types.Int, pg.FnDefs[1].Body[0].(Return).Value.ReturnType())
 	})
 }

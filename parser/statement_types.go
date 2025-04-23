@@ -7,7 +7,9 @@ import (
 type Statement interface{}
 
 type VarDecl struct {
-	Name  string
+	Name string
+	// The type of the variable will only known at the parsing pass if it's explicitly declared.
+	// If it should be inferred it will be Unspecified until the type resolving pass.
 	Type  types.Type
 	Value Expression
 }

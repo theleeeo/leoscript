@@ -138,7 +138,7 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 	for {
 		expr, err := p.ParseExpr()
 		if err != nil {
-			return nil, fmt.Errorf("parsing argument: %w", err)
+			return nil, err
 		}
 
 		args = append(args, expr)
