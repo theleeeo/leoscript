@@ -1,9 +1,13 @@
 package token
 
-import "leoscript/types"
+import (
+	"fmt"
+	"leoscript/types"
+)
 
 type Token interface {
 	Type() TokenType
+	String() string
 }
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=TokenType
@@ -40,11 +44,19 @@ type EOF struct{}
 
 func (EOF) Type() TokenType { return EOFType }
 
+func (EOF) String() string {
+	return "{EOF}"
+}
+
 type Integer struct {
 	Value int
 }
 
 func (Integer) Type() TokenType { return IntegerType }
+
+func (i Integer) String() string {
+	return fmt.Sprintf("{int:%d}", i.Value)
+}
 
 type Operator struct {
 	Op string
@@ -73,29 +85,33 @@ func (t Operator) Priority() Priority {
 	panic("invalid operator in binary expression")
 }
 
+func (t Operator) String() string {
+	return fmt.Sprintf("{op:%s}", t.Op)
+}
+
 type OpenParen struct{}
+
+func (OpenParen) Type() TokenType { return OpenParenType }
 
 func (OpenParen) String() string {
 	return "{(}"
 }
 
-func (OpenParen) Type() TokenType { return OpenParenType }
-
 type CloseParen struct{}
+
+func (CloseParen) Type() TokenType { return CloseParenType }
 
 func (CloseParen) String() string {
 	return "{)}"
 }
 
-func (CloseParen) Type() TokenType { return CloseParenType }
-
 type Semicolon struct{}
+
+func (Semicolon) Type() TokenType { return SemicolonType }
 
 func (Semicolon) String() string {
 	return "{;}"
 }
-
-func (Semicolon) Type() TokenType { return SemicolonType }
 
 type Identifier struct {
 	Value string
@@ -103,31 +119,62 @@ type Identifier struct {
 
 func (Identifier) Type() TokenType { return IdentifierType }
 
+func (i Identifier) String() string {
+	return fmt.Sprintf("{id:%s}", i.Value)
+}
+
 type Boolean struct {
 	Value bool
 }
 
 func (Boolean) Type() TokenType { return BooleanType }
 
+func (b Boolean) String() string {
+	if b.Value {
+		return "{bool:true}"
+	}
+	return "{bool:false}"
+}
+
 type VarDecl struct{}
 
 func (VarDecl) Type() TokenType { return VarDeclType }
+
+func (VarDecl) String() string {
+	return "{var}"
+}
 
 type FnDef struct{}
 
 func (FnDef) Type() TokenType { return FnDefType }
 
+func (FnDef) String() string {
+	return "{fn}"
+}
+
 type OpenBrace struct{}
 
 func (OpenBrace) Type() TokenType { return OpenBraceType }
+
+func (OpenBrace) String() string {
+	return "{[}"
+}
 
 type CloseBrace struct{}
 
 func (CloseBrace) Type() TokenType { return CloseBraceType }
 
+func (CloseBrace) String() string {
+	return "{]}"
+}
+
 type Return struct{}
 
 func (Return) Type() TokenType { return ReturnType }
+
+func (Return) String() string {
+	return "{return}"
+}
 
 type Type struct {
 	Kind types.Type
@@ -135,10 +182,22 @@ type Type struct {
 
 func (Type) Type() TokenType { return TypeType }
 
+func (t Type) String() string {
+	return fmt.Sprintf("{type:%s}", t.Kind)
+}
+
 type Comma struct{}
 
 func (Comma) Type() TokenType { return CommaType }
 
+func (Comma) String() string {
+	return "{,}"
+}
+
 type If struct{}
 
 func (If) Type() TokenType { return IfType }
+
+func (If) String() string {
+	return "{if}"
+}
