@@ -157,7 +157,7 @@ type OpenBrace struct{}
 func (OpenBrace) Type() TokenType { return OpenBraceType }
 
 func (OpenBrace) String() string {
-	return "{[}"
+	return "{{}"
 }
 
 type CloseBrace struct{}
@@ -165,7 +165,7 @@ type CloseBrace struct{}
 func (CloseBrace) Type() TokenType { return CloseBraceType }
 
 func (CloseBrace) String() string {
-	return "{]}"
+	return "{}}"
 }
 
 type Return struct{}
