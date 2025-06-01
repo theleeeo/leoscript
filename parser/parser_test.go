@@ -1110,3 +1110,64 @@ func Test_If(t *testing.T) {
 		}, fnDef)
 	})
 }
+
+func Test_FunctionCall(t *testing.T) {
+	t.Run("Function call, 0 args", func(t *testing.T) {
+		lx := lexer.MustTokenize("foo();")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Call{
+			Name: "foo",
+			Args: []Expression{},
+		}, prog)
+	})
+
+	t.Run("Function call, 1 arg", func(t *testing.T) {
+		lx := lexer.MustTokenize("foo(1);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+		assert.EqualExportedValues(t, Call{
+			Name: "foo",
+			Args: []Expression{
+				IntegerLiteral{Value: 1},
+			},
+		}, prog)
+	})
+
+	t.Run("Function call, 2 args", func(t *testing.T) {
+		lx := lexer.MustTokenize("foo(1, 2);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Call{
+			Name: "foo",
+			Args: []Expression{
+				IntegerLiteral{Value: 1},
+				IntegerLiteral{Value: 2},
+			},
+		}, prog)
+	})
+
+	t.Run("Function call with mixed arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize("foo(1 + 2, true);")
+		p := Parser{tokens: lx}
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, Call{
+			Name: "foo",
+			Args: []Expression{
+				BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 2},
+					Op:    "+",
+				},
+				BooleanLiteral{Value: true},
+			},
+		}, prog)
+	})
+}

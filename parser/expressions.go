@@ -41,6 +41,10 @@ func (p *Parser) ParseExpr() (Expression, error) {
 		case token.OpenBrace:
 			return root, nil
 
+		case token.Comma:
+			// Commas are used in function calls.
+			return root, nil
+
 		default:
 			return nil, fmt.Errorf("unexpected token in expression: T=%T V=%v", tk, tk)
 		}
@@ -119,10 +123,14 @@ func (p *Parser) parseFnCall() (Expression, error) {
 }
 
 func (p *Parser) parseArgs() ([]Expression, error) {
-	if _, ok := p.peekNext().(token.CloseParen); ok {
-		// TODO: Do this at the start of the function, always, when the parsing is refactored to always start a parsing function at its first token
-		p.next()
+	if err := p.expectCurrent(token.OpenParenType); err != nil {
+		return nil, fmt.Errorf("expected open parenthesis in argument list: %w", err)
+	}
 
+	p.next() // Consume the open parenthesis
+
+	// If the next token is a close parenthesis, we have no arguments
+	if _, ok := p.peek().(token.CloseParen); ok {
 		return []Expression{}, nil
 	}
 
@@ -139,9 +147,11 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 			break
 		}
 
-		if err := p.expectNext(token.CommaType); err != nil {
+		if err := p.expectCurrent(token.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
+
+		p.next() // Consume the comma
 	}
 
 	return args, nil
