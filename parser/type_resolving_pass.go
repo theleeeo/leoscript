@@ -58,7 +58,7 @@ func resolveTypesOfStmt(stmt Statement, scope *Scope) Statement {
 		stmt.Cond = resolveTypesOfExpr(stmt.Cond, scope)
 		return stmt
 	default:
-		return stmt
+		panic(fmt.Sprintf("unhandled statement type: %T", stmt))
 	}
 }
 
@@ -90,7 +90,11 @@ func resolveTypesOfExpr(expr Expression, scope *Scope) Expression {
 		expr.returnType = varIdent.Type
 
 		return expr
-	default:
+	case IntegerLiteral:
 		return expr
+	case BooleanLiteral:
+		return expr
+	default:
+		panic(fmt.Sprintf("unhandled expression type: %T", expr))
 	}
 }
