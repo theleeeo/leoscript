@@ -15,6 +15,10 @@ type IntegerLiteral struct {
 
 func (IntegerLiteral) ReturnType() types.Type { return types.Int }
 
+type VoidLiteral struct{}
+
+func (VoidLiteral) ReturnType() types.Type { return types.Void }
+
 type BooleanLiteral struct {
 	Value bool
 }

@@ -49,7 +49,12 @@ func resolveTypesOfStmt(stmt Statement, scope *Scope) Statement {
 		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
 		return stmt
 	case Return:
-		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
+		if stmt.Value == nil {
+			stmt.Value = VoidLiteral{}
+		} else {
+			stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
+		}
+
 		return stmt
 	case Assignment:
 		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)

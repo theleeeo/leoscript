@@ -66,28 +66,28 @@ func Test_ValidateTypes(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	// t.Run("Void return", func(t *testing.T) {
-	// 	lx := lexer.MustTokenize(`
-	// 	fn a() {
-	// 		return;
-	// 	}
-	// 	`)
-	// 	p := Parser{tokens: lx}
+	t.Run("Void return", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn a() {
+			return;
+		}
+		`)
+		p := Parser{tokens: lx}
 
-	// 	fnDef, err := p.parseFnDef()
-	// 	assert.NoError(t, err)
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
 
-	// 	pg := Program{
-	// 		VarDecls: []VarDecl{},
-	// 		FnDefs:   []FnDef{fnDef},
-	// 	}
+		pg := Program{
+			VarDecls: []VarDecl{},
+			FnDefs:   []FnDef{fnDef},
+		}
 
-	// 	pg, err = TypeResolvingPass(pg)
-	// 	assert.NoError(t, err)
+		pg, err = TypeResolvingPass(pg)
+		assert.NoError(t, err)
 
-	// 	_, err = TypeValidationPass(pg)
-	// 	assert.NoError(t, err)
-	// })
+		_, err = TypeValidationPass(pg)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_ValidateTypes_Invalid(t *testing.T) {
