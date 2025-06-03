@@ -86,7 +86,7 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 		}
 	case parser.If:
 		cond := intr.evaluateExpression(s.Cond)
-		if cond.Type() != types.Bool {
+		if cond.Type() != types.Bool { // TODO: Remove these runtime checks when the type validation pass is fully implemented
 			panic("if condition must be a boolean")
 		}
 
