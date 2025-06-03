@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"leoscript/types"
 )
 
 func TypeValidationPass(program Program) (pg Program, err error) {
@@ -40,10 +41,10 @@ func verifyTypesOfStmt(stmt Statement, pctx parsingContext) {
 		if stmt.Value.ReturnType() != pctx.currentFn.ReturnType {
 			panic(fmt.Sprintf("type mismatch: expected %s, got %s", pctx.currentFn.ReturnType, stmt.Value.ReturnType()))
 		}
-	// case If:
-	// 	if stmt.Cond.ReturnType() != types.Bool {
-	// 		panic("if condition must be of type bool")
-	// 	}
+	case If:
+		if stmt.Cond.ReturnType() != types.Bool {
+			panic(fmt.Sprintf("type mismatch: expected Bool, got %s", stmt.Cond.ReturnType()))
+		}
 	default:
 		panic(fmt.Sprintf("unhandled statement type %T", stmt))
 	}

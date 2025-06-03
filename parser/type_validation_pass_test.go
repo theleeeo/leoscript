@@ -35,6 +35,59 @@ func Test_ValidateTypes(t *testing.T) {
 		_, err = TypeValidationPass(pg)
 		assert.NoError(t, err)
 	})
+
+	t.Run("If condition type, variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		bool a = true;
+
+		fn b() {
+			if (a) {
+				return;
+			}
+		}
+		`)
+		p := Parser{tokens: lx}
+		varDef, err := p.parseVarDecl()
+		assert.NoError(t, err)
+
+		p.next()
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		pg := Program{
+			VarDecls: []VarDecl{varDef},
+			FnDefs:   []FnDef{fnDef},
+		}
+
+		pg, err = TypeResolvingPass(pg)
+		assert.NoError(t, err)
+
+		_, err = TypeValidationPass(pg)
+		assert.NoError(t, err)
+	})
+
+	// t.Run("Void return", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	fn a() {
+	// 		return;
+	// 	}
+	// 	`)
+	// 	p := Parser{tokens: lx}
+
+	// 	fnDef, err := p.parseFnDef()
+	// 	assert.NoError(t, err)
+
+	// 	pg := Program{
+	// 		VarDecls: []VarDecl{},
+	// 		FnDefs:   []FnDef{fnDef},
+	// 	}
+
+	// 	pg, err = TypeResolvingPass(pg)
+	// 	assert.NoError(t, err)
+
+	// 	_, err = TypeValidationPass(pg)
+	// 	assert.NoError(t, err)
+	// })
 }
 
 func Test_ValidateTypes_Invalid(t *testing.T) {
@@ -84,6 +137,60 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 
 		fn b() bool {
 			return a;
+		}
+		`)
+		p := Parser{tokens: lx}
+		varDef, err := p.parseVarDecl()
+		assert.NoError(t, err)
+
+		p.next()
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		pg := Program{
+			VarDecls: []VarDecl{varDef},
+			FnDefs:   []FnDef{fnDef},
+		}
+
+		pg, err = TypeResolvingPass(pg)
+		assert.NoError(t, err)
+
+		_, err = TypeValidationPass(pg)
+		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
+	})
+
+	t.Run("If condition type, constant", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn b() {
+			if (1) {
+				return;
+			}
+		}
+		`)
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		pg := Program{
+			VarDecls: []VarDecl{},
+			FnDefs:   []FnDef{fnDef},
+		}
+
+		pg, err = TypeResolvingPass(pg)
+		assert.NoError(t, err)
+
+		_, err = TypeValidationPass(pg)
+		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
+	})
+
+	t.Run("If condition type, variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int a = 1;
+
+		fn b() {
+			if (a) {
+				return;
+			}
 		}
 		`)
 		p := Parser{tokens: lx}
