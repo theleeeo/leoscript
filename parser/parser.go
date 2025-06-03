@@ -113,6 +113,8 @@ func (p *Parser) ParseFile() (Program, error) {
 }
 
 func (p *Parser) parseBlock() ([]Statement, error) {
+	p.next() // Consume the open brace
+
 	stmts := []Statement{}
 
 	for tk := p.peek(); tk.Type() != token.CloseBraceType; tk = p.next() {
@@ -121,6 +123,7 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 			return nil, fmt.Errorf("parsing statement: %w", err)
 		}
 
+		// If the statement is an If statement, we don't expect a semicolon after it
 		if _, ok := stmt.(If); !ok {
 			if err := p.expectCurrent(token.SemicolonType); err != nil {
 				return nil, err

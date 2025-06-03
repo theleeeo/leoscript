@@ -38,6 +38,7 @@ const (
 
 	// Control Flow
 	IfType
+	ElseType
 )
 
 type EOF struct{}
@@ -200,4 +201,12 @@ func (If) Type() TokenType { return IfType }
 
 func (If) String() string {
 	return "{if}"
+}
+
+type Else struct{}
+
+func (Else) Type() TokenType { return ElseType }
+
+func (Else) String() string {
+	return "{else}"
 }

@@ -16,7 +16,7 @@ var keywords = map[string]token.Token{
 	"fn":     token.FnDef{},
 	"return": token.Return{},
 	"if":     token.If{},
-	// "else":     token.Else{},
+	"else":   token.Else{},
 	// "while":    token.While{},
 	// "for":      token.For{},
 	//"in": token.In{},

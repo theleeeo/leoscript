@@ -37,5 +37,6 @@ type Assignment struct {
 
 type If struct {
 	Cond Expression
-	Body []Statement
+	Then []Statement
+	Else []Statement
 }

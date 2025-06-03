@@ -361,7 +361,7 @@ func Test_RunCompleteFile(t *testing.T) {
 }
 
 func Test_IfStatements(t *testing.T) {
-	t.Run("Simple if statement", func(t *testing.T) {
+	t.Run("constant if, true", func(t *testing.T) {
 		i := New()
 
 		err := i.LoadRaw(`
@@ -379,43 +379,61 @@ func Test_IfStatements(t *testing.T) {
 		assert.Equal(t, 1, resp.(numberVal).value)
 	})
 
-	// t.Run("Simple if else statement", func(t *testing.T) {
-	// 	i := New()
+	t.Run("constant if, false", func(t *testing.T) {
+		i := New()
 
-	// 	err := i.LoadRaw(`
-	// 		fn main() int {
-	// 			if false {
-	// 				return 1;
-	// 			} else {
-	// 				return 0;
-	// 			}
-	// 		}
-	// 	`)
-	// 	assert.NoError(t, err)
+		err := i.LoadRaw(`
+			fn main() int {
+				if false {
+					return 1;
+				}
+				return 0;
+			}
+		`)
+		assert.NoError(t, err)
 
-	// 	resp, err := i.Run()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, 0, resp.(numberVal).value)
-	// })
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, resp.(numberVal).value)
+	})
 
-	// t.Run("Simple if else if else statement", func(t *testing.T) {
-	// 	i := New()
+	t.Run("Simple if else statement", func(t *testing.T) {
+		i := New()
 
-	// 	err := i.LoadRaw(`
-	// 		fn main() int {
-	// 			if false {
-	// 				return 1;
-	// 			} else if true {
-	// 				return 0;
-	// 			} else {
-	// 				return -1;
-	// 			}
-	// 		}
-	// 	`)
-	// 	assert.NoError(t, err)
+		err := i.LoadRaw(`
+			fn main() int {
+				if false {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
+		`)
+		assert.NoError(t, err)
 
-	// 	resp, err := i.Run()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, 0, resp.(numberVal).value)
-	// })
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, resp.(numberVal).value)
+	})
+
+	t.Run("Simple if else if else statement", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				if false {
+					return 1;
+				} else if true {
+					return 0;
+				} else {
+					return -1;
+				}
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, resp.(numberVal).value)
+	})
 }

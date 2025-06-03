@@ -91,9 +91,17 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 		}
 
 		if cond.(booleanVal).value {
-			for _, stmt := range s.Body {
+			for _, stmt := range s.Then {
 				if ret := intr.evaluateStatement(stmt); ret != nil {
 					return ret
+				}
+			}
+		} else {
+			if s.Else != nil {
+				for _, stmt := range s.Else {
+					if ret := intr.evaluateStatement(stmt); ret != nil {
+						return ret
+					}
 				}
 			}
 		}

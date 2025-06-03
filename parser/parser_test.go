@@ -1071,7 +1071,7 @@ func Test_If(t *testing.T) {
 				Right: IntegerLiteral{Value: 0},
 				Op:    ">",
 			},
-			Body: []Statement{
+			Then: []Statement{
 				Assignment{
 					Name:  "foo",
 					Value: IntegerLiteral{Value: 10},
@@ -1101,13 +1101,216 @@ func Test_If(t *testing.T) {
 			Body: []Statement{
 				If{
 					Cond: BooleanLiteral{Value: true},
-					Body: []Statement{
+					Then: []Statement{
 						Return{Value: IntegerLiteral{Value: 1}},
 					},
 				},
 				Return{Value: IntegerLiteral{Value: 0}},
 			},
 		}, fnDef)
+	})
+
+	t.Run("if with else", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if 1 > 0 {
+			foo = 10;
+		} else {
+			foo = 20;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, If{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 0},
+				Op:    ">",
+			},
+			Then: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 10},
+				},
+			},
+			Else: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 20},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("if with else if", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if 1 > 0 {
+			foo = 10;
+		} else if 2 < 3 {
+			foo = 20;
+		} else {
+			foo = 30;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, If{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 0},
+				Op:    ">",
+			},
+			Then: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 10},
+				},
+			},
+			Else: []Statement{
+				If{
+					Cond: BinaryExpression{
+						Left:  IntegerLiteral{Value: 2},
+						Right: IntegerLiteral{Value: 3},
+						Op:    "<",
+					},
+					Then: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 20},
+						},
+					},
+					Else: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 30},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("if with multiple else ifs", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if 1 > 0 {
+			foo = 10;
+		} else if 2 < 3 {
+			foo = 20;
+		} else if 3 > 4 {
+			foo = 30;
+		} else {
+			foo = 40;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, If{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 0},
+				Op:    ">",
+			},
+			Then: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 10},
+				},
+			},
+			Else: []Statement{
+				If{
+					Cond: BinaryExpression{
+						Left:  IntegerLiteral{Value: 2},
+						Right: IntegerLiteral{Value: 3},
+						Op:    "<",
+					},
+					Then: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 20},
+						},
+					},
+					Else: []Statement{
+						If{
+
+							Cond: BinaryExpression{
+								Left:  IntegerLiteral{Value: 3},
+								Right: IntegerLiteral{Value: 4},
+								Op:    ">",
+							},
+							Then: []Statement{
+								Assignment{
+									Name:  "foo",
+									Value: IntegerLiteral{Value: 30},
+								},
+							},
+							Else: []Statement{
+								Assignment{
+									Name:  "foo",
+									Value: IntegerLiteral{Value: 40},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("if with nested if", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if 1 > 0 {
+			if 2 < 3 {
+				foo = 10;
+			} else {
+				foo = 20;
+			}
+		} else {
+			foo = 30;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, If{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 0},
+				Op:    ">",
+			},
+			Then: []Statement{
+				If{
+					Cond: BinaryExpression{
+						Left:  IntegerLiteral{Value: 2},
+						Right: IntegerLiteral{Value: 3},
+						Op:    "<",
+					},
+					Then: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 10},
+						},
+					},
+					Else: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 20},
+						},
+					},
+				},
+			},
+			Else: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 30},
+				},
+			},
+		}, prog)
 	})
 }
 

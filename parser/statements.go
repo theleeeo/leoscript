@@ -21,6 +21,8 @@ func (p *Parser) ParseStatement() (Statement, error) {
 		return p.parseReturn()
 	case token.If:
 		return p.parseIf()
+	case token.Else:
+		return p.parseIf()
 	default:
 		return nil, fmt.Errorf("unexpected token type %T", tk)
 	}
@@ -154,16 +156,6 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 		return FnDef{}, fmt.Errorf("expected open brace after arguments in function definition")
 	}
 
-	// Consume the opening brace
-	p.next()
-
-	// Get the raw source code of the function body.
-	// This is to parse it later when the full global scope is available.
-	// bodySrc, err := p.getFnBodySource()
-	// if err != nil {
-	// 	return FnDef{}, fmt.Errorf("getting function body source: %w", err)
-	// }
-
 	body, err := p.parseBlock()
 	if err != nil {
 		return FnDef{}, fmt.Errorf("parsing function body: %w", err)
@@ -173,8 +165,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 		Name:       identifier.Value,
 		ReturnType: returnType,
 		Args:       args,
-		// bodySrc:    bodySrc,
-		Body: body,
+		Body:       body,
 	}, nil
 }
 
@@ -235,9 +226,7 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("expected open brace after if condition: %w", err)
 	}
 
-	p.next() // Consume the open brace
-
-	stmts, err := p.parseBlock()
+	thenBlock, err := p.parseBlock()
 	if err != nil {
 		return If{}, fmt.Errorf("parsing if block: %w", err)
 	}
@@ -246,8 +235,55 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("expected close brace after if block: %w", err)
 	}
 
-	return If{
+	ifStmt := If{
 		Cond: expr,
-		Body: stmts,
-	}, nil
+		Then: thenBlock,
+	}
+
+	if _, ok := p.peekNext().(token.Else); ok {
+		p.next() // Consume the close brace
+
+		elseBlock, err := p.parseElse()
+		if err != nil {
+			return If{}, fmt.Errorf("parsing else block: %w", err)
+		}
+		ifStmt.Else = elseBlock
+	}
+
+	return ifStmt, nil
+}
+
+func (p *Parser) parseElse() ([]Statement, error) {
+	p.next() // Consume the else token
+
+	// If the next token is an if, this is an else if statement
+	if _, ok := p.peek().(token.If); ok {
+		if err := p.expectCurrent(token.IfType); err != nil {
+			return nil, fmt.Errorf("expected if after else: %w", err)
+		}
+
+		ifStmt, err := p.parseIf()
+		if err != nil {
+			return nil, fmt.Errorf("parsing else if statement: %w", err)
+		}
+
+		return []Statement{ifStmt}, nil
+	}
+
+	// If the next token is an open brace, this is a simple else block
+
+	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+		return nil, fmt.Errorf("expected open brace after else: %w", err)
+	}
+
+	elseBlock, err := p.parseBlock()
+	if err != nil {
+		return nil, fmt.Errorf("parsing else block: %w", err)
+	}
+
+	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+		return nil, fmt.Errorf("expected close brace after else block: %w", err)
+	}
+
+	return elseBlock, nil
 }
