@@ -1374,3 +1374,135 @@ func Test_FunctionCall(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_WhileStatements(t *testing.T) {
+	t.Run("Simple while loop", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		while true {
+			foo = 10;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, While{
+			Cond: BooleanLiteral{Value: true},
+			Body: []Statement{
+				Assignment{
+					Name:  "foo",
+					Value: IntegerLiteral{Value: 10},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("While loop with condition", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		while 1 < 2 {
+			bar();
+			baz = 20;
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, While{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "<",
+			},
+			Body: []Statement{
+				Call{
+					Name: "bar",
+					Args: []Expression{},
+				},
+				Assignment{
+					Name:  "baz",
+					Value: IntegerLiteral{Value: 20},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("Function with while loop", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() {
+			while 1 < 2 {
+				bar();
+				baz = 20;
+			}
+		}
+		`)
+		p := Parser{tokens: lx}
+		fnDef, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "main",
+			ReturnType: types.Void,
+			Args:       []Argument{},
+			Body: []Statement{
+				While{
+					Cond: BinaryExpression{
+						Left:  IntegerLiteral{Value: 1},
+						Right: IntegerLiteral{Value: 2},
+						Op:    "<",
+					},
+					Body: []Statement{
+						Call{
+							Name: "bar",
+							Args: []Expression{},
+						},
+						Assignment{
+							Name:  "baz",
+							Value: IntegerLiteral{Value: 20},
+						},
+					},
+				},
+			},
+		}, fnDef)
+	})
+
+	t.Run("While loop with nested if", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		while 1 < 2 {
+			if true {
+				foo = 10;
+			} else {
+				foo = 20;
+			}
+		}
+		`)
+		p := Parser{tokens: lx}
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, While{
+			Cond: BinaryExpression{
+				Left:  IntegerLiteral{Value: 1},
+				Right: IntegerLiteral{Value: 2},
+				Op:    "<",
+			},
+			Body: []Statement{
+				If{
+					Cond: BooleanLiteral{Value: true},
+					Then: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 10},
+						},
+					},
+					Else: []Statement{
+						Assignment{
+							Name:  "foo",
+							Value: IntegerLiteral{Value: 20},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+}

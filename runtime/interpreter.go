@@ -107,6 +107,26 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 		}
 	case parser.Return:
 		return intr.evaluateExpression(s.Value)
+	case parser.While:
+		for {
+			cond := intr.evaluateExpression(s.Cond)
+			if cond.Type() != types.Bool { // TODO: Remove these runtime checks when the type validation pass is fully implemented
+				panic("while condition must be a boolean")
+			}
+			if !cond.(booleanVal).value {
+				break
+			}
+			for _, stmt := range s.Body {
+				if ret := intr.evaluateStatement(stmt); ret != nil {
+					return ret
+				}
+			}
+		}
+	case parser.Assignment:
+		val := intr.evaluateExpression(s.Value)
+		if err := intr.activeScope.SetVar(s.Name, val); err != nil {
+			panic(fmt.Sprintf("assignment error: %v", err))
+		}
 	default:
 		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
 	}

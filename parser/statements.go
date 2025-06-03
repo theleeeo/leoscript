@@ -23,6 +23,8 @@ func (p *Parser) ParseStatement() (Statement, error) {
 		return p.parseIf()
 	case token.Else:
 		return p.parseIf()
+	case token.While:
+		return p.parseWhile()
 	default:
 		return nil, fmt.Errorf("unexpected token type %T", tk)
 	}
@@ -286,4 +288,31 @@ func (p *Parser) parseElse() ([]Statement, error) {
 	}
 
 	return elseBlock, nil
+}
+
+func (p *Parser) parseWhile() (While, error) {
+	p.next() // Consume the while token
+
+	expr, err := p.ParseExpr()
+	if err != nil {
+		return While{}, fmt.Errorf("parsing while condition: %w", err)
+	}
+
+	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+		return While{}, fmt.Errorf("expected open brace after while condition: %w", err)
+	}
+
+	body, err := p.parseBlock()
+	if err != nil {
+		return While{}, fmt.Errorf("parsing while body: %w", err)
+	}
+
+	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+		return While{}, fmt.Errorf("expected close brace after while body: %w", err)
+	}
+
+	return While{
+		Cond: expr,
+		Body: body,
+	}, nil
 }

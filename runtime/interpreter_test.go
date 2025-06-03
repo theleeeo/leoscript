@@ -322,7 +322,9 @@ func Test_RunCompleteFile(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 11, resp.(numberVal).value)
 	})
+}
 
+func Test_Scope(t *testing.T) {
 	t.Run("global and local scope", func(t *testing.T) {
 		i := New()
 
@@ -357,6 +359,29 @@ func Test_RunCompleteFile(t *testing.T) {
 		resp, err := i.Run()
 		assert.NoError(t, err)
 		assert.Equal(t, 11, resp.(numberVal).value)
+	})
+
+	t.Run("nested scopes", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			var a = 10;
+
+			fn main() {
+				var b = 11;
+				return foo();
+			}
+
+			fn foo() int {
+				var c = 12;
+				return a + b + c;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 33, resp.(numberVal).value)
 	})
 }
 
@@ -436,4 +461,102 @@ func Test_IfStatements(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, resp.(numberVal).value)
 	})
+}
+
+func Test_VariableAssignment(t *testing.T) {
+	t.Run("Simple variable assignment", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				var a = 1;
+				a = a + 1;
+				return a;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 2, resp.(numberVal).value)
+	})
+
+	t.Run("Variable assignment with expression", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				var a = 1;
+				var b = 2;
+				a = a + b;
+				return a;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 3, resp.(numberVal).value)
+	})
+
+	t.Run("Assign variable to another variable", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				var a = 1;
+				var b = 2;
+				b = a;
+				return b;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, resp.(numberVal).value)
+	})
+}
+
+func Test_WhileStatements(t *testing.T) {
+	t.Run("Simple while loop", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				var a = 0;
+				while a < 5 {
+					a = a + 1;
+				}
+				return a;
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 5, resp.(numberVal).value)
+	})
+
+	// t.Run("While loop with break", func(t *testing.T) {
+	// 	i := New()
+
+	// 	err := i.LoadRaw(`
+	// 		fn main() int {
+	// 			var a = 0;
+	// 			while (a < 10) {
+	// 				if (a == 5) {
+	// 					break;
+	// 				}
+	// 				a = a + 1;
+	// 			}
+	// 			return a;
+	// 		}
+	// 	`)
+	// 	assert.NoError(t, err)
+
+	// 	resp, err := i.Run()
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 5, resp.(numberVal).value)
+	// })
 }

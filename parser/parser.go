@@ -124,7 +124,12 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 		}
 
 		// If the statement is an If statement, we don't expect a semicolon after it
-		if _, ok := stmt.(If); !ok {
+		switch stmt.(type) {
+		case If:
+			// Do nothing, no semicolon expected after an If statement
+		case While:
+			// Do nothing, no semicolon expected after a While statement
+		default:
 			if err := p.expectCurrent(token.SemicolonType); err != nil {
 				return nil, err
 			}

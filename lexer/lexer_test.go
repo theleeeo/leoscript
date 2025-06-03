@@ -299,4 +299,97 @@ func Test_ControlFlow(t *testing.T) {
 			token.CloseBrace{},
 		}, lx)
 	})
+
+	t.Run("If-else block", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if foo >= bar {
+			foo = 10;
+		} else {
+			bar = 20;
+		}
+		`)
+		assert.Equal(t, []token.Token{
+			token.If{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: ">="},
+			token.Identifier{Value: "bar"},
+			token.OpenBrace{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 10},
+			token.Semicolon{},
+			token.CloseBrace{},
+			token.Else{},
+			token.OpenBrace{},
+			token.Identifier{Value: "bar"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 20},
+			token.Semicolon{},
+			token.CloseBrace{},
+		}, lx)
+	})
+
+	t.Run("If-else if-else block", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if foo >= bar {
+			foo = 10;
+		} else if bar < baz {
+			bar = 20;
+		} else {
+			baz = 30;
+		}
+		`)
+		assert.Equal(t, []token.Token{
+			token.If{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: ">="},
+			token.Identifier{Value: "bar"},
+			token.OpenBrace{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 10},
+			token.Semicolon{},
+			token.CloseBrace{},
+			token.Else{},
+			token.If{},
+			token.Identifier{Value: "bar"},
+			token.Operator{Op: "<"},
+			token.Identifier{Value: "baz"},
+			token.OpenBrace{},
+			token.Identifier{Value: "bar"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 20},
+			token.Semicolon{},
+			token.CloseBrace{},
+			token.Else{},
+			token.OpenBrace{},
+			token.Identifier{Value: "baz"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 30},
+			token.Semicolon{},
+			token.CloseBrace{},
+		}, lx)
+	})
+
+	t.Run("While loop", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		while foo < bar {
+			foo = foo + 1;
+		}
+		`)
+		assert.Equal(t, []token.Token{
+			token.While{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "<"},
+			token.Identifier{Value: "bar"},
+			token.OpenBrace{},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "="},
+			token.Identifier{Value: "foo"},
+			token.Operator{Op: "+"},
+			token.Integer{Value: 1},
+			token.Semicolon{},
+			token.CloseBrace{},
+		}, lx)
+	})
 }

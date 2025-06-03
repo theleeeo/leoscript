@@ -40,3 +40,8 @@ type If struct {
 	Then []Statement
 	Else []Statement
 }
+
+type While struct {
+	Cond Expression
+	Body []Statement
+}

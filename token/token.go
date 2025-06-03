@@ -39,6 +39,7 @@ const (
 	// Control Flow
 	IfType
 	ElseType
+	WhileType
 )
 
 type EOF struct{}
@@ -209,4 +210,12 @@ func (Else) Type() TokenType { return ElseType }
 
 func (Else) String() string {
 	return "{else}"
+}
+
+type While struct{}
+
+func (While) Type() TokenType { return WhileType }
+
+func (While) String() string {
+	return "{while}"
 }
