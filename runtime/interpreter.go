@@ -127,6 +127,10 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 		if err := intr.activeScope.SetVar(s.Name, val); err != nil {
 			panic(fmt.Sprintf("assignment error: %v", err))
 		}
+	case parser.Call:
+		// A function call in a place where a statement is expected (e.g. not in an expression context)
+		// means that we are calling a function for its side effects, not its return value.
+		_ = intr.evaluateExpression(s)
 	default:
 		panic(fmt.Sprintf("unknown statement: %T, v=%+v", s, s))
 	}
@@ -207,15 +211,14 @@ func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 	case parser.VarIdentifier:
 		val, ok := intr.activeScope.GetVar(e.Name)
 		if !ok {
-			// TODO: Handle this better
-			panic(fmt.Sprintf("variable %s not defined", e.Name))
+			panic(fmt.Sprintf("variable %s not defined", e.Name)) // TODO: remove this once we have a validation pass
 		}
 		return val
 
 	case parser.Call:
 		fn, ok := intr.activeScope.GetFn(e.Name)
 		if !ok {
-			panic(fmt.Sprintf("function %s not defined", e.Name))
+			panic(fmt.Sprintf("function %s not defined", e.Name)) // TODO: remove this once we have a validation pass
 		}
 
 		var parameters []runtimeVal

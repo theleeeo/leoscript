@@ -560,3 +560,20 @@ func Test_WhileStatements(t *testing.T) {
 	// 	assert.Equal(t, 5, resp.(numberVal).value)
 	// })
 }
+
+func Test_FunctionCall(t *testing.T) {
+	t.Run("Unknown function call", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn main() int {
+				return foo();
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.ErrorContains(t, err, "function foo not defined")
+		assert.Nil(t, resp)
+	})
+}
