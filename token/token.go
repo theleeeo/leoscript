@@ -35,6 +35,7 @@ const (
 	FnDefType
 	ReturnType
 	CommaType
+	StubDefType
 
 	// Control Flow
 	IfType
@@ -45,7 +46,6 @@ const (
 type EOF struct{}
 
 func (EOF) Type() TokenType { return EOFType }
-
 func (EOF) String() string {
 	return "{EOF}"
 }
@@ -55,7 +55,6 @@ type Integer struct {
 }
 
 func (Integer) Type() TokenType { return IntegerType }
-
 func (i Integer) String() string {
 	return fmt.Sprintf("{int:%d}", i.Value)
 }
@@ -65,7 +64,6 @@ type Operator struct {
 }
 
 func (Operator) Type() TokenType { return OperatorType }
-
 func (t Operator) Priority() Priority {
 	switch t.Op {
 	case "=":
@@ -94,7 +92,6 @@ func (t Operator) String() string {
 type OpenParen struct{}
 
 func (OpenParen) Type() TokenType { return OpenParenType }
-
 func (OpenParen) String() string {
 	return "{(}"
 }
@@ -102,7 +99,6 @@ func (OpenParen) String() string {
 type CloseParen struct{}
 
 func (CloseParen) Type() TokenType { return CloseParenType }
-
 func (CloseParen) String() string {
 	return "{)}"
 }
@@ -110,7 +106,6 @@ func (CloseParen) String() string {
 type Semicolon struct{}
 
 func (Semicolon) Type() TokenType { return SemicolonType }
-
 func (Semicolon) String() string {
 	return "{;}"
 }
@@ -120,7 +115,6 @@ type Identifier struct {
 }
 
 func (Identifier) Type() TokenType { return IdentifierType }
-
 func (i Identifier) String() string {
 	return fmt.Sprintf("{id:%s}", i.Value)
 }
@@ -130,7 +124,6 @@ type Boolean struct {
 }
 
 func (Boolean) Type() TokenType { return BooleanType }
-
 func (b Boolean) String() string {
 	if b.Value {
 		return "{bool:true}"
@@ -141,7 +134,6 @@ func (b Boolean) String() string {
 type VarDecl struct{}
 
 func (VarDecl) Type() TokenType { return VarDeclType }
-
 func (VarDecl) String() string {
 	return "{var}"
 }
@@ -149,7 +141,6 @@ func (VarDecl) String() string {
 type FnDef struct{}
 
 func (FnDef) Type() TokenType { return FnDefType }
-
 func (FnDef) String() string {
 	return "{fn}"
 }
@@ -157,7 +148,6 @@ func (FnDef) String() string {
 type OpenBrace struct{}
 
 func (OpenBrace) Type() TokenType { return OpenBraceType }
-
 func (OpenBrace) String() string {
 	return "{{}"
 }
@@ -165,7 +155,6 @@ func (OpenBrace) String() string {
 type CloseBrace struct{}
 
 func (CloseBrace) Type() TokenType { return CloseBraceType }
-
 func (CloseBrace) String() string {
 	return "{}}"
 }
@@ -173,7 +162,6 @@ func (CloseBrace) String() string {
 type Return struct{}
 
 func (Return) Type() TokenType { return ReturnType }
-
 func (Return) String() string {
 	return "{return}"
 }
@@ -183,7 +171,6 @@ type Type struct {
 }
 
 func (Type) Type() TokenType { return TypeType }
-
 func (t Type) String() string {
 	return fmt.Sprintf("{type:%s}", t.Kind)
 }
@@ -191,7 +178,6 @@ func (t Type) String() string {
 type Comma struct{}
 
 func (Comma) Type() TokenType { return CommaType }
-
 func (Comma) String() string {
 	return "{,}"
 }
@@ -199,7 +185,6 @@ func (Comma) String() string {
 type If struct{}
 
 func (If) Type() TokenType { return IfType }
-
 func (If) String() string {
 	return "{if}"
 }
@@ -207,7 +192,6 @@ func (If) String() string {
 type Else struct{}
 
 func (Else) Type() TokenType { return ElseType }
-
 func (Else) String() string {
 	return "{else}"
 }
@@ -215,7 +199,13 @@ func (Else) String() string {
 type While struct{}
 
 func (While) Type() TokenType { return WhileType }
-
 func (While) String() string {
 	return "{while}"
+}
+
+type StubDef struct{}
+
+func (StubDef) Type() TokenType { return StubDefType }
+func (StubDef) String() string {
+	return "{stub}"
 }

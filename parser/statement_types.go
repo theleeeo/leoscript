@@ -45,3 +45,9 @@ type While struct {
 	Cond Expression
 	Body []Statement
 }
+
+type StubDef struct {
+	Name       string
+	ReturnType types.Type
+	Args       []Argument
+}

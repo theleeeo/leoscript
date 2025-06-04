@@ -1506,3 +1506,63 @@ func Test_WhileStatements(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_StubDef(t *testing.T) {
+	t.Run("Simple stubdef", func(t *testing.T) {
+		lx := lexer.MustTokenize("stub foo();")
+		p := Parser{tokens: lx}
+		prog, err := p.parseStubdef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StubDef{
+			ReturnType: types.Void,
+			Name:       "foo",
+			Args:       []Argument{},
+		}, prog)
+	})
+
+	t.Run("Stubdef with arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize("stub foo(int a, bool b);")
+		p := Parser{tokens: lx}
+		prog, err := p.parseStubdef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StubDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+				{Name: "b", Type: types.Bool},
+			},
+		}, prog)
+	})
+
+	t.Run("Stubdef with return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("stub foo() int;")
+		p := Parser{tokens: lx}
+		prog, err := p.parseStubdef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StubDef{
+			Name:       "foo",
+			ReturnType: types.Int,
+			Args:       []Argument{},
+		}, prog)
+	})
+
+	t.Run("Stubdef with arguments and return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("stub foo(int a, bool b) int;")
+		p := Parser{tokens: lx}
+		prog, err := p.parseStubdef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StubDef{
+			Name:       "foo",
+			ReturnType: types.Int,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+				{Name: "b", Type: types.Bool},
+			},
+		}, prog)
+	})
+}

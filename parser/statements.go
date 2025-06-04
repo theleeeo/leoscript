@@ -145,8 +145,10 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	var returnType types.Type
 
+	p.next() // Consume the close parenthesis
+
 	// Check if the function has a return type
-	if tk, ok := p.next().(token.Type); ok {
+	if tk, ok := p.peek().(token.Type); ok {
 		returnType = tk.Kind
 		p.next() // Consume the type token
 	} else {
@@ -314,5 +316,45 @@ func (p *Parser) parseWhile() (While, error) {
 	return While{
 		Cond: expr,
 		Body: body,
+	}, nil
+}
+
+func (p *Parser) parseStubdef() (StubDef, error) {
+	if err := p.expectNext(token.IdentifierType); err != nil {
+		return StubDef{}, fmt.Errorf("expected identifier after stub: %w", err)
+	}
+
+	identifier := p.peek().(token.Identifier)
+
+	if err := p.expectNext(token.OpenParenType); err != nil {
+		return StubDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
+	}
+
+	args, err := p.parseFnParams()
+	if err != nil {
+		return StubDef{}, fmt.Errorf("parsing arguments: %w", err)
+	}
+
+	var returnType types.Type
+
+	p.next() // Consume the close parenthesis
+
+	// Check if the stub has a return type
+	if tk, ok := p.peek().(token.Type); ok {
+		returnType = tk.Kind
+		p.next() // Consume the type token
+	} else {
+		// No return type is specified
+		returnType = types.Void
+	}
+
+	if err := p.expectCurrent(token.SemicolonType); err != nil {
+		return StubDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
+	}
+
+	return StubDef{
+		Name:       identifier.Value,
+		ReturnType: returnType,
+		Args:       args,
 	}, nil
 }

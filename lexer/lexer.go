@@ -18,10 +18,7 @@ var keywords = map[string]token.Token{
 	"if":     token.If{},
 	"else":   token.Else{},
 	"while":  token.While{},
-	// "for":      token.For{},
-	//"in": token.In{},
-	// "break":    token.Break{},
-	// "continue": token.Continue{},
+	"stub":   token.StubDef{},
 }
 
 type lexer struct {

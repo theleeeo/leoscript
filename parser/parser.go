@@ -77,6 +77,9 @@ type Program struct {
 
 	// Global function definitions
 	FnDefs []FnDef
+
+	// StubDefs for functions that are not defined in this file
+	StubDefs []StubDef
 }
 
 func (p *Parser) ParseFile() (Program, error) {
@@ -85,7 +88,7 @@ func (p *Parser) ParseFile() (Program, error) {
 		case token.VarDecl:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
-				return Program{}, err
+				return Program{}, fmt.Errorf("parsing variable declaration: %w", err)
 			}
 
 			p.Program.VarDecls = append(p.Program.VarDecls, varDecl)
@@ -93,10 +96,18 @@ func (p *Parser) ParseFile() (Program, error) {
 		case token.FnDef:
 			fnDef, err := p.parseFnDef()
 			if err != nil {
-				return Program{}, err
+				return Program{}, fmt.Errorf("parsing function definition: %w", err)
 			}
 
 			p.Program.FnDefs = append(p.Program.FnDefs, fnDef)
+
+		case token.StubDef:
+			stub, err := p.parseStubdef()
+			if err != nil {
+				return Program{}, fmt.Errorf("parsing stub definition: %w", err)
+			}
+
+			p.Program.StubDefs = append(p.Program.StubDefs, stub)
 
 		default:
 			return Program{}, fmt.Errorf("unexpected token type %T", tk)
