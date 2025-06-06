@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"leoscript/token"
-	"slices"
 )
 
 func NewParser(tokens []token.Token) *Parser {
@@ -112,12 +111,6 @@ func (p *Parser) ParseFile() (Program, error) {
 		default:
 			return Program{}, fmt.Errorf("unexpected token type %T", tk)
 		}
-	}
-
-	if !slices.ContainsFunc(p.Program.FnDefs, func(fnDef FnDef) bool {
-		return fnDef.Name == "main"
-	}) {
-		return Program{}, fmt.Errorf("no main function found in file")
 	}
 
 	return p.Program, nil

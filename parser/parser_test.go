@@ -1049,8 +1049,17 @@ func Test_ParseFile(t *testing.T) {
 		`)
 		p := Parser{tokens: lx}
 		prog, err := p.ParseFile()
-		assert.ErrorContains(t, err, "no main function")
-		assert.Empty(t, prog)
+		assert.NoError(t, err)
+		assert.EqualExportedValues(t, Program{
+			FnDefs: []FnDef{
+				{
+					Name:       "bar",
+					ReturnType: types.Void,
+					Args:       []Argument{},
+					Body:       []Statement{},
+				},
+			},
+		}, prog)
 	})
 }
 
