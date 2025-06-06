@@ -49,12 +49,7 @@ func resolveTypesOfStmt(stmt Statement, scope *Scope) Statement {
 		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
 		return stmt
 	case Return:
-		if stmt.Value == nil {
-			stmt.Value = VoidLiteral{}
-		} else {
-			stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
-		}
-
+		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
 		return stmt
 	case Assignment:
 		stmt.Value = resolveTypesOfExpr(stmt.Value, scope)
@@ -95,9 +90,9 @@ func resolveTypesOfExpr(expr Expression, scope *Scope) Expression {
 		expr.returnType = varIdent.Type
 
 		return expr
-	case IntegerLiteral:
-		return expr
-	case BooleanLiteral:
+	case IntegerLiteral,
+		BooleanLiteral,
+		VoidLiteral:
 		return expr
 	default:
 		panic(fmt.Sprintf("unhandled expression type: %T", expr))

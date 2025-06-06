@@ -35,7 +35,9 @@ func (p *Parser) parseReturn() (Statement, error) {
 
 	// An empty return statement
 	if _, ok := p.peek().(token.Semicolon); ok {
-		return Return{}, nil
+		return Return{
+			Value: VoidLiteral{},
+		}, nil
 	}
 
 	expr, err := p.ParseExpr()

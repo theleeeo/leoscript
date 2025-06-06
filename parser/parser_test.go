@@ -1019,7 +1019,7 @@ func Test_ParseFile(t *testing.T) {
 					ReturnType: types.Void,
 					Args:       []Argument{},
 					Body: []Statement{
-						Return{},
+						Return{Value: VoidLiteral{}},
 					},
 				},
 				{
