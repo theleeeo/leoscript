@@ -1,12 +1,16 @@
 package parser
 
 import (
+	"fmt"
 	"leoscript/token"
 	"leoscript/types"
+	"strconv"
+	"strings"
 )
 
 type Expression interface {
 	ReturnType() types.Type
+	String() string
 }
 
 type IntegerLiteral struct {
@@ -15,15 +19,30 @@ type IntegerLiteral struct {
 
 func (IntegerLiteral) ReturnType() types.Type { return types.Int }
 
+func (i IntegerLiteral) String() string {
+	return strconv.Itoa(i.Value)
+}
+
 type VoidLiteral struct{}
 
 func (VoidLiteral) ReturnType() types.Type { return types.Void }
+
+func (VoidLiteral) String() string {
+	return "void"
+}
 
 type BooleanLiteral struct {
 	Value bool
 }
 
 func (BooleanLiteral) ReturnType() types.Type { return types.Bool }
+
+func (b BooleanLiteral) String() string {
+	if b.Value {
+		return "true"
+	}
+	return "false"
+}
 
 type BinaryExpression struct {
 	Left     Expression
@@ -89,12 +108,20 @@ func (root BinaryExpression) PriorityMerge(binTk token.Operator, newExpr Express
 	return root
 }
 
+func (e BinaryExpression) String() string {
+	return fmt.Sprintf("(%s %s %s)", e.Left.String(), e.Op, e.Right.String())
+}
+
 type UnaryExpression struct {
 	Expression Expression
 	Op         string
 }
 
 func (e UnaryExpression) ReturnType() types.Type { return e.Expression.ReturnType() }
+
+func (e UnaryExpression) String() string {
+	return e.Op + e.Expression.String()
+}
 
 type VarIdentifier struct {
 	Name       string
@@ -109,6 +136,10 @@ func (i VarIdentifier) ReturnType() types.Type {
 	return i.returnType
 }
 
+func (i VarIdentifier) String() string {
+	return i.Name
+}
+
 type Call struct {
 	Name       string
 	Args       []Expression
@@ -121,4 +152,12 @@ func (c Call) ReturnType() types.Type {
 	}
 
 	return c.returnType
+}
+
+func (c Call) String() string {
+	args := make([]string, len(c.Args))
+	for i, arg := range c.Args {
+		args[i] = arg.String()
+	}
+	return fmt.Sprintf("%s(%s)", c.Name, strings.Join(args, ", "))
 }
