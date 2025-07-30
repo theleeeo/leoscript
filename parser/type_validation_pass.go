@@ -6,61 +6,23 @@ import (
 )
 
 func TypeValidationPass(program Program) (pg Program, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%v", r)
+	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
+		switch expr := node.(type) {
+		case VarDecl:
+			if expr.Value.ReturnType() != expr.Type {
+				panic(fmt.Sprintf("type mismatch: expected %s, got %s", expr.Type, expr.Value.ReturnType()))
+			}
+		case Return:
+			if expr.Value.ReturnType() != wctx.ParentFn.ReturnType {
+				panic(fmt.Sprintf("type mismatch: expected %s, got %s", wctx.ParentFn.ReturnType, expr.Value.ReturnType()))
+			}
+		case If:
+			if expr.Cond.ReturnType() != types.Bool {
+				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", expr.Cond.ReturnType()))
+			}
 		}
-	}()
+		return node
+	})
 
-	for i := range program.VarDecls {
-		verifyTypesOfStmt(program.VarDecls[i], parsingContext{})
-	}
-
-	for i := range program.FnDefs {
-		for j := range program.FnDefs[i].Body {
-			verifyTypesOfStmt(program.FnDefs[i].Body[j], parsingContext{
-				currentFn: &program.FnDefs[i],
-			})
-		}
-	}
-
-	return program, nil
+	return tw.WalkProgram(program)
 }
-
-type parsingContext struct {
-	currentFn *FnDef
-}
-
-func verifyTypesOfStmt(stmt Statement, pctx parsingContext) {
-	switch stmt := stmt.(type) {
-	case VarDecl:
-		if stmt.Value.ReturnType() != stmt.Type {
-			panic(fmt.Sprintf("type mismatch: expected %s, got %s", stmt.Type, stmt.Value.ReturnType()))
-		}
-	case Return:
-		if stmt.Value.ReturnType() != pctx.currentFn.ReturnType {
-			panic(fmt.Sprintf("type mismatch: expected %s, got %s", pctx.currentFn.ReturnType, stmt.Value.ReturnType()))
-		}
-	case If:
-		if stmt.Cond.ReturnType() != types.Bool {
-			panic(fmt.Sprintf("type mismatch: expected Bool, got %s", stmt.Cond.ReturnType()))
-		}
-	default:
-		panic(fmt.Sprintf("unhandled statement type %T", stmt))
-	}
-}
-
-// func verifyTypesOfExpr(expr Expression) {
-// 	switch expr := expr.(type) {
-// 	case VarIdentifier:
-// 		fmt.Println("Verifying variable identifier:", expr.Name)
-// 		// varIdent, ok := scope.ResolveVar(expr.Name)
-// 		// if !ok {
-// 		// 	panic(fmt.Sprint("unknown variable", "name", expr.Name))
-// 		// }
-
-// 		// expr.returnType = varIdent.Value.ReturnType()
-// 	default:
-// 		panic(fmt.Sprintf("unhandled expression type %T", expr))
-// 	}
-// }

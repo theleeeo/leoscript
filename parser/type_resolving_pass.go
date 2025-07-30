@@ -22,8 +22,6 @@ func TypeResolvingPass(program Program) (pg Program, err error) {
 
 			expr.returnType = varIdent.Type
 
-			fmt.Println("Resolved variable type:", expr.Name, "->", expr.returnType)
-
 			return expr
 		}
 		return node
