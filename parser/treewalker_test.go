@@ -9,7 +9,7 @@ import (
 )
 
 func Test_TreeWalking(t *testing.T) {
-	prog := Program{
+	prog := &Program{
 		VarDecls: []VarDecl{
 			{Name: "x", Value: BooleanLiteral{Value: true}},
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
@@ -34,13 +34,13 @@ func Test_TreeWalking(t *testing.T) {
 	}
 
 	tw := NewTreeWalker(callback)
-	pg, err := tw.WalkProgram(prog)
+	err := tw.WalkProgram(prog)
 	assert.NoError(t, err)
-	assert.Equal(t, len(pg.VarDecls), 2, "Expected 2 variable declarations")
+	assert.Equal(t, len(prog.VarDecls), 2, "Expected 2 variable declarations")
 }
 
 func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
-	prog := Program{
+	prog := &Program{
 		VarDecls: []VarDecl{
 			{Name: "x", Value: BooleanLiteral{Value: true}},
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
@@ -66,12 +66,12 @@ func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
 	}
 
 	tw := NewTreeWalker(callback)
-	pg, err := tw.WalkProgram(prog)
+	err := tw.WalkProgram(prog)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(pg.VarDecls), "Expected 1 variable declaration after removal")
-	assert.Equal(t, 1, len(pg.FnDefs), "Expected 1 function definition after removal")
-	assert.Equal(t, "y", pg.VarDecls[0].Name, "Expected remaining variable declaration to be 'y'")
-	assert.Equal(t, "bar", pg.FnDefs[0].Name, "Expected remaining function definition to be 'bar'")
+	assert.Equal(t, 1, len(prog.VarDecls), "Expected 1 variable declaration after removal")
+	assert.Equal(t, 1, len(prog.FnDefs), "Expected 1 function definition after removal")
+	assert.Equal(t, "y", prog.VarDecls[0].Name, "Expected remaining variable declaration to be 'y'")
+	assert.Equal(t, "bar", prog.FnDefs[0].Name, "Expected remaining function definition to be 'bar'")
 }
 
 // func Test_TreeWalking_Remove_2(t *testing.T) {
@@ -129,12 +129,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
-		assert.Equal(t, "b", pg.VarDecls[1].Name)
+		assert.Equal(t, 2, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
+		assert.Equal(t, "b", prog.VarDecls[1].Name)
 
 		assert.ElementsMatch(t, []string{"a", "b"}, visitedNodes)
 	})
@@ -164,12 +164,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.FnDefs))
-		assert.Equal(t, "foo", pg.FnDefs[0].Name)
-		assert.Equal(t, "bar", pg.FnDefs[1].Name)
+		assert.Equal(t, 2, len(prog.FnDefs))
+		assert.Equal(t, "foo", prog.FnDefs[0].Name)
+		assert.Equal(t, "bar", prog.FnDefs[1].Name)
 
 		assert.ElementsMatch(t, []string{"foo", "bar"}, visitedNodes)
 	})
@@ -199,12 +199,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.FnDefs))
-		assert.Equal(t, "add", pg.FnDefs[0].Name)
-		assert.Equal(t, "subtract", pg.FnDefs[1].Name)
+		assert.Equal(t, 2, len(prog.FnDefs))
+		assert.Equal(t, "add", prog.FnDefs[0].Name)
+		assert.Equal(t, "subtract", prog.FnDefs[1].Name)
 
 		assert.ElementsMatch(t, []string{"a", "b", "x", "y"}, visitedNodes)
 	})
@@ -239,13 +239,13 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 3, len(pg.FnDefs))
-		assert.Equal(t, "main", pg.FnDefs[0].Name)
-		assert.Equal(t, "add", pg.FnDefs[1].Name)
-		assert.Equal(t, "subtract", pg.FnDefs[2].Name)
+		assert.Equal(t, 3, len(prog.FnDefs))
+		assert.Equal(t, "main", prog.FnDefs[0].Name)
+		assert.Equal(t, "add", prog.FnDefs[1].Name)
+		assert.Equal(t, "subtract", prog.FnDefs[2].Name)
 
 		assert.ElementsMatch(t, []string{"add(5, 10)", "subtract(20, 5)"}, visitedNodes)
 	})
@@ -275,12 +275,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
-		assert.Equal(t, "b", pg.VarDecls[1].Name)
+		assert.Equal(t, 2, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
+		assert.Equal(t, "b", prog.VarDecls[1].Name)
 
 		assert.ElementsMatch(t, []string{"a", "b", "a", "b"}, visitedNodes)
 	})
@@ -314,12 +314,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
-		assert.Equal(t, "b", pg.VarDecls[1].Name)
+		assert.Equal(t, 2, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
+		assert.Equal(t, "b", prog.VarDecls[1].Name)
 
 		assert.ElementsMatch(t, []string{"if"}, visitedNodes)
 	})
@@ -347,11 +347,11 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 1, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
+		assert.Equal(t, 1, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
 
 		assert.ElementsMatch(t, []string{"return"}, visitedNodes)
 	})
@@ -379,11 +379,11 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 1, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
+		assert.Equal(t, 1, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
 
 		assert.ElementsMatch(t, []string{"a"}, visitedNodes)
 	})
@@ -413,12 +413,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 2, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
-		assert.Equal(t, "b", pg.VarDecls[1].Name)
+		assert.Equal(t, 2, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
+		assert.Equal(t, "b", prog.VarDecls[1].Name)
 
 		assert.ElementsMatch(t, []string{"((a + b) * (a - b))", "(a + b)", "(a - b)"}, visitedNodes)
 	})
@@ -447,11 +447,11 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 1, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
+		assert.Equal(t, 1, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
 
 		assert.ElementsMatch(t, []string{"-a"}, visitedNodes)
 	})
@@ -484,11 +484,11 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 1, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
+		assert.Equal(t, 1, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
 
 		assert.ElementsMatch(t, []string{"add(a, 5)"}, visitedNodes)
 	})
@@ -519,11 +519,11 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		}
 
 		tw := NewTreeWalker(callback)
-		pg, err := tw.WalkProgram(prog)
+		err = tw.WalkProgram(prog)
 		assert.NoError(t, err)
 
-		assert.Equal(t, 1, len(pg.VarDecls))
-		assert.Equal(t, "a", pg.VarDecls[0].Name)
+		assert.Equal(t, 1, len(prog.VarDecls))
+		assert.Equal(t, "a", prog.VarDecls[0].Name)
 
 		assert.ElementsMatch(t, []string{"while"}, visitedNodes)
 	})
@@ -547,7 +547,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 	// 	}
 
 	// 	treeWalker := NewTreeWalker2(callback)
-	// 	pg, err := tw.WalkProgram(prog)
+	// 	err := tw.WalkProgram(prog)
 	// 	assert.NoError(t, err)
 
 	// 	assert.Equal(t, 2, len(pg.StubDefs))

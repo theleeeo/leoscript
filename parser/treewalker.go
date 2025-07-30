@@ -32,7 +32,10 @@ func NewTreeWalker(callbackFn func(wctx WalkingContext, node Statement) Statemen
 }
 
 // WalkProgram walks through the program and applies the refCheck to each statement and expression.
-func (tw *TreeWalker) WalkProgram(program Program) (p Program, err error) {
+//
+// TODO: Do a check and avoid walking nil statements or expressions.
+// If a statement or expression is nil, it should be removed from the ast by some cleaning pass in the end.
+func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
@@ -86,7 +89,7 @@ func (tw *TreeWalker) WalkProgram(program Program) (p Program, err error) {
 		i++
 	}
 
-	return program, nil
+	return nil
 }
 
 func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Statement {
@@ -103,7 +106,6 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 			Name: rv.Name,
 			Type: rv.Type,
 		}))
-		stmt = rv
 	case Return:
 		rv.Value = tw.walkExpression(rv.Value, wctx)
 		stmt = rv

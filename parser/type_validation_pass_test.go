@@ -24,15 +24,15 @@ func Test_ValidateTypes(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.NoError(t, err)
 	})
 
@@ -54,15 +54,15 @@ func Test_ValidateTypes(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.NoError(t, err)
 	})
 }
@@ -75,13 +75,13 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 		p := Parser{tokens: lx}
 		varDef, err := p.parseVarDecl()
 		assert.NoError(t, err)
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{},
 		}
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.Error(t, err)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
@@ -97,13 +97,13 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 		p.next()
 		varDef2, err := p.parseVarDecl()
 		assert.NoError(t, err)
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef, varDef2},
 			FnDefs:   []FnDef{},
 		}
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.Error(t, err)
 		assert.Equal(t, "type mismatch: expected Int, got Bool", err.Error())
 	})
@@ -124,15 +124,15 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 
@@ -148,15 +148,15 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 
@@ -178,15 +178,15 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		_, err = TypeValidationPass(pg)
+		err = TypeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 }

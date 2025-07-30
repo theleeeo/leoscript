@@ -5,7 +5,7 @@ import (
 	"leoscript/types"
 )
 
-func TypeValidationPass(program Program) (pg Program, err error) {
+func TypeValidationPass(program *Program) (err error) {
 	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
 		switch expr := node.(type) {
 		case VarDecl:

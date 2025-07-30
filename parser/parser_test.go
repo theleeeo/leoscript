@@ -12,7 +12,7 @@ import (
 func Test_Expr_Parse(t *testing.T) {
 	t.Run("Single integer", func(t *testing.T) {
 		lx := lexer.MustTokenize("123;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -21,7 +21,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Single binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("123 + 456;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -34,7 +34,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Multiple binary expression, no order", func(t *testing.T) {
 		lx := lexer.MustTokenize("123 + 2 - 789 + 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -55,7 +55,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Multiple binary expression, order", func(t *testing.T) {
 		lx := lexer.MustTokenize("123 + 2 * 789 / 4 - 9 * 1 / 2;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -88,7 +88,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Negation of integer", func(t *testing.T) {
 		lx := lexer.MustTokenize("-123;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -100,7 +100,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Double negation of integer", func(t *testing.T) {
 		lx := lexer.MustTokenize("--123;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -114,7 +114,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Unneccessary plus sign", func(t *testing.T) {
 		lx := lexer.MustTokenize("+123 - 45;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -129,7 +129,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Negation of integer in operation", func(t *testing.T) {
 		lx := lexer.MustTokenize("4 + -123;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -145,7 +145,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Unneccessary parentheses on integer", func(t *testing.T) {
 		lx := lexer.MustTokenize("(123);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -154,7 +154,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Parentheses first in top-level with more afterwards", func(t *testing.T) {
 		lx := lexer.MustTokenize("(1 + 2) + 10;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -171,7 +171,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Parentheses first in top-level with more afterwards, order changed", func(t *testing.T) {
 		lx := lexer.MustTokenize("(1 + 2) * 10;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -188,7 +188,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Parentheses on binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("(123 + 456);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -201,7 +201,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Parentheses inside binary expression, not changing order", func(t *testing.T) {
 		lx := lexer.MustTokenize("(67 + 123) + 456 - 70;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -222,7 +222,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("Parentheses inside binary expression, changing order", func(t *testing.T) {
 		lx := lexer.MustTokenize("67 * (123 - 456) - 70;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -243,7 +243,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("another case", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + (2 + 10) * 5;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -264,7 +264,7 @@ func Test_Expr_Parse(t *testing.T) {
 
 	t.Run("unary with parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("-(1 + 2);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -388,7 +388,7 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 func Test_Expr_Boolean(t *testing.T) {
 	t.Run("Boolean expression, no change of order", func(t *testing.T) {
 		lx := lexer.MustTokenize("true && false || true;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -405,7 +405,7 @@ func Test_Expr_Boolean(t *testing.T) {
 
 	t.Run("Boolean expression, changing order", func(t *testing.T) {
 		lx := lexer.MustTokenize("true || false && true;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -422,7 +422,7 @@ func Test_Expr_Boolean(t *testing.T) {
 
 	t.Run("Mixed boolean and arithmetic expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("true && 1 + 2 || false;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -443,7 +443,7 @@ func Test_Expr_Boolean(t *testing.T) {
 
 	t.Run("Multiple boolean unary expressions", func(t *testing.T) {
 		lx := lexer.MustTokenize("!true && !!false;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -467,7 +467,7 @@ func Test_Expr_Boolean(t *testing.T) {
 func Test_Expr_Comparisons(t *testing.T) {
 	t.Run("simple equality", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 == 2;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -480,7 +480,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("equality with arithmetic", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + 2 == 3 * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -501,7 +501,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("equality with parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("(1 + 2) == 3 * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -522,7 +522,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("equality with parentheses, order changed", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + (2 == 3) * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -543,7 +543,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("simple comparison", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 < 2;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -556,7 +556,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("comparison with arithmetic", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + 2 <= 3 * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -577,7 +577,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("comparison with parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("(1 >= 2) < 3 * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -598,7 +598,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 
 	t.Run("comparison with parentheses, order changed", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + (2 < 3) * 4;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -621,7 +621,7 @@ func Test_Expr_Comparisons(t *testing.T) {
 func Test_Stmnt_VarDecl(t *testing.T) {
 	t.Run("Simple integer declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 123;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -634,7 +634,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Simple boolean declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("bool a = true;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -647,7 +647,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Integer declaration with expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 1 + 2 * 3;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -668,7 +668,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Type-free var declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("var a = 1 < 2 && true;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -688,7 +688,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 	t.Run("Identifier declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = abc;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -705,7 +705,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 
 		var a = foo();
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -785,7 +785,7 @@ func Test_ReturnTypes(t *testing.T) {
 func Test_Identifiers(t *testing.T) {
 	t.Run("Simple identifier in binary expr", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + a;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -800,7 +800,7 @@ func Test_Identifiers(t *testing.T) {
 func Test_FunctionDefinitions(t *testing.T) {
 	t.Run("Simple function definition", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() {}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -814,7 +814,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 	t.Run("Simple function definition with body", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() {return 1 + 2;}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -836,7 +836,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 	t.Run("Function definition with return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() int {}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -850,7 +850,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 	t.Run("Function definition with one argument", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a) {}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -866,7 +866,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 	t.Run("Function definition with arguments", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a, bool b, bool c) {}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -884,7 +884,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 	t.Run("Function definition with arguments and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(bool a, int b) bool {}")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -945,7 +945,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		prog, err := p.ParseFile()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, Program{
+		assert.EqualExportedValues(t, &Program{
 			VarDecls: []VarDecl{
 				{
 					Name:  "a",
@@ -994,11 +994,11 @@ func Test_ParseFile(t *testing.T) {
 			}
 		`)
 
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseFile()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, Program{
+		assert.EqualExportedValues(t, &Program{
 			FnDefs: []FnDef{
 				{
 					Name:       "foo",
@@ -1047,10 +1047,10 @@ func Test_ParseFile(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			fn bar() {}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseFile()
 		assert.NoError(t, err)
-		assert.EqualExportedValues(t, Program{
+		assert.EqualExportedValues(t, &Program{
 			FnDefs: []FnDef{
 				{
 					Name:       "bar",
@@ -1070,7 +1070,7 @@ func Test_If(t *testing.T) {
 			foo = 10;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1099,7 +1099,7 @@ func Test_If(t *testing.T) {
 			return 0;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -1127,7 +1127,7 @@ func Test_If(t *testing.T) {
 			foo = 20;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1162,7 +1162,7 @@ func Test_If(t *testing.T) {
 			foo = 30;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1214,7 +1214,7 @@ func Test_If(t *testing.T) {
 			foo = 40;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1282,7 +1282,7 @@ func Test_If(t *testing.T) {
 			foo = 30;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1326,7 +1326,7 @@ func Test_If(t *testing.T) {
 func Test_FunctionCall(t *testing.T) {
 	t.Run("Function call, 0 args", func(t *testing.T) {
 		lx := lexer.MustTokenize("foo();")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -1338,7 +1338,7 @@ func Test_FunctionCall(t *testing.T) {
 
 	t.Run("Function call, 1 arg", func(t *testing.T) {
 		lx := lexer.MustTokenize("foo(1);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 		assert.EqualExportedValues(t, Call{
@@ -1351,7 +1351,7 @@ func Test_FunctionCall(t *testing.T) {
 
 	t.Run("Function call, 2 args", func(t *testing.T) {
 		lx := lexer.MustTokenize("foo(1, 2);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -1366,7 +1366,7 @@ func Test_FunctionCall(t *testing.T) {
 
 	t.Run("Function call with mixed arguments", func(t *testing.T) {
 		lx := lexer.MustTokenize("foo(1 + 2, true);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseExpr()
 		assert.NoError(t, err)
 
@@ -1391,7 +1391,7 @@ func Test_WhileStatements(t *testing.T) {
 			foo = 10;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1413,7 +1413,7 @@ func Test_WhileStatements(t *testing.T) {
 			baz = 20;
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1445,7 +1445,7 @@ func Test_WhileStatements(t *testing.T) {
 			}
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
 		assert.NoError(t, err)
 
@@ -1485,7 +1485,7 @@ func Test_WhileStatements(t *testing.T) {
 			}
 		}
 		`)
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.ParseStatement()
 		assert.NoError(t, err)
 
@@ -1519,7 +1519,7 @@ func Test_WhileStatements(t *testing.T) {
 func Test_StubDef(t *testing.T) {
 	t.Run("Simple stubdef", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo();")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.parseStubdef()
 		assert.NoError(t, err)
 
@@ -1532,7 +1532,7 @@ func Test_StubDef(t *testing.T) {
 
 	t.Run("Stubdef with arguments", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b);")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.parseStubdef()
 		assert.NoError(t, err)
 
@@ -1548,7 +1548,7 @@ func Test_StubDef(t *testing.T) {
 
 	t.Run("Stubdef with return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo() int;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.parseStubdef()
 		assert.NoError(t, err)
 
@@ -1561,7 +1561,7 @@ func Test_StubDef(t *testing.T) {
 
 	t.Run("Stubdef with arguments and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b) int;")
-		p := Parser{tokens: lx}
+		p := NewParser(lx)
 		prog, err := p.parseStubdef()
 		assert.NoError(t, err)
 

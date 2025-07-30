@@ -27,12 +27,12 @@ func Test_ResolveTypes(t *testing.T) {
 
 		assert.Equal(t, types.Unspecified, fnDef.Body[0].(Return).Value.ReturnType())
 
-		pg := Program{
+		pg := &Program{
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
 		assert.Equal(t, types.Int, pg.FnDefs[0].Body[0].(Return).Value.ReturnType())
@@ -56,11 +56,11 @@ func Test_ResolveTypes(t *testing.T) {
 		fnDef2, err := p.parseFnDef()
 		assert.NoError(t, err)
 
-		pg := Program{
+		pg := &Program{
 			FnDefs: []FnDef{fnDef1, fnDef2},
 		}
 
-		pg, err = TypeResolvingPass(pg)
+		err = TypeResolvingPass(pg)
 		assert.NoError(t, err)
 
 		assert.Equal(t, types.Int, pg.FnDefs[1].Body[0].(Return).Value.ReturnType())

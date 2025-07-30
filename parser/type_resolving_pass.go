@@ -2,7 +2,7 @@ package parser
 
 import "fmt"
 
-func TypeResolvingPass(program Program) (pg Program, err error) {
+func TypeResolvingPass(program *Program) (err error) {
 	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
 		switch expr := node.(type) {
 		case Call:

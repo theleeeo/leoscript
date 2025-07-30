@@ -6,14 +6,18 @@ import (
 )
 
 func NewParser(tokens []token.Token) *Parser {
-	return &Parser{tokens: tokens, current: 0}
+	return &Parser{
+		tokens:  tokens,
+		current: 0,
+		program: &Program{},
+	}
 }
 
 type Parser struct {
 	tokens  []token.Token
 	current int
 
-	Program Program
+	program *Program
 }
 
 // next will consume the current token and return the next one
@@ -74,39 +78,39 @@ type Program struct {
 	StubDefs []StubDef
 }
 
-func (p *Parser) ParseFile() (Program, error) {
+func (p *Parser) ParseFile() (*Program, error) {
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
 		switch tk.(type) {
 		case token.VarDecl:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
-				return Program{}, fmt.Errorf("parsing variable declaration: %w", err)
+				return nil, fmt.Errorf("parsing variable declaration: %w", err)
 			}
 
-			p.Program.VarDecls = append(p.Program.VarDecls, varDecl)
+			p.program.VarDecls = append(p.program.VarDecls, varDecl)
 
 		case token.FnDef:
 			fnDef, err := p.parseFnDef()
 			if err != nil {
-				return Program{}, fmt.Errorf("parsing function definition: %w", err)
+				return nil, fmt.Errorf("parsing function definition: %w", err)
 			}
 
-			p.Program.FnDefs = append(p.Program.FnDefs, fnDef)
+			p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
 		case token.StubDef:
 			stub, err := p.parseStubdef()
 			if err != nil {
-				return Program{}, fmt.Errorf("parsing stub definition: %w", err)
+				return nil, fmt.Errorf("parsing stub definition: %w", err)
 			}
 
-			p.Program.StubDefs = append(p.Program.StubDefs, stub)
+			p.program.StubDefs = append(p.program.StubDefs, stub)
 
 		default:
-			return Program{}, fmt.Errorf("unexpected token type %T", tk)
+			return nil, fmt.Errorf("unexpected token type %T", tk)
 		}
 	}
 
-	return p.Program, nil
+	return p.program, nil
 }
 
 func (p *Parser) parseBlock() ([]Statement, error) {
