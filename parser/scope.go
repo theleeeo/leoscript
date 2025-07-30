@@ -34,6 +34,15 @@ func (s *Scope) RegisterFn(fnDef FnDef) error {
 	return nil
 }
 
+func (s *Scope) DeregisterFn(fnDef FnDef) error {
+	if _, ok := s.fnDefs[fnDef.Name]; !ok {
+		return fmt.Errorf("function %s not declared", fnDef.Name)
+	}
+
+	delete(s.fnDefs, fnDef.Name)
+	return nil
+}
+
 func (s *Scope) ResolveVar(name string) (VarDecl, bool) {
 	varDecl, ok := s.varDecls[name]
 	if !ok && s.parent != nil {
@@ -49,5 +58,14 @@ func (s *Scope) RegisterVar(varDecl VarDecl) error {
 	}
 
 	s.varDecls[varDecl.Name] = varDecl
+	return nil
+}
+
+func (s *Scope) DeregisterVar(varDecl VarDecl) error {
+	if _, ok := s.varDecls[varDecl.Name]; !ok {
+		return fmt.Errorf("variable %s not declared", varDecl.Name)
+	}
+
+	delete(s.varDecls, varDecl.Name)
 	return nil
 }

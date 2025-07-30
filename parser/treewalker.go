@@ -5,341 +5,190 @@ import (
 	"slices"
 )
 
-type WalkingContext struct {
-	Scope *Scope
-}
-
-type TreeWalkerCallbacks struct {
-	// Statement callbacks
-	VarDecl    func(wctx WalkingContext, varDecl *VarDecl) *VarDecl
-	FnDefs     func(wctx WalkingContext, fnDef *FnDef) *FnDef
-	StubDef    func(wctx WalkingContext, stubDef *StubDef) *StubDef
-	Return     func(wctx WalkingContext, ret *Return) *Return
-	Assignment func(wctx WalkingContext, assignment *Assignment) *Assignment
-	If         func(wctx WalkingContext, ifStmt *If) *If
-	While      func(wctx WalkingContext, whileStmt *While) *While
-
-	// Expression callbacks
-	VarIdentifier    func(wctx WalkingContext, varIdentifier *VarIdentifier) *VarIdentifier
-	Call             func(wctx WalkingContext, call *Call) *Call
-	BinaryExpression func(wctx WalkingContext, binaryExpr *BinaryExpression) *BinaryExpression
-	UnaryExpression  func(wctx WalkingContext, unaryExpr *UnaryExpression) *UnaryExpression
-}
-
-type TreeWalker struct {
-	Callbacks TreeWalkerCallbacks
-}
-
-// TODO: Remove
-type NoopCallback struct{}
-
-// Statement callbacks
-func (n NoopCallback) VarDecl(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
-	return varDecl
-}
-func (n NoopCallback) FnDefs(wctx WalkingContext, fnDef *FnDef) *FnDef {
-	return fnDef
-}
-func (n NoopCallback) StubDef(wctx WalkingContext, stubDef *StubDef) *StubDef {
-	return stubDef
-}
-func (n NoopCallback) Return(wctx WalkingContext, ret *Return) *Return {
-	return ret
-}
-func (n NoopCallback) Assignment(wctx WalkingContext, assignment *Assignment) *Assignment {
-	return assignment
-}
-func (n NoopCallback) If(wctx WalkingContext, ifStmt *If) *If {
-	return ifStmt
-}
-func (n NoopCallback) While(wctx WalkingContext, whileStmt *While) *While {
-	return whileStmt
-}
-
-// Expression callbacks
-func (n NoopCallback) VarIdentifier(wctx WalkingContext, varIdentifier *VarIdentifier) *VarIdentifier {
-	return varIdentifier
-}
-func (n NoopCallback) Call(wctx WalkingContext, call *Call) *Call {
-	return call
-}
-func (n NoopCallback) BinaryExpression(wctx WalkingContext, binaryExpr *BinaryExpression) *BinaryExpression {
-	return binaryExpr
-}
-func (n NoopCallback) UnaryExpression(wctx WalkingContext, unaryExpr *UnaryExpression) *UnaryExpression {
-	return unaryExpr
-}
-
-// TODO: Reevaluate the node if it has changed after the callback.
-// NewTreeWalker creates a new TreeWalker with the provided callbacks.
-func NewTreeWalker(callbacks TreeWalkerCallbacks) *TreeWalker {
-	if callbacks.VarDecl == nil {
-		callbacks.VarDecl = NoopCallback{}.VarDecl
-	}
-	if callbacks.FnDefs == nil {
-		callbacks.FnDefs = NoopCallback{}.FnDefs
-	}
-	if callbacks.StubDef == nil {
-		callbacks.StubDef = NoopCallback{}.StubDef
-	}
-	if callbacks.Return == nil {
-		callbacks.Return = NoopCallback{}.Return
-	}
-	if callbacks.Assignment == nil {
-		callbacks.Assignment = NoopCallback{}.Assignment
-	}
-	if callbacks.If == nil {
-		callbacks.If = NoopCallback{}.If
-	}
-	if callbacks.While == nil {
-		callbacks.While = NoopCallback{}.While
-	}
-	if callbacks.VarIdentifier == nil {
-		callbacks.VarIdentifier = NoopCallback{}.VarIdentifier
-	}
-	if callbacks.Call == nil {
-		callbacks.Call = NoopCallback{}.Call
-	}
-	if callbacks.BinaryExpression == nil {
-		callbacks.BinaryExpression = NoopCallback{}.BinaryExpression
-	}
-	if callbacks.UnaryExpression == nil {
-		callbacks.UnaryExpression = NoopCallback{}.UnaryExpression
-	}
-
-	return &TreeWalker{
-		Callbacks: callbacks,
-	}
-}
-
-// WalkProgram walks through the program and applies the refCheck to each statement and expression.
-func (tw *TreeWalker) WalkProgram(program Program) Program {
-	globalScope := NewScope(nil)
-
-	// Setup the global scope with the global variable declarations and function definitions.
-	for _, varDecl := range program.VarDecls {
-		globalScope.RegisterVar(varDecl)
-	}
-
-	for _, fn := range program.FnDefs {
-		globalScope.RegisterFn(fn)
-	}
-
-	i := 0
-	for i < len(program.VarDecls) {
-		retVal := tw.Callbacks.VarDecl(WalkingContext{
-			Scope: globalScope,
-		}, &program.VarDecls[i])
-		if retVal == nil {
-			// If the callback returns nil, we remove the variable declaration.
-			// Do not increment i, as the next element has shifted into the current index.
-			program.VarDecls = append(program.VarDecls[:i], program.VarDecls[i+1:]...)
-			continue
-		}
-
-		program.VarDecls[i] = *retVal
-
-		tw.walkExpression(&program.VarDecls[i].Value, WalkingContext{
-			Scope: globalScope,
-		})
-		i++
-
-	}
-
-	i = 0
-	for i < len(program.FnDefs) {
-		functionScope := NewScope(globalScope)
-
-		// Register function parameters in the function scope
-		for _, param := range program.FnDefs[i].Args {
-			functionScope.RegisterVar(VarDecl{
-				Name: param.Name,
-				Type: param.Type,
-			})
-		}
-
-		// Register the function in the global scope
-		retVal := tw.Callbacks.FnDefs(WalkingContext{
-			Scope: functionScope,
-		}, &program.FnDefs[i])
-		if retVal == nil {
-			// If the callback returns nil, we remove the function definition.
-			program.FnDefs = slices.Delete(program.FnDefs, i, i+1)
-			// Do not increment i, as the next element has shifted into the current index.
-			continue
-		}
-
-		program.FnDefs[i] = *retVal
-
-		// Walk the function body statements
-		for j := range program.FnDefs[i].Body {
-			tw.walkStatement(&program.FnDefs[i].Body[j], WalkingContext{
-				Scope: functionScope,
-			})
-		}
-		i++
-	}
-
-	return program
-}
-
+// TODO: You are better than this
 func must(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-// TODO: Handle a callback removing or altering statements and expressions.
-func (tw *TreeWalker) walkStatement(stmtRef *Statement, wctx WalkingContext) {
-	var retVal Statement
-	var nextExprs []*Expression
+type WalkingContext struct {
+	Scope *Scope
+}
 
-	switch stmt := (*stmtRef).(type) {
+type TreeWalker struct {
+	CallbackFn func(wctx WalkingContext, node Statement) Statement
+}
+
+// NewTreeWalker creates a new TreeWalker with the provided callbacks.
+func NewTreeWalker(callbackFn func(wctx WalkingContext, node Statement) Statement) *TreeWalker {
+	return &TreeWalker{
+		CallbackFn: callbackFn,
+	}
+}
+
+// WalkProgram walks through the program and applies the refCheck to each statement and expression.
+func (tw *TreeWalker) WalkProgram(program Program) (p Program, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
+	globalScope := NewScope(nil)
+
+	// Setup the global scope with the global variable declarations and function definitions.
+	for _, varDecl := range program.VarDecls {
+		must(globalScope.RegisterVar(varDecl))
+	}
+
+	for _, fn := range program.FnDefs {
+		must(globalScope.RegisterFn(fn))
+	}
+
+	i := 0
+	for i < len(program.VarDecls) {
+		must(globalScope.DeregisterVar(program.VarDecls[i]))
+
+		resp := tw.walkStatement(program.VarDecls[i], WalkingContext{
+			Scope: globalScope,
+		})
+		if resp == nil {
+			// If the callback returns nil, we remove the variable declaration.
+			program.VarDecls = slices.Delete(program.VarDecls, i, i+1)
+			continue
+		}
+		program.VarDecls[i] = resp.(VarDecl)
+
+		i++
+	}
+
+	i = 0
+	for i < len(program.FnDefs) {
+		must(globalScope.DeregisterFn(program.FnDefs[i]))
+
+		resp := tw.walkStatement(program.FnDefs[i], WalkingContext{
+			Scope: globalScope,
+		})
+		if resp == nil {
+			// If the callback returns nil, we remove the function definition.
+			program.FnDefs = slices.Delete(program.FnDefs, i, i+1)
+			continue
+		}
+		program.FnDefs[i] = resp.(FnDef)
+
+		i++
+	}
+
+	return program, nil
+}
+
+func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Statement {
+	switch rv := stmt.(type) {
 	case VarDecl:
-		rv := tw.Callbacks.VarDecl(wctx, &stmt)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
+		rv.Value = tw.walkExpression(rv.Value, wctx)
 
-		nextExprs = append(nextExprs, &rv.Value)
+		// If the statement is a variable declaration, we register it in the scope.
+		must(wctx.Scope.RegisterVar(rv))
+		stmt = rv
+	case Argument:
+		// If the statement is an argument, we register it in the scope.
+		must(wctx.Scope.RegisterVar(VarDecl{
+			Name: rv.Name,
+			Type: rv.Type,
+		}))
+		stmt = rv
 	case Return:
-		rv := tw.Callbacks.Return(wctx, &stmt)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &stmt.Value)
-
+		rv.Value = tw.walkExpression(rv.Value, wctx)
+		stmt = rv
 	case Assignment:
-		rv := tw.Callbacks.Assignment(wctx, &stmt)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &rv.Value)
-
+		rv.Value = tw.walkExpression(rv.Value, wctx)
+		stmt = rv
 	case Call:
-		rv := tw.Callbacks.Call(wctx, &stmt)
-		if rv == nil {
-			break
+		for i := range rv.Args {
+			fmt.Printf("Walking argument %d: %T\n", i, rv.Args[i])
+			rv.Args[i] = tw.walkExpression(rv.Args[i], wctx)
 		}
-		retVal = *rv
-
-		for i := range stmt.Args {
-			nextExprs = append(nextExprs, &rv.Args[i])
-		}
-
+		stmt = rv
 	case If:
-		rv := tw.Callbacks.If(wctx, &stmt)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &rv.Cond)
+		rv.Cond = tw.walkExpression(rv.Cond, wctx)
 		for i := range rv.Then {
-			tw.walkStatement(&rv.Then[i], wctx)
+			rv.Then[i] = tw.walkStatement(rv.Then[i], wctx)
 		}
 		for i := range rv.Else {
-			tw.walkStatement(&rv.Else[i], wctx)
+			rv.Else[i] = tw.walkStatement(rv.Else[i], wctx)
 		}
+		stmt = rv
 	case While:
-		rv := tw.Callbacks.While(wctx, &stmt)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &rv.Cond)
+		rv.Cond = tw.walkExpression(rv.Cond, wctx)
 		for i := range rv.Body {
-			tw.walkStatement(&rv.Body[i], wctx)
+			rv.Body[i] = tw.walkStatement(rv.Body[i], wctx)
 		}
-	default:
-		panic(fmt.Errorf("unhandled statement type: %T", stmt))
-	}
+		stmt = rv
+	case FnDef:
+		// Walk the function body statements
+		functionScope := NewScope(wctx.Scope)
 
-	if retVal == nil {
-		return
-	}
+		i := 0
+		for i < len(rv.Args) {
+			// walk the args
+			retVal := tw.walkStatement(rv.Args[i], WalkingContext{
+				Scope: functionScope,
+			})
+			if retVal == nil {
+				// If the callback returns nil, we remove the argument.
+				rv.Args = slices.Delete(rv.Args, i, i+1)
+				continue
+			}
+			rv.Args[i] = retVal.(Argument)
 
-	*stmtRef = retVal
+			i++
+		}
 
-	if varDecl, ok := (*stmtRef).(VarDecl); ok {
-		// If the statement is a variable declaration, we register it in the scope.
-		must(wctx.Scope.RegisterVar(varDecl))
-	} else if fnDef, ok := (*stmtRef).(FnDef); ok {
+		for i := range rv.Body {
+			rv.Body[i] = tw.walkStatement(rv.Body[i], WalkingContext{
+				Scope: functionScope,
+			})
+		}
+
 		// If the statement is a function definition, we register it in the scope.
-		must(wctx.Scope.RegisterFn(fnDef))
-	} else if stubDef, ok := (*stmtRef).(StubDef); ok {
-		_ = stubDef // TODO
-
+		must(wctx.Scope.RegisterFn(rv))
+		stmt = rv
+	case StubDef:
 		// If the statement is a stub definition, we register it in the scope.
 		// must(wctx.Scope.RegisterStub(stubDef))
 	}
 
-	for _, exprRef := range nextExprs {
-		tw.walkExpression(exprRef, wctx)
-	}
+	return tw.CallbackFn(wctx, stmt)
 }
 
-func (tw *TreeWalker) walkExpression(exprRef *Expression, wctx WalkingContext) {
-	var retVal Expression
-	var nextExprs []*Expression
-
-	switch expr := (*exprRef).(type) {
-	case VarIdentifier:
-		rv := tw.Callbacks.VarIdentifier(wctx, &expr)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
+func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expression {
+	switch rv := (expr).(type) {
 	case Call:
-		rv := tw.Callbacks.Call(wctx, &expr)
-		if rv == nil {
-			break
+		for i := range rv.Args {
+			rv.Args[i] = tw.walkExpression(rv.Args[i], wctx)
 		}
-		retVal = *rv
-
-		for i := range expr.Args {
-			nextExprs = append(nextExprs, &rv.Args[i])
-		}
-
+		expr = rv
 	case BinaryExpression:
-		rv := tw.Callbacks.BinaryExpression(wctx, &expr)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &rv.Left, &rv.Right)
+		rv.Left = tw.walkExpression(rv.Left, wctx)
+		rv.Right = tw.walkExpression(rv.Right, wctx)
+		expr = rv
 	case UnaryExpression:
-		rv := tw.Callbacks.UnaryExpression(wctx, &expr)
-		if rv == nil {
-			break
-		}
-		retVal = *rv
-
-		nextExprs = append(nextExprs, &rv.Expression)
-	case IntegerLiteral, BooleanLiteral, VoidLiteral:
-		// No need to walk literals. (Maybe exept for strings in the future)
+		rv.Expression = tw.walkExpression(rv.Expression, wctx)
+		expr = rv
+	case IntegerLiteral,
+		BooleanLiteral,
+		VoidLiteral,
+		VarIdentifier:
+		// Nothing to walk
 	default:
-		panic(fmt.Errorf("unhandled expression type: %T", expr))
+		panic(fmt.Errorf("unhandled expression type: %T", rv))
 	}
 
-	if retVal == nil {
-		*exprRef = nil
-		return
+	retVal := tw.CallbackFn(wctx, expr)
+	if newExpr, ok := retVal.(Expression); ok {
+		return newExpr
 	}
 
-	*exprRef = retVal
-
-	for _, nextExprRef := range nextExprs {
-		if nextExprRef != nil {
-			tw.walkExpression(nextExprRef, wctx)
-		}
-	}
+	panic(fmt.Errorf("non-expression returned when walking expression: %T", retVal))
 }

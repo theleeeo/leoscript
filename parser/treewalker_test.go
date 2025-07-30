@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"leoscript/lexer"
 	"leoscript/types"
 	"testing"
@@ -10,7 +9,7 @@ import (
 )
 
 func Test_TreeWalking(t *testing.T) {
-	program := Program{
+	prog := Program{
 		VarDecls: []VarDecl{
 			{Name: "x", Value: BooleanLiteral{Value: true}},
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
@@ -30,28 +29,18 @@ func Test_TreeWalking(t *testing.T) {
 		},
 	}
 
-	callbacks := TreeWalkerCallbacks{
-		VarDecl: func(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
-			fmt.Println("Visiting variable declaration:", varDecl.Name)
-			return varDecl
-		},
-		FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
-			fmt.Println("Visiting function defintion:", fnDef.Name)
-			return fnDef
-		},
-		Call: func(wctx WalkingContext, call *Call) *Call {
-			fmt.Println("Visiting function call:", call.Name)
-			return call
-		},
+	callback := func(wctx WalkingContext, stmt Statement) Statement {
+		return stmt
 	}
 
-	treeWalker := NewTreeWalker(callbacks)
-	pg := treeWalker.WalkProgram(program)
+	tw := NewTreeWalker(callback)
+	pg, err := tw.WalkProgram(prog)
+	assert.NoError(t, err)
 	assert.Equal(t, len(pg.VarDecls), 2, "Expected 2 variable declarations")
 }
 
 func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
-	program := Program{
+	prog := Program{
 		VarDecls: []VarDecl{
 			{Name: "x", Value: BooleanLiteral{Value: true}},
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
@@ -62,68 +51,62 @@ func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
 		},
 	}
 
-	callbacks := TreeWalkerCallbacks{
-		VarDecl: func(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
-			if varDecl.Name == "x" {
-				fmt.Println("Removing variable declaration:", varDecl.Name)
-				return nil // Return nil to remove it
+	callback := func(wctx WalkingContext, stmt Statement) Statement {
+		switch s := stmt.(type) {
+		case VarDecl:
+			if s.Name == "x" {
+				return nil // Remove it
 			}
-			return varDecl
-		},
-		FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
-			if fnDef.Name == "foo" {
-				fmt.Println("Removing function definition:", fnDef.Name)
-				return nil // Return nil to remove it
+		case FnDef:
+			if s.Name == "foo" {
+				return nil // Remove it
 			}
-			return fnDef
-		},
+		}
+		return stmt
 	}
 
-	treeWalker := NewTreeWalker(callbacks)
-	pg := treeWalker.WalkProgram(program)
+	tw := NewTreeWalker(callback)
+	pg, err := tw.WalkProgram(prog)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pg.VarDecls), "Expected 1 variable declaration after removal")
 	assert.Equal(t, 1, len(pg.FnDefs), "Expected 1 function definition after removal")
-	assert.Equal(t, pg.VarDecls[0].Name, "y", "Expected remaining variable declaration to be 'y'")
-	assert.Equal(t, pg.FnDefs[0].Name, "bar", "Expected remaining function definition to be 'bar'")
+	assert.Equal(t, "y", pg.VarDecls[0].Name, "Expected remaining variable declaration to be 'y'")
+	assert.Equal(t, "bar", pg.FnDefs[0].Name, "Expected remaining function definition to be 'bar'")
 }
 
-func Test_TreeWalking_Remove_2(t *testing.T) {
-	lx := lexer.MustTokenize(`
-			var a = 10;
+// func Test_TreeWalking_Remove_2(t *testing.T) {
+// 	lx := lexer.MustTokenize(`
+// 			var a = 10;
 
-			fn main() {
-				var b = 11;
-				return a + b;
-			}
-		`)
+// 			fn main() {
+// 				var b = 11;
+// 				return a + b;
+// 			}
+// 		`)
 
-	p := NewParser(lx)
-	prog, err := p.ParseFile()
-	assert.NoError(t, err)
+// 	p := NewParser(lx)
+// 	prog, err := p.ParseFile()
+// 	assert.NoError(t, err)
 
-	callbacks := TreeWalkerCallbacks{
-		VarDecl: func(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
-			fmt.Println("Visiting variable declaration:", varDecl.Name)
-			return varDecl
-		},
-		FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
-			fmt.Println("Visiting function definition:", fnDef.Name)
-			return fnDef
-		},
-		VarIdentifier: func(wctx WalkingContext, varIdentifier *VarIdentifier) *VarIdentifier {
-			fmt.Println("Visiting variable identifier:", varIdentifier.Name)
-			// if varIdentifier.Name == "a" {
-			// 	fmt.Println("Removing variable identifier:", varIdentifier.Name)
-			// 	return nil // Return nil to remove it
-			// }
-			return varIdentifier
-		},
-	}
+// 	callbacks := TreeWalkerCallbacks{
+// 		VarDecl: func(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
+// 			return varDecl
+// 		},
+// 		FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
+// 			return fnDef
+// 		},
+// 		VarIdentifier: func(wctx WalkingContext, varIdentifier *VarIdentifier) *VarIdentifier {
+// 			// if varIdentifier.Name == "a" {
+// 			// 	return nil // Return nil to remove it
+// 			// }
+// 			return varIdentifier
+// 		},
+// 	}
 
-	treeWalker := NewTreeWalker(callbacks)
-	_ = treeWalker.WalkProgram(prog)
+// 	treeWalker := NewTreeWalker2(callback)
+// 	_ = treeWalker.WalkProgram(prog)
 
-}
+// }
 
 func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 	t.Run("global variable declarations", func(t *testing.T) {
@@ -137,15 +120,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			VarDecl: func(wctx WalkingContext, varDecl *VarDecl) *VarDecl {
-				visitedNodes = append(visitedNodes, varDecl.Name)
-				return varDecl
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case VarDecl:
+				visitedNodes = append(visitedNodes, n.Name)
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -170,15 +155,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
-				visitedNodes = append(visitedNodes, fnDef.Name)
-				return fnDef
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case FnDef:
+				visitedNodes = append(visitedNodes, n.Name)
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.FnDefs))
 		assert.Equal(t, "foo", pg.FnDefs[0].Name)
@@ -203,17 +190,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			FnDefs: func(wctx WalkingContext, fnDef *FnDef) *FnDef {
-				for _, arg := range fnDef.Args {
-					visitedNodes = append(visitedNodes, arg.Name)
-				}
-				return fnDef
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case Argument:
+				visitedNodes = append(visitedNodes, n.Name)
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.FnDefs))
 		assert.Equal(t, "add", pg.FnDefs[0].Name)
@@ -243,22 +230,24 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			Call: func(wctx WalkingContext, call *Call) *Call {
-				visitedNodes = append(visitedNodes, call.Name)
-				return call
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case Call:
+				visitedNodes = append(visitedNodes, n.String())
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 3, len(pg.FnDefs))
 		assert.Equal(t, "main", pg.FnDefs[0].Name)
 		assert.Equal(t, "add", pg.FnDefs[1].Name)
 		assert.Equal(t, "subtract", pg.FnDefs[2].Name)
 
-		assert.ElementsMatch(t, []string{"add", "subtract"}, visitedNodes)
+		assert.ElementsMatch(t, []string{"add(5, 10)", "subtract(20, 5)"}, visitedNodes)
 	})
 
 	t.Run("variable identifiers", func(t *testing.T) {
@@ -277,15 +266,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			VarIdentifier: func(wctx WalkingContext, varIdentifier *VarIdentifier) *VarIdentifier {
-				visitedNodes = append(visitedNodes, varIdentifier.Name)
-				return varIdentifier
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case VarIdentifier:
+				visitedNodes = append(visitedNodes, n.Name)
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -313,15 +304,18 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			If: func(wctx WalkingContext, ifStmt *If) *If {
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case If:
 				visitedNodes = append(visitedNodes, "if")
-				return ifStmt
-			},
+				return n
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -344,15 +338,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			Return: func(wctx WalkingContext, returnStmt *Return) *Return {
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch node.(type) {
+			case Return:
 				visitedNodes = append(visitedNodes, "return")
-				return returnStmt
-			},
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 1, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -374,15 +370,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			Assignment: func(wctx WalkingContext, assignment *Assignment) *Assignment {
-				visitedNodes = append(visitedNodes, assignment.Name)
-				return assignment
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case Assignment:
+				visitedNodes = append(visitedNodes, n.Name)
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 1, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -406,15 +404,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			BinaryExpression: func(wctx WalkingContext, binaryExpr *BinaryExpression) *BinaryExpression {
-				visitedNodes = append(visitedNodes, binaryExpr.String())
-				return binaryExpr
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case BinaryExpression:
+				visitedNodes = append(visitedNodes, n.String())
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 2, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -438,15 +438,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			UnaryExpression: func(wctx WalkingContext, unaryExpr *UnaryExpression) *UnaryExpression {
-				visitedNodes = append(visitedNodes, unaryExpr.String())
-				return unaryExpr
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case UnaryExpression:
+				visitedNodes = append(visitedNodes, n.String())
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 1, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -473,15 +475,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			Call: func(wctx WalkingContext, call *Call) *Call {
-				visitedNodes = append(visitedNodes, call.String())
-				return call
-			},
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch n := node.(type) {
+			case Call:
+				visitedNodes = append(visitedNodes, n.String())
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 1, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -506,15 +510,17 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.NoError(t, err)
 
 		var visitedNodes []string
-		callbacks := TreeWalkerCallbacks{
-			While: func(wctx WalkingContext, whileStmt *While) *While {
+		callback := func(wctx WalkingContext, node Statement) Statement {
+			switch node.(type) {
+			case While:
 				visitedNodes = append(visitedNodes, "while")
-				return whileStmt
-			},
+			}
+			return node
 		}
 
-		treeWalker := NewTreeWalker(callbacks)
-		pg := treeWalker.WalkProgram(prog)
+		tw := NewTreeWalker(callback)
+		pg, err := tw.WalkProgram(prog)
+		assert.NoError(t, err)
 
 		assert.Equal(t, 1, len(pg.VarDecls))
 		assert.Equal(t, "a", pg.VarDecls[0].Name)
@@ -540,8 +546,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 	// 		},
 	// 	}
 
-	// 	treeWalker := NewTreeWalker(callbacks)
-	// 	pg := treeWalker.WalkProgram(prog)
+	// 	treeWalker := NewTreeWalker2(callback)
+	// 	pg, err := tw.WalkProgram(prog)
+	// 	assert.NoError(t, err)
 
 	// 	assert.Equal(t, 2, len(pg.StubDefs))
 	// 	assert.Equal(t, "foo", pg.StubDefs[0].Name)

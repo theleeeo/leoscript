@@ -63,13 +63,6 @@ func (p *Parser) peekNext() token.Token {
 	return p.tokens[p.current+1]
 }
 
-// putBack will move the current token back one step
-// this is useful when we want to "undo" a token consumption
-// func (p *Parser) putBack() {
-// 	// fmt.Println("putting back token", p.tokens[p.current].Type())
-// 	p.current--
-// }
-
 type Program struct {
 	// Global variable declarations
 	VarDecls []VarDecl
@@ -129,10 +122,8 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 
 		// If the statement is an If statement, we don't expect a semicolon after it
 		switch stmt.(type) {
-		case If:
-			// Do nothing, no semicolon expected after an If statement
-		case While:
-			// Do nothing, no semicolon expected after a While statement
+		case If, While:
+			// Do nothing, no semicolon expected
 		default:
 			if err := p.expectCurrent(token.SemicolonType); err != nil {
 				return nil, err
