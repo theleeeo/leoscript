@@ -14,6 +14,10 @@ func must(err error) {
 
 type WalkingContext struct {
 	Scope *Scope
+
+	// The function whose body we are currently walking.
+	// Will be nil if we are not in a function body (only in the global scope).
+	ParentFn *FnDef
 }
 
 type TreeWalker struct {
@@ -51,7 +55,8 @@ func (tw *TreeWalker) WalkProgram(program Program) (p Program, err error) {
 		must(globalScope.DeregisterVar(program.VarDecls[i]))
 
 		resp := tw.walkStatement(program.VarDecls[i], WalkingContext{
-			Scope: globalScope,
+			Scope:    globalScope,
+			ParentFn: nil, // No parent function in the global scope
 		})
 		if resp == nil {
 			// If the callback returns nil, we remove the variable declaration.
@@ -68,7 +73,8 @@ func (tw *TreeWalker) WalkProgram(program Program) (p Program, err error) {
 		must(globalScope.DeregisterFn(program.FnDefs[i]))
 
 		resp := tw.walkStatement(program.FnDefs[i], WalkingContext{
-			Scope: globalScope,
+			Scope:    globalScope,
+			ParentFn: &program.FnDefs[i],
 		})
 		if resp == nil {
 			// If the callback returns nil, we remove the function definition.
@@ -133,7 +139,8 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		for i < len(rv.Args) {
 			// walk the args
 			retVal := tw.walkStatement(rv.Args[i], WalkingContext{
-				Scope: functionScope,
+				Scope:    functionScope,
+				ParentFn: &rv, // Set the parent function to the current function
 			})
 			if retVal == nil {
 				// If the callback returns nil, we remove the argument.
@@ -147,7 +154,8 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 
 		for i := range rv.Body {
 			rv.Body[i] = tw.walkStatement(rv.Body[i], WalkingContext{
-				Scope: functionScope,
+				Scope:    functionScope,
+				ParentFn: &rv, // Set the parent function to the current function
 			})
 		}
 
