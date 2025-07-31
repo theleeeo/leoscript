@@ -30,6 +30,10 @@ func (intr *Interpreter) LoadRaw(src string) error {
 		intr.evaluateStatement(stmt)
 	}
 
+	for _, stmt := range program.StubDefs {
+		intr.evaluateStatement(stmt)
+	}
+
 	return nil
 }
 
@@ -63,12 +67,50 @@ func New() *Interpreter {
 	return &Interpreter{
 		globalScope: globalScope,
 		activeScope: globalScope,
+		stubs:       make(map[string]func(args []runtimeVal) runtimeVal),
 	}
 }
 
 type Interpreter struct {
 	globalScope *scope
 	activeScope *scope
+	stubs       map[string]func(args []runtimeVal) runtimeVal
+}
+
+func (intr *Interpreter) RegisterStub(name string, fn func(args []any) any) {
+	if _, exists := intr.stubs[name]; exists {
+		panic(fmt.Sprintf("stub function %s already registered", name))
+	}
+
+	intr.stubs[name] = func(args []runtimeVal) runtimeVal {
+		// Convert runtimeVal to any for the stub function
+		convertedArgs := make([]any, len(args))
+		for i, arg := range args {
+			switch v := arg.(type) {
+			case numberVal:
+				convertedArgs[i] = v.value
+			case booleanVal:
+				convertedArgs[i] = v.value
+			default:
+				panic(fmt.Sprintf("unsupported argument type for stub function: %T", v))
+			}
+		}
+
+		result := fn(convertedArgs)
+		if result == nil {
+			return nil
+		}
+
+		// Convert the result back to runtimeVal
+		switch v := result.(type) {
+		case int:
+			return numberVal{value: v}
+		case bool:
+			return booleanVal{value: v}
+		default:
+			panic(fmt.Sprintf("unsupported return type from stub function: %T", v))
+		}
+	}
 }
 
 // Evaluates a statement. If the statement contains a return, it es evaluates and its value is returned from this function.
@@ -226,6 +268,10 @@ func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 			parameters = append(parameters, intr.evaluateExpression(arg))
 		}
 
+		if fn.Stub {
+			return intr.callStub(fn, parameters)
+		}
+
 		return intr.callFunction(intr.activeScope, fn, parameters)
 
 	default:
@@ -260,4 +306,15 @@ func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, param
 	intr.activeScope = parentScope
 
 	return nil
+}
+func (intr *Interpreter) callStub(fn parser.FnDef, parameters []runtimeVal) runtimeVal {
+	if len(parameters) != len(fn.Args) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Args), len(parameters)))
+	}
+
+	if stubFunc, ok := intr.stubs[fn.Name]; ok {
+		return stubFunc(parameters)
+	}
+
+	panic(fmt.Sprintf("stub function %s not registered", fn.Name))
 }

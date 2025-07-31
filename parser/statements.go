@@ -321,20 +321,20 @@ func (p *Parser) parseWhile() (While, error) {
 	}, nil
 }
 
-func (p *Parser) parseStubdef() (StubDef, error) {
+func (p *Parser) parseStubdef() (FnDef, error) {
 	if err := p.expectNext(token.IdentifierType); err != nil {
-		return StubDef{}, fmt.Errorf("expected identifier after stub: %w", err)
+		return FnDef{}, fmt.Errorf("expected identifier after stub: %w", err)
 	}
 
 	identifier := p.peek().(token.Identifier)
 
 	if err := p.expectNext(token.OpenParenType); err != nil {
-		return StubDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
+		return FnDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
 	}
 
 	args, err := p.parseFnParams()
 	if err != nil {
-		return StubDef{}, fmt.Errorf("parsing arguments: %w", err)
+		return FnDef{}, fmt.Errorf("parsing arguments: %w", err)
 	}
 
 	var returnType types.Type
@@ -351,12 +351,14 @@ func (p *Parser) parseStubdef() (StubDef, error) {
 	}
 
 	if err := p.expectCurrent(token.SemicolonType); err != nil {
-		return StubDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
+		return FnDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
 	}
 
-	return StubDef{
+	return FnDef{
 		Name:       identifier.Value,
 		ReturnType: returnType,
 		Args:       args,
+		Body:       nil,
+		Stub:       true,
 	}, nil
 }

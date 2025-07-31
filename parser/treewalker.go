@@ -149,7 +149,7 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 				rv.Args = slices.Delete(rv.Args, i, i+1)
 				continue
 			}
-			rv.Args[i] = retVal.(Argument)
+			rv.Args[i] = retVal.(Argument) // TODO: Check the type
 
 			i++
 		}
@@ -164,9 +164,6 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		// If the statement is a function definition, we register it in the scope.
 		must(wctx.Scope.RegisterFn(rv))
 		stmt = rv
-	case StubDef:
-		// If the statement is a stub definition, we register it in the scope.
-		// must(wctx.Scope.RegisterStub(stubDef))
 	}
 
 	return tw.CallbackFn(wctx, stmt)

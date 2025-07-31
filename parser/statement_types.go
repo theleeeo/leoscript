@@ -19,6 +19,10 @@ type FnDef struct {
 	ReturnType types.Type
 	Args       []Argument
 	Body       []Statement
+
+	// IsStub indicates if this function is a stub, meaning it has no body and is only declared.
+	// Its body will be supplied from an external source.
+	Stub bool
 }
 
 type Return struct {
@@ -44,10 +48,4 @@ type If struct {
 type While struct {
 	Cond Expression
 	Body []Statement
-}
-
-type StubDef struct {
-	Name       string
-	ReturnType types.Type
-	Args       []Argument
 }

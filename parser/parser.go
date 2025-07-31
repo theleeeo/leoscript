@@ -75,7 +75,7 @@ type Program struct {
 	FnDefs []FnDef
 
 	// StubDefs for functions that are not defined in this file
-	StubDefs []StubDef
+	StubDefs []FnDef
 }
 
 func (p *Parser) ParseFile() (*Program, error) {

@@ -577,3 +577,65 @@ func Test_FunctionCall(t *testing.T) {
 		assert.Nil(t, resp)
 	})
 }
+
+func Test_Stub(t *testing.T) {
+	t.Run("Call registered stub function", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(args []any) any {
+			return 42
+		})
+
+		err := i.LoadRaw(`
+			stub foo() int;
+			
+			fn main() int {
+				return foo();
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 42, resp.(numberVal).value)
+	})
+
+	t.Run("Call registered stub function with arguments", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(args []any) any {
+			return args[0].(int) + 1
+		})
+
+		err := i.LoadRaw(`
+				stub foo(int x) int;
+
+				fn main() int {
+					return foo(41);
+				}
+			`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 42, resp.(numberVal).value)
+	})
+
+	t.Run("Call registered stub function with multiple arguments", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(args []any) any {
+			return args[0].(int) + args[1].(int)
+		})
+
+		err := i.LoadRaw(`
+			stub foo(int x, int y) int;
+
+			fn main() int {
+				return foo(41, 1);
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 42, resp.(numberVal).value)
+	})
+}
