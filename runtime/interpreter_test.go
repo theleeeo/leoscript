@@ -581,7 +581,7 @@ func Test_FunctionCall(t *testing.T) {
 func Test_Stub(t *testing.T) {
 	t.Run("Call registered stub function", func(t *testing.T) {
 		i := New()
-		i.RegisterStub("foo", func(args []any) any {
+		i.RegisterStub("foo", func() int {
 			return 42
 		})
 
@@ -601,8 +601,8 @@ func Test_Stub(t *testing.T) {
 
 	t.Run("Call registered stub function with arguments", func(t *testing.T) {
 		i := New()
-		i.RegisterStub("foo", func(args []any) any {
-			return args[0].(int) + 1
+		i.RegisterStub("foo", func(arg int) int {
+			return arg + 1
 		})
 
 		err := i.LoadRaw(`
@@ -621,8 +621,8 @@ func Test_Stub(t *testing.T) {
 
 	t.Run("Call registered stub function with multiple arguments", func(t *testing.T) {
 		i := New()
-		i.RegisterStub("foo", func(args []any) any {
-			return args[0].(int) + args[1].(int)
+		i.RegisterStub("foo", func(a1, a2 int) int {
+			return a1 + a2
 		})
 
 		err := i.LoadRaw(`
@@ -637,5 +637,98 @@ func Test_Stub(t *testing.T) {
 		resp, err := i.Run()
 		assert.NoError(t, err)
 		assert.Equal(t, 42, resp.(numberVal).value)
+	})
+
+	t.Run("Boolean stub function", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("isEven", func(n int) bool {
+			return n%2 == 0
+		})
+
+		err := i.LoadRaw(`
+			stub isEven(int x) bool;
+
+			fn main() bool {
+				return isEven(42);
+			}
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, true, resp.(booleanVal).value)
+	})
+}
+
+func Test_StubVerification(t *testing.T) {
+	t.Run("Verify stub with correct signature", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(arg int) int {
+			return arg + 1
+		})
+
+		err := i.LoadRaw(`
+			stub foo(int x) int;
+
+			fn main() int {
+				return foo(41);
+			}
+		`)
+		assert.NoError(t, err)
+
+		err = i.verifyStubs()
+		assert.NoError(t, err)
+	})
+
+	t.Run("Verify stub with incorrect argument type", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(arg bool) int {
+			return 1
+		})
+
+		err := i.LoadRaw(`
+			stub foo(int x) int;
+
+			fn main() int {
+				return foo(41);
+			}
+		`)
+		assert.NoError(t, err)
+
+		err = i.verifyStubs()
+		assert.ErrorContains(t, err, "argument 1: expected bool, got Int")
+	})
+
+	t.Run("Verify stub with incorrect return type", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func(arg int) bool {
+			return arg%2 == 0
+		})
+
+		err := i.LoadRaw(`
+			stub foo(int x) int;
+
+			fn main() int {
+				return foo(42);
+			}
+		`)
+		assert.NoError(t, err)
+
+		err = i.verifyStubs()
+		assert.ErrorContains(t, err, "return value: expected bool, got Int")
+	})
+
+	t.Run("register non-function stub", func(t *testing.T) {
+		i := New()
+
+		defer func() {
+			if r := recover(); r != nil {
+				assert.Contains(t, r, "expected a function, got string")
+			} else {
+				t.Errorf("expected panic but did not occur")
+			}
+		}()
+
+		i.RegisterStub("foo", "not a function")
 	})
 }
