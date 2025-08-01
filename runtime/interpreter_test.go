@@ -732,3 +732,65 @@ func Test_StubVerification(t *testing.T) {
 		i.RegisterStub("foo", "not a function")
 	})
 }
+
+func Test_InvokeFunc(t *testing.T) {
+	t.Run("Invoke registered stub function", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("foo", func() int {
+			return 42
+		})
+
+		err := i.LoadRaw(`
+			stub foo() int;
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Invoke("foo")
+		assert.NoError(t, err)
+		assert.Equal(t, 42, resp.(int))
+	})
+
+	t.Run("Invoke registered stub function with arguments", func(t *testing.T) {
+		i := New()
+		i.RegisterStub("bar", func(arg int) int {
+			return arg + 1
+		})
+
+		err := i.LoadRaw(`
+			stub bar(int x) int;
+		`)
+		assert.NoError(t, err)
+
+		resp, err := i.Invoke("bar", 10)
+		assert.NoError(t, err)
+		assert.Equal(t, 11, resp.(int))
+	})
+
+	t.Run("Invoke function with no parameters", func(t *testing.T) {
+		i := New()
+		err := i.LoadRaw(`
+			fn foo() int {
+				return 10;
+			}
+			`)
+		assert.NoError(t, err)
+
+		resp, err := i.Invoke("foo")
+		assert.NoError(t, err)
+		assert.Equal(t, 10, resp.(int))
+	})
+
+	t.Run("Invoke function with parameters", func(t *testing.T) {
+		i := New()
+
+		err := i.LoadRaw(`
+			fn add(int a, int b) int {
+				return a + b;
+			}
+			`)
+		assert.NoError(t, err)
+		resp, err := i.Invoke("add", 5, 7)
+		assert.NoError(t, err)
+		assert.Equal(t, 12, resp.(int))
+	})
+}
