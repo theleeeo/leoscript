@@ -8,11 +8,11 @@ func buildCallOrder(vars []VarDecl) ([]VarDecl, error) {
 		DependsOn []string
 	}
 
-	coVars := make(map[string]coVar)
+	unresolvedVars := make(map[string]coVar)
 
 	for _, v := range vars {
 		dependantVars := getDependantVars(v.Value)
-		coVars[v.Name] = coVar{
+		unresolvedVars[v.Name] = coVar{
 			Var:       v,
 			DependsOn: dependantVars,
 		}
@@ -24,20 +24,20 @@ func buildCallOrder(vars []VarDecl) ([]VarDecl, error) {
 	var visit func(name string) error
 	visit = func(name string) error {
 		if _, ok := visited[name]; ok {
-			// If the variable has been visited but not removed from coVars, it means it's a circular dependency.
-			if _, ok := coVars[name]; ok {
+			// If the variable has been visited but not resolved, it means it's a circular dependency.
+			if _, ok := unresolvedVars[name]; ok {
 				return fmt.Errorf("circular dependency detected: %s", name)
 			}
 			return nil // Already visited
 		}
 		visited[name] = struct{}{}
-		for _, dep := range coVars[name].DependsOn {
+		for _, dep := range unresolvedVars[name].DependsOn {
 			if err := visit(dep); err != nil {
 				return err
 			}
 		}
-		callOrder = append(callOrder, coVars[name].Var)
-		delete(coVars, name)
+		callOrder = append(callOrder, unresolvedVars[name].Var)
+		delete(unresolvedVars, name)
 		return nil
 	}
 
