@@ -116,7 +116,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -151,7 +151,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -186,7 +186,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -226,7 +226,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -262,7 +262,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -290,7 +290,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			var a = 10;
 			var b = 20;
 
-			fn main() {
+			fn main() int {
 				if (a < b) {
 					return a;
 				} else {
@@ -300,7 +300,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -328,13 +328,13 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				return a;
 			}
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -366,7 +366,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -393,14 +393,14 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			var a = 10;
 			var b = 20;
 
-			fn main() {
+			fn main() int {
 				var result = (a + b) * (a - b);
 				return result;
 			}
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -427,14 +427,14 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				var negA = -a;
 				return negA;
 			}
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -464,14 +464,14 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 				return x + y;
 			}
 
-			fn main() {
+			fn main() int {
 				var result = add(a, 5);
 				return result;
 			}
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string
@@ -497,7 +497,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				while (a > 0) {
 					a = a - 1;
 				}
@@ -506,7 +506,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		var visitedNodes []string

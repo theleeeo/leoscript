@@ -53,9 +53,13 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 		must(globalScope.RegisterFn(fn))
 	}
 
+	for _, stub := range program.StubDefs {
+		must(globalScope.RegisterFn(stub))
+	}
+
 	i := 0
 	for i < len(program.VarDecls) {
-		must(globalScope.DeregisterVar(program.VarDecls[i]))
+		globalScope.deregisterVar(program.VarDecls[i].Name)
 
 		resp := tw.walkStatement(program.VarDecls[i], WalkingContext{
 			Scope:    globalScope,
@@ -73,7 +77,7 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 
 	i = 0
 	for i < len(program.FnDefs) {
-		must(globalScope.DeregisterFn(program.FnDefs[i]))
+		globalScope.deregisterFn(program.FnDefs[i].Name)
 
 		resp := tw.walkStatement(program.FnDefs[i], WalkingContext{
 			Scope:    globalScope,
@@ -165,6 +169,7 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		stmt = rv
 	}
 
+	// TODO: Only register vars and funcs to the scope efter the callback and if they are not removed
 	return tw.CallbackFn(wctx, stmt)
 }
 

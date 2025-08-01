@@ -34,13 +34,12 @@ func (s *Scope) RegisterFn(fnDef FnDef) error {
 	return nil
 }
 
-func (s *Scope) DeregisterFn(fnDef FnDef) error {
-	if _, ok := s.fnDefs[fnDef.Name]; !ok {
-		return fmt.Errorf("function %s not declared", fnDef.Name)
+func (s *Scope) deregisterFn(name string) {
+	if _, ok := s.fnDefs[name]; !ok {
+		panic(fmt.Sprintf("function %s not declared", name))
 	}
 
-	delete(s.fnDefs, fnDef.Name)
-	return nil
+	delete(s.fnDefs, name)
 }
 
 func (s *Scope) ResolveVar(name string) (VarDecl, bool) {
@@ -61,11 +60,10 @@ func (s *Scope) RegisterVar(varDecl VarDecl) error {
 	return nil
 }
 
-func (s *Scope) DeregisterVar(varDecl VarDecl) error {
-	if _, ok := s.varDecls[varDecl.Name]; !ok {
-		return fmt.Errorf("variable %s not declared", varDecl.Name)
+func (s *Scope) deregisterVar(name string) {
+	if _, ok := s.varDecls[name]; !ok {
+		panic(fmt.Sprintf("variable %s is not declared", name)) // This function is for internal use only and this should never
 	}
 
-	delete(s.varDecls, varDecl.Name)
-	return nil
+	delete(s.varDecls, name)
 }

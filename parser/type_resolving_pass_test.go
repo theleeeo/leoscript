@@ -32,7 +32,7 @@ func Test_ResolveTypes(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
 		assert.Equal(t, types.Int, pg.FnDefs[0].Body[0].(Return).Value.ReturnType())
@@ -60,7 +60,7 @@ func Test_ResolveTypes(t *testing.T) {
 			FnDefs: []FnDef{fnDef1, fnDef2},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
 		assert.Equal(t, types.Int, pg.FnDefs[1].Body[0].(Return).Value.ReturnType())

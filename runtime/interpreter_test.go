@@ -242,7 +242,7 @@ func Test_Identifiers(t *testing.T) {
 			var foo = bar;
 			var bar = 123;
 			`))
-		pg, _ := p.ParseFile()
+		pg, _ := p.Parse()
 		i, _ := NewInterpreter(pg).Initialize()
 		val, ok := i.activeScope.GetVar("foo")
 		assert.True(t, ok)
@@ -257,7 +257,7 @@ func Test_RunCompleteFile(t *testing.T) {
 				return 1;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -276,7 +276,7 @@ func Test_RunCompleteFile(t *testing.T) {
 				return 1 + 2;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -292,7 +292,7 @@ func Test_RunCompleteFile(t *testing.T) {
 				return a + 10;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -307,12 +307,12 @@ func Test_Scope(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				var b = 11;
 				return a + b;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -325,12 +325,12 @@ func Test_Scope(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				var a = 11;
 				return a;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -343,17 +343,17 @@ func Test_Scope(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				var b = 11;
-				return foo();
+				return foo(b);
 			}
 
-			fn foo() int {
+			fn foo(int b) int {
 				var c = 12;
 				return a + b + c;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -373,7 +373,7 @@ func Test_IfStatements(t *testing.T) {
 				return 0;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -391,7 +391,7 @@ func Test_IfStatements(t *testing.T) {
 				return 0;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -410,7 +410,7 @@ func Test_IfStatements(t *testing.T) {
 				}
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -431,7 +431,7 @@ func Test_IfStatements(t *testing.T) {
 				}
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -450,7 +450,7 @@ func Test_VariableAssignment(t *testing.T) {
 				return a;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -468,7 +468,7 @@ func Test_VariableAssignment(t *testing.T) {
 				return a;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -486,7 +486,7 @@ func Test_VariableAssignment(t *testing.T) {
 				return b;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -507,7 +507,7 @@ func Test_WhileStatements(t *testing.T) {
 				return a;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)
@@ -539,22 +539,23 @@ func Test_WhileStatements(t *testing.T) {
 	// })
 }
 
-func Test_FunctionCall(t *testing.T) {
-	t.Run("Unknown function call", func(t *testing.T) {
-		lx := lexer.MustTokenize(`
-			fn main() int {
-				return foo();
-			}
-		`)
-		pg, err := parser.NewParser(lx).ParseFile()
-		assert.NoError(t, err)
-		i, err := NewInterpreter(pg).Initialize()
-		assert.NoError(t, err)
-		resp, err := i.Run()
-		assert.ErrorContains(t, err, "function foo not defined")
-		assert.Nil(t, resp)
-	})
-}
+// TODO: Not possible until the parser supports partial parsing (if it ever will be implemented).
+// func Test_FunctionCall(t *testing.T) {
+// 	t.Run("Unknown function call", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 			fn main() int {
+// 				return foo();
+// 			}
+// 		`)
+// 		pg, err := parser.NewParser(lx).Parse()
+// 		assert.NoError(t, err)
+// 		i, err := NewInterpreter(pg).Initialize()
+// 		assert.NoError(t, err)
+// 		resp, err := i.Run()
+// 		assert.ErrorContains(t, err, "function foo not defined")
+// 		assert.Nil(t, resp)
+// 	})
+// }
 
 func Test_Stub(t *testing.T) {
 	t.Run("Call registered stub function", func(t *testing.T) {
@@ -565,7 +566,7 @@ func Test_Stub(t *testing.T) {
 				return foo();
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func() int {
@@ -586,7 +587,7 @@ func Test_Stub(t *testing.T) {
 					return foo(41);
 				}
 			`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func(arg int) int {
@@ -607,7 +608,7 @@ func Test_Stub(t *testing.T) {
 				return foo(41, 1);
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func(a1, a2 int) int {
@@ -628,7 +629,7 @@ func Test_Stub(t *testing.T) {
 				return isEven(42);
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("isEven", func(n int) bool {
@@ -651,7 +652,7 @@ func Test_StubVerification(t *testing.T) {
 				return foo(41);
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func(arg int) int {
@@ -671,7 +672,7 @@ func Test_StubVerification(t *testing.T) {
 				return foo(41);
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		_, err = NewInterpreter(pg).
 			RegisterStub("foo", func(arg bool) int {
@@ -689,7 +690,7 @@ func Test_StubVerification(t *testing.T) {
 				return foo(42);
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		_, err = NewInterpreter(pg).
 			RegisterStub("foo", func(arg int) bool {
@@ -701,7 +702,7 @@ func Test_StubVerification(t *testing.T) {
 
 	t.Run("register non-function stub", func(t *testing.T) {
 		lx := lexer.MustTokenize(`stub foo() int;`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		assert.PanicsWithValue(t, "expected a function, got string", func() { NewInterpreter(pg).RegisterStub("foo", "not a function") })
 	})
@@ -712,7 +713,7 @@ func Test_InvokeFunc(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			stub foo() int;
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func() int {
@@ -730,7 +731,7 @@ func Test_InvokeFunc(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			stub bar(int x) int;
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("bar", func(arg int) int {
@@ -748,7 +749,7 @@ func Test_InvokeFunc(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			stub foo() int;
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).
 			RegisterStub("foo", func() int {
@@ -768,7 +769,7 @@ func Test_InvokeFunc(t *testing.T) {
 				return a + b;
 			}
 		`)
-		pg, err := parser.NewParser(lx).ParseFile()
+		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		i, err := NewInterpreter(pg).Initialize()
 		assert.NoError(t, err)

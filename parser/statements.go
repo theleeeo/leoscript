@@ -182,7 +182,7 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	case token.Type:
 		varType = tk.Kind
 	case token.VarDecl:
-		varType = nil
+		varType = types.Unspecified
 	default:
 		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
 	}

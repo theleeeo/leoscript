@@ -683,6 +683,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 				Right: BooleanLiteral{Value: true},
 				Op:    "&&",
 			},
+			Type: types.Unspecified,
 		}, prog)
 	})
 
@@ -731,6 +732,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 				Name: "foo",
 				Args: []Expression{},
 			},
+			Type: types.Unspecified,
 		}, vardef)
 	})
 
@@ -739,7 +741,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		var a = a;
 		`)
 		p := NewParser(lx)
-		_, err := p.ParseFile()
+		_, err := p.Parse()
 		assert.ErrorContains(t, err, "circular dependency detected: a")
 	})
 
@@ -749,17 +751,19 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		var b = 123;
 		`)
 		p := NewParser(lx)
-		pg, err := p.ParseFile()
+		pg, err := p.Parse()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, &Program{
 			VarDecls: []VarDecl{
 				{
 					Name:  "b",
+					Type:  types.Int,
 					Value: IntegerLiteral{Value: 123},
 				},
 				{
 					Name:  "a",
+					Type:  types.Int,
 					Value: VarIdentifier{Name: "b"},
 				},
 			},
@@ -951,6 +955,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 				VarDecl{
 					Name:  "a",
 					Value: IntegerLiteral{Value: 123},
+					Type:  types.Unspecified,
 				},
 				Return{
 					Value: BinaryExpression{
@@ -967,14 +972,14 @@ func Test_FunctionDefinitions(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			var a = 10;
 
-			fn main() {
+			fn main() int {
 				var b = 11;
 				return a + b;
 			}
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, &Program{
@@ -982,18 +987,20 @@ func Test_FunctionDefinitions(t *testing.T) {
 				{
 					Name:  "a",
 					Value: IntegerLiteral{Value: 10},
+					Type:  types.Int,
 				},
 			},
 			FnDefs: []FnDef{
 				{
 
 					Name:       "main",
-					ReturnType: types.Void,
+					ReturnType: types.Int,
 					Args:       []Argument{},
 					Body: []Statement{
 						VarDecl{
 							Name:  "b",
 							Value: IntegerLiteral{Value: 11},
+							Type:  types.Int,
 						},
 						Return{
 							Value: BinaryExpression{
@@ -1027,7 +1034,7 @@ func Test_ParseFile(t *testing.T) {
 		`)
 
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, &Program{
@@ -1072,6 +1079,7 @@ func Test_ParseFile(t *testing.T) {
 					},
 				},
 			},
+			VarDecls: []VarDecl{},
 		}, prog)
 	})
 
@@ -1080,7 +1088,7 @@ func Test_ParseFile(t *testing.T) {
 			fn bar() {}
 		`)
 		p := NewParser(lx)
-		prog, err := p.ParseFile()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 		assert.EqualExportedValues(t, &Program{
 			FnDefs: []FnDef{
@@ -1091,6 +1099,7 @@ func Test_ParseFile(t *testing.T) {
 					Body:       []Statement{},
 				},
 			},
+			VarDecls: []VarDecl{},
 		}, prog)
 	})
 }

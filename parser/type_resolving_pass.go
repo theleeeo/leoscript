@@ -1,8 +1,11 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"leoscript/types"
+)
 
-func TypeResolvingPass(program *Program) (err error) {
+func typeResolvingPass(program *Program) (err error) {
 	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
 		switch expr := node.(type) {
 		case Call:
@@ -21,6 +24,17 @@ func TypeResolvingPass(program *Program) (err error) {
 			}
 
 			expr.returnType = varIdent.Type
+
+			return expr
+		case VarDecl:
+			if expr.Type == types.Unspecified {
+				// If the type is unspecified, we need to resolve it from the value.
+				expr.Type = expr.Value.ReturnType()
+			}
+
+			// Re-register the varDecl to the scope so the variable in the scope contains the correct type.
+			wctx.Scope.deregisterVar(expr.Name)
+			wctx.Scope.RegisterVar(expr)
 
 			return expr
 		}

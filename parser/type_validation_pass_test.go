@@ -29,10 +29,10 @@ func Test_ValidateTypes(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.NoError(t, err)
 	})
 
@@ -59,10 +59,10 @@ func Test_ValidateTypes(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.NoError(t, err)
 	})
 }
@@ -79,9 +79,9 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 			VarDecls: []VarDecl{varDef},
 			FnDefs:   []FnDef{},
 		}
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.Error(t, err)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
@@ -101,9 +101,9 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 			VarDecls: []VarDecl{varDef, varDef2},
 			FnDefs:   []FnDef{},
 		}
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.Error(t, err)
 		assert.Equal(t, "type mismatch: expected Int, got Bool", err.Error())
 	})
@@ -129,10 +129,10 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 
@@ -153,10 +153,10 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 
@@ -183,10 +183,10 @@ func Test_ValidateTypes_Invalid(t *testing.T) {
 			FnDefs:   []FnDef{fnDef},
 		}
 
-		err = TypeResolvingPass(pg)
+		err = typeResolvingPass(pg)
 		assert.NoError(t, err)
 
-		err = TypeValidationPass(pg)
+		err = typeValidationPass(pg)
 		assert.Equal(t, "type mismatch: expected Bool, got Int", err.Error())
 	})
 }
