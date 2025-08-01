@@ -2,39 +2,51 @@ package runtime
 
 import (
 	"fmt"
-	"leoscript/lexer"
 	"leoscript/parser"
 	"leoscript/types"
 )
 
-func (intr *Interpreter) LoadRaw(src string) error {
-	if src == "" {
-		return fmt.Errorf("empty source")
+func NewInterpreter(program *parser.Program) *Interpreter {
+	return &Interpreter{
+		program: program,
+		stubs:   make(map[string]externalFunction),
+	}
+}
+
+type Interpreter struct {
+	program *parser.Program
+
+	globalScope *scope
+	activeScope *scope
+	stubs       map[string]externalFunction
+}
+
+func (intr *Interpreter) Initialize() (*Interpreter, error) {
+	globalScope := newScope(nil)
+	intr.globalScope = globalScope
+	intr.activeScope = globalScope
+
+	// If the program is nil, the interpreter is "hollow".
+	if intr.program != nil {
+		for _, fnDef := range intr.program.FnDefs {
+			intr.evaluateStatement(fnDef)
+		}
+
+		for _, stubDef := range intr.program.StubDefs {
+			intr.evaluateStatement(stubDef)
+		}
+
+		for _, varDecl := range intr.program.VarDecls {
+			intr.evaluateStatement(varDecl)
+		}
+
 	}
 
-	tokens, err := lexer.Tokenize(src)
-	if err != nil {
-		return fmt.Errorf("tokenizing: %w", err)
+	if err := intr.verifyStubs(); err != nil {
+		return nil, fmt.Errorf("stub verification failed: %w", err)
 	}
 
-	program, err := parser.NewParser(tokens).ParseFile()
-	if err != nil {
-		return fmt.Errorf("parsing: %w", err)
-	}
-
-	for _, stmt := range program.FnDefs {
-		intr.evaluateStatement(stmt)
-	}
-
-	for _, stmt := range program.VarDecls {
-		intr.evaluateStatement(stmt)
-	}
-
-	for _, stmt := range program.StubDefs {
-		intr.evaluateStatement(stmt)
-	}
-
-	return nil
+	return intr, nil
 }
 
 func (intr *Interpreter) Run() (val runtimeVal, err error) {
@@ -44,10 +56,6 @@ func (intr *Interpreter) Run() (val runtimeVal, err error) {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
-
-	if err := intr.verifyStubs(); err != nil {
-		return nil, fmt.Errorf("stub verification failed: %w", err)
-	}
 
 	for fnName, fnDef := range intr.activeScope.functions {
 		if fnName == "main" {
@@ -97,23 +105,9 @@ func (intr *Interpreter) Invoke(funcName string, parameters ...any) (any, error)
 	return fromRuntimeVal(retVal), nil
 }
 
-func New() *Interpreter {
-	globalScope := newScope(nil)
-	return &Interpreter{
-		globalScope: globalScope,
-		activeScope: globalScope,
-		stubs:       make(map[string]externalFunction),
-	}
-}
-
-type Interpreter struct {
-	globalScope *scope
-	activeScope *scope
-	stubs       map[string]externalFunction
-}
-
 // Evaluates a statement. If the statement contains a return, it es evaluates and its value is returned from this function.
 // That means that if this functions return value is != nil, the caller should return.
+// TODO: Disallow before initialization
 func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 	switch s := stmt.(type) {
 	case parser.VarDecl:

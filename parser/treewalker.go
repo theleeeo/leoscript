@@ -114,7 +114,6 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		stmt = rv
 	case Call:
 		for i := range rv.Args {
-			fmt.Printf("Walking argument %d: %T\n", i, rv.Args[i])
 			rv.Args[i] = tw.walkExpression(rv.Args[i], wctx)
 		}
 		stmt = rv

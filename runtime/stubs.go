@@ -8,7 +8,7 @@ import (
 )
 
 // RegisterStub allows registering any Go function as a stub, using reflection to map runtimeVals to Go values and back.
-func (intr *Interpreter) RegisterStub(name string, fn any) {
+func (intr *Interpreter) RegisterStub(name string, fn any) *Interpreter {
 	if _, exists := intr.stubs[name]; exists {
 		panic(fmt.Sprintf("stub function %s already registered", name))
 	}
@@ -34,6 +34,8 @@ func (intr *Interpreter) RegisterStub(name string, fn any) {
 	}
 
 	intr.stubs[name] = ef
+
+	return intr
 }
 
 func (intr *Interpreter) verifyStubs() error {
