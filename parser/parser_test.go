@@ -733,6 +733,38 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 			},
 		}, vardef)
 	})
+
+	t.Run("Self-recursive global var", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = a;
+		`)
+		p := NewParser(lx)
+		_, err := p.ParseFile()
+		assert.ErrorContains(t, err, "circular dependency detected: a")
+	})
+
+	t.Run("Out of order var declarations", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = b;
+		var b = 123;
+		`)
+		p := NewParser(lx)
+		pg, err := p.ParseFile()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "b",
+					Value: IntegerLiteral{Value: 123},
+				},
+				{
+					Name:  "a",
+					Value: VarIdentifier{Name: "b"},
+				},
+			},
+		}, pg)
+	})
 }
 
 func Test_ReturnTypes(t *testing.T) {

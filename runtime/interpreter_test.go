@@ -237,18 +237,17 @@ func Test_Identifiers(t *testing.T) {
 		assert.Equal(t, 124, val.(numberVal).value)
 	})
 
-	// t.Run("global variable references later defined global var", func(t *testing.T) {
-	// 	p := parser.NewParser(lexer.MustTokenize(`
-	// 		var foo = bar;
-	// 		var bar = 123;
-	// 		`))
-	// 	stmt, _ := p.ParseStatement()
-	// 	i, _ := NewInterpreter(nil).Initialize()
-	// 	i.evaluateStatement(stmt)
-	// 	val, ok := i.activeScope.GetVar("foo")
-	// 	assert.True(t, ok)
-	// 	assert.Equal(t, 123, val.(numberVal).value)
-	// })
+	t.Run("global variable references later defined global var", func(t *testing.T) {
+		p := parser.NewParser(lexer.MustTokenize(`
+			var foo = bar;
+			var bar = 123;
+			`))
+		pg, _ := p.ParseFile()
+		i, _ := NewInterpreter(pg).Initialize()
+		val, ok := i.activeScope.GetVar("foo")
+		assert.True(t, ok)
+		assert.Equal(t, 123, val.(numberVal).value)
+	})
 }
 
 func Test_RunCompleteFile(t *testing.T) {
