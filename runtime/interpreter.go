@@ -287,6 +287,10 @@ func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, param
 
 	// Set the active scope to the function scope
 	intr.activeScope = fnScope
+	defer func() {
+		// Reset the active scope to the parent scope
+		intr.activeScope = parentScope
+	}()
 
 	// Evaluate the function body
 	for _, stmt := range fn.Body {
@@ -294,9 +298,6 @@ func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, param
 			return retVal
 		}
 	}
-
-	// Reset the active scope to the parent scope
-	intr.activeScope = parentScope
 
 	return nil
 }

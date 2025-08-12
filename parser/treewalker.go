@@ -137,9 +137,11 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		}
 		stmt = rv
 	case FnDef:
-		// Walk the function body statements
+		// Register the function in the scope before walking its body to allow recursive calls.
+		must(wctx.Scope.RegisterFn(rv))
 		functionScope := NewScope(wctx.Scope)
 
+		// Walk the function body statements
 		i := 0
 		for i < len(rv.Args) {
 			// walk the args
@@ -164,8 +166,6 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 			})
 		}
 
-		// If the statement is a function definition, we register it in the scope.
-		must(wctx.Scope.RegisterFn(rv))
 		stmt = rv
 	}
 

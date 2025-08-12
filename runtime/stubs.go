@@ -141,8 +141,6 @@ func (ef externalFunction) Call(args []runtimeVal) runtimeVal {
 		return numberVal{value: v}
 	case bool:
 		return booleanVal{value: v}
-	case float64:
-		return numberVal{value: int(v)}
 	case nil:
 		return nil
 	default:

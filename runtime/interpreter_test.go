@@ -779,3 +779,75 @@ func Test_InvokeFunc(t *testing.T) {
 		assert.Equal(t, 12, resp.(int))
 	})
 }
+
+func Test_Recursive(t *testing.T) {
+	t.Run("factorial", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn factorial(int n) int {
+			if n <= 1 {
+				return 1;
+			}
+			return n * factorial(n - 1);
+		}
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		i, err := NewInterpreter(pg).Initialize()
+		assert.NoError(t, err)
+		resp, err := i.Invoke("factorial", 10)
+		assert.NoError(t, err)
+		assert.Equal(t, 3628800, resp.(int))
+	})
+
+	t.Run("fibonacci", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn fib(int n) int {
+			if n <= 1 {
+				return n;
+			}
+			return fib(n - 1) + fib(n - 2);
+		}
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		i, err := NewInterpreter(pg).Initialize()
+		assert.NoError(t, err)
+
+		resp, err := i.Invoke("fib", 10)
+		assert.NoError(t, err)
+		assert.Equal(t, 55, resp.(int))
+	})
+}
+
+func Benchmark_Fibonacci(b *testing.B) {
+	b.Run("ast-walking interpreter", func(b *testing.B) {
+
+		lx := lexer.MustTokenize(`
+		fn fib(int n) int {
+			if n <= 1 {
+				return n;
+				}
+				return fib(n - 1) + fib(n - 2);
+				}
+				`)
+		pg, err := parser.NewParser(lx).Parse()
+		if err != nil {
+			b.Fatalf("Parse error: %v", err)
+		}
+		i, err := NewInterpreter(pg).Initialize()
+		if err != nil {
+			b.Fatalf("Interpreter init error: %v", err)
+		}
+
+		b.ResetTimer()
+		for b.Loop() {
+			resp, err := i.Invoke("fib", 20)
+			if err != nil {
+				b.Fatalf("Interpreter run error: %v", err)
+			}
+			if resp.(int) != 6765 {
+				b.Fatalf("Expected 6765, got %v", resp)
+			}
+		}
+	})
+}
