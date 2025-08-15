@@ -15,7 +15,6 @@ func Benchmark_Arithmetic(b *testing.B) {
 		expr, _ := parser.NewParser(lx).ParseExpr()
 		i := NewInterpreter(nil)
 
-		b.ResetTimer()
 		for b.Loop() {
 			i.evaluateExpression(expr)
 		}
@@ -26,10 +25,9 @@ func Benchmark_Arithmetic(b *testing.B) {
 		1 + 2 * 3 - 4 / 2;
 		`)
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
+		exe := compiler.CompileStatement(expr, nil)
 		vm := NewVM(exe)
 
-		b.ResetTimer()
 		for b.Loop() {
 			vm.Run()
 		}
@@ -56,7 +54,6 @@ func Benchmark_Fibonacci(b *testing.B) {
 			b.Fatalf("Interpreter init error: %v", err)
 		}
 
-		b.ResetTimer()
 		for b.Loop() {
 			resp, err := i.Invoke("fib", 20)
 			if err != nil {

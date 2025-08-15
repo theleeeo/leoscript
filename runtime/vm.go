@@ -7,7 +7,8 @@ import (
 )
 
 type VM struct {
-	stack []uint64
+	cStack        []uint64
+	variableStack []byte
 
 	program []byte
 	pc      int
@@ -15,10 +16,17 @@ type VM struct {
 
 func NewVM(program []byte) *VM {
 	return &VM{
-		program: program,
-		pc:      0,
-		stack:   make([]uint64, 0),
+		program:       program,
+		pc:            0,
+		cStack:        make([]uint64, 0),
+		variableStack: make([]byte, 0),
 	}
+}
+
+func (vm *VM) pop() uint64 {
+	value := vm.cStack[len(vm.cStack)-1]
+	vm.cStack = vm.cStack[:len(vm.cStack)-1]
+	return value
 }
 
 func (vm *VM) Run() (int, error) {
@@ -27,52 +35,39 @@ func (vm *VM) Run() (int, error) {
 
 		switch op {
 		case compiler.OpPush:
-			if vm.pc+8 > len(vm.program) {
-				return 0, fmt.Errorf("not enough bytes for PUSH operation")
-			}
 			vm.pc++
 
 			value := binary.BigEndian.Uint64(vm.program[vm.pc : vm.pc+8])
-			vm.stack = append(vm.stack, value)
 			vm.pc += 7
+
+			vm.cStack = append(vm.cStack, value)
 		case compiler.OpAdd:
-			if len(vm.stack) < 2 {
-				return 0, fmt.Errorf("not enough values on stack for ADD operation")
-			}
-
-			// Extract the values from the stack
-			a := vm.stack[len(vm.stack)-1]
-			b := vm.stack[len(vm.stack)-2]
-			// Actually remove them from the stack
-			vm.stack = vm.stack[:len(vm.stack)-2]
-			// Add their sum back to the stack
-			vm.stack = append(vm.stack, a+b)
+			a := vm.pop()
+			b := vm.pop()
+			vm.cStack = append(vm.cStack, a+b)
 		case compiler.OpSub:
-			if len(vm.stack) < 2 {
-				return 0, fmt.Errorf("not enough values on stack for SUB operation")
-			}
-			a := vm.stack[len(vm.stack)-1]
-			b := vm.stack[len(vm.stack)-2]
-			vm.stack = vm.stack[:len(vm.stack)-2]
-			vm.stack = append(vm.stack, b-a)
-
+			a := vm.pop()
+			b := vm.pop()
+			vm.cStack = append(vm.cStack, b-a)
 		case compiler.OpMul:
-			if len(vm.stack) < 2 {
-				return 0, fmt.Errorf("not enough values on stack for SUB operation")
-			}
-			a := vm.stack[len(vm.stack)-1]
-			b := vm.stack[len(vm.stack)-2]
-			vm.stack = vm.stack[:len(vm.stack)-2]
-			vm.stack = append(vm.stack, b*a)
+			a := vm.pop()
+			b := vm.pop()
+			vm.cStack = append(vm.cStack, b*a)
 		case compiler.OpDiv:
-			if len(vm.stack) < 2 {
-				return 0, fmt.Errorf("not enough values on stack for SUB operation")
-			}
-			a := vm.stack[len(vm.stack)-1]
-			b := vm.stack[len(vm.stack)-2]
-			vm.stack = vm.stack[:len(vm.stack)-2]
-			vm.stack = append(vm.stack, b/a)
+			a := vm.pop()
+			b := vm.pop()
+			vm.cStack = append(vm.cStack, b/a)
+		case compiler.OpStore:
+			value := vm.pop()
 
+			// Store the value in the variable stack
+			vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
+		case compiler.OpLoad:
+			vm.pc++
+			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc : vm.pc+8])
+			vm.pc += 7
+			value := binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
+			vm.cStack = append(vm.cStack, value)
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
@@ -80,5 +75,13 @@ func (vm *VM) Run() (int, error) {
 		vm.pc++
 	}
 
-	return int(vm.stack[len(vm.stack)-1]), nil
+	if len(vm.cStack) == 0 {
+		return 0, nil
+	}
+
+	return int(vm.pop()), nil
+}
+
+func (vm *VM) VariableStack() []byte {
+	return vm.variableStack
 }

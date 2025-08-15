@@ -1,7 +1,6 @@
 package compiler_test
 
 import (
-	"fmt"
 	"leoscript/compiler"
 	"leoscript/lexer"
 	"leoscript/parser"
@@ -9,7 +8,7 @@ import (
 	"testing"
 )
 
-func equalProgram(t *testing.T, expected, p string) {
+func equalProgram(t *testing.T, p, expected string) {
 	pOps := strings.Split(p, "\n")
 	exOps := strings.Split(expected, "\n")
 
@@ -27,17 +26,10 @@ func equalProgram(t *testing.T, expected, p string) {
 }
 
 func Test_ArithmeticExpr(t *testing.T) {
-	t.Run("penis", func(t *testing.T) {
-		a := -1
-		b := uint(a)
-		b--
-		fmt.Println(int(b))
-	})
-
 	t.Run("Single integer", func(t *testing.T) {
 		lx := lexer.MustTokenize("257;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		i := compiler.CompileStatement(expr)
+		i := compiler.CompileStatement(expr, nil)
 		s := compiler.DebugPrint(i)
 		equalProgram(t,
 			s,
@@ -48,7 +40,7 @@ func Test_ArithmeticExpr(t *testing.T) {
 	t.Run("Single binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("2 + 3;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		i := compiler.CompileStatement(expr)
+		i := compiler.CompileStatement(expr, nil)
 		s := compiler.DebugPrint(i)
 		equalProgram(t,
 			s,
@@ -61,7 +53,7 @@ func Test_ArithmeticExpr(t *testing.T) {
 	t.Run("Multiple binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + 2 - 3 * 4;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		i := compiler.CompileStatement(expr)
+		i := compiler.CompileStatement(expr, nil)
 		s := compiler.DebugPrint(i)
 		equalProgram(t,
 			s,
@@ -78,7 +70,7 @@ func Test_ArithmeticExpr(t *testing.T) {
 	t.Run("Multiple binary expression with parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + (2 - 3) + 4;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		i := compiler.CompileStatement(expr)
+		i := compiler.CompileStatement(expr, nil)
 		s := compiler.DebugPrint(i)
 		equalProgram(t,
 			s,
@@ -95,7 +87,7 @@ func Test_ArithmeticExpr(t *testing.T) {
 	t.Run("Multiple binary expression with parentheses, order changed", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 + (2 - 3) * 4;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		i := compiler.CompileStatement(expr)
+		i := compiler.CompileStatement(expr, nil)
 		s := compiler.DebugPrint(i)
 		equalProgram(t,
 			s,
@@ -107,5 +99,55 @@ func Test_ArithmeticExpr(t *testing.T) {
 			MUL
 			ADD
 			`)
+	})
+}
+
+func Test_StackVariables(t *testing.T) {
+	t.Run("store a simple integer variable", func(t *testing.T) {
+		lx := lexer.MustTokenize("int a = 10;")
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		i := compiler.CompileStatement(stmt, nil)
+		s := compiler.DebugPrint(i)
+		equalProgram(t,
+			s,
+			`PUSH 10
+			STORE
+			`,
+		)
+	})
+
+	t.Run("store integer result of expression", func(t *testing.T) {
+		lx := lexer.MustTokenize("int a = 10 + 20;")
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		i := compiler.CompileStatement(stmt, nil)
+		s := compiler.DebugPrint(i)
+		equalProgram(t,
+			s,
+			`PUSH 10
+			PUSH 20
+			ADD
+			STORE
+			`,
+		)
+	})
+
+	t.Run("save in var and use it", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int a = 10;
+		int b = a + 20;
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		i := compiler.Compile(pg)
+		s := compiler.DebugPrint(i.Raw())
+		equalProgram(t,
+			s,
+			`PUSH 10
+			STORE
+			LOAD 0
+			PUSH 20
+			ADD
+			STORE
+			`,
+		)
 	})
 }

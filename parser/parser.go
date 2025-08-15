@@ -81,6 +81,13 @@ type Program struct {
 func (p *Parser) Parse() (*Program, error) {
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
 		switch tk.(type) {
+		case token.Type:
+			varDecl, err := p.parseVarDecl()
+			if err != nil {
+				return nil, fmt.Errorf("parsing variable declaration: %w", err)
+			}
+
+			p.program.VarDecls = append(p.program.VarDecls, varDecl)
 		case token.VarDecl:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {

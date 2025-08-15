@@ -2,16 +2,24 @@ package compiler
 
 import (
 	"encoding/binary"
+	"fmt"
 	"leoscript/parser"
-	"strconv"
-	"strings"
 )
 
 func Compile(p *parser.Program) Executable {
 	var code []byte
 
+	sc := &scopeContext{
+		stackAllocs:        make(map[string]variable),
+		currentStackOffset: 0,
+	}
+
+	for _, stmt := range p.VarDecls {
+		code = append(code, CompileStatement(stmt, sc)...)
+	}
+
 	for _, stmt := range p.FnDefs {
-		code = append(code, CompileStatement(stmt)...)
+		code = append(code, CompileStatement(stmt, sc)...)
 	}
 
 	return Executable{
@@ -23,74 +31,57 @@ type Executable struct {
 	code []byte
 }
 
-func DebugPrint(exe []byte) string {
-	b := strings.Builder{}
-
-	i := 0
-	for i < len(exe) {
-		op := exe[i]
-		switch op {
-		case OpPush:
-			b.WriteString("PUSH")
-			b.WriteRune(' ')
-			i++
-
-			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
-			i = i + 8
-		case OpAdd:
-			b.WriteString("ADD")
-			i++
-		case OpSub:
-			b.WriteString("SUB")
-			i++
-		case OpMul:
-			b.WriteString("MUL")
-			i++
-		case OpDiv:
-			b.WriteString("DIV")
-			i++
-		default:
-			panic("unknown opcode" + strconv.Itoa(int(op)))
-		}
-
-		b.WriteRune('\n')
-	}
-
-	return b.String()
+func (e *Executable) Raw() []byte {
+	return e.code
 }
 
-func CompileStatement(stmt parser.Statement) []byte {
+type scopeContext struct {
+	// The stack offsets for each variable allocated on the stack
+	stackAllocs map[string]variable
+	// The current stack offset for the next variable to be allocated
+	currentStackOffset uint64
+}
+
+type variable struct {
+	stackOffset uint64
+	size        uint64
+}
+
+func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
+	if sc == nil {
+		sc = &scopeContext{
+			stackAllocs:        make(map[string]variable),
+			currentStackOffset: 0,
+		}
+	}
+
+	var bytes []byte
+
 	switch stmt := stmt.(type) {
 	case parser.IntegerLiteral:
-		// return []byte{OpPush, byte(stmt.Value)} // Example bytecode for integer literal
-		bytes := make([]byte, 1, 1+8)
-		bytes[0] = OpPush
+		bytes = append(bytes, OpPush)
 		bytes = binary.BigEndian.AppendUint64(bytes, uint64(stmt.Value))
-		return bytes
 	case parser.UnaryExpression:
 		switch stmt.Op {
 		case "-":
-			var bytes []byte
 			bytes = append(bytes, OpPush)
 			bytes = binary.BigEndian.AppendUint64(bytes, 0)
 
 			bytes = append(bytes, OpPush)
-			expr := CompileStatement(stmt.Expression)
+			expr := CompileStatement(stmt.Expression, sc)
 			bytes = append(bytes, expr...)
 
 			bytes = append(bytes, OpSub)
-			return bytes
 		default:
 			panic("unsupported unary operator: " + stmt.Op)
 		}
 	case parser.BinaryExpression:
-		bytes := make([]byte, 0, 1+8+1+8)
+		left := CompileStatement(stmt.Left, sc)
+		right := CompileStatement(stmt.Right, sc)
 
-		left := CompileStatement(stmt.Left)
 		bytes = append(bytes, left...)
-
-		right := CompileStatement(stmt.Right)
 		bytes = append(bytes, right...)
+
 		switch stmt.Op {
 		case "+":
 			bytes = append(bytes, OpAdd)
@@ -103,10 +94,32 @@ func CompileStatement(stmt parser.Statement) []byte {
 		default:
 			panic("unsupported binary operator: " + stmt.Op)
 		}
-		return bytes
+	case parser.VarDecl:
+		// The full size required by the variable
+		varSize := stmt.Type.Size()
+		sc.stackAllocs[stmt.Name] = variable{
+			stackOffset: sc.currentStackOffset,
+			size:        varSize,
+		}
+		sc.currentStackOffset += varSize
+
+		// The code required to compute the value of the variable.
+		val := CompileStatement(stmt.Value, sc)
+
+		bytes = append(bytes, val...)
+		bytes = append(bytes, OpStore)
+		// bytes = binary.BigEndian.AppendUint64(bytes, varSize)
+	case parser.VarIdentifier:
+		v := sc.stackAllocs[stmt.Name]
+
+		bytes = append(bytes, OpLoad)
+		// bytes = binary.BigEndian.AppendUint64(bytes, v.size)
+		bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
 	default:
-		panic("unsupported statement type")
+		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
+
+	return bytes
 }
 
 const (
@@ -115,4 +128,6 @@ const (
 	OpAdd
 	OpSub
 	OpDiv
+	OpStore
+	OpLoad
 )
