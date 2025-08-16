@@ -143,6 +143,10 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = append(bytes, OpPush)
 			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Push false
 			bytes = append(bytes, OpEq)                     // Negate the result of equality
+		case "&&": // TODO: Short-circuit evaluation
+			bytes = append(bytes, OpAnd)
+		case "||": // TODO: Short-circuit evaluation
+			bytes = append(bytes, OpOr)
 		default:
 			panic("unsupported binary operator: " + stmt.Op)
 		}
@@ -288,4 +292,6 @@ const (
 	OpGt
 	OpLte
 	OpGte
+	OpAnd
+	OpOr
 )

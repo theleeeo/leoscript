@@ -89,41 +89,57 @@ func (vm *VM) Run() (int, error) {
 			a := vm.pop()
 			b := vm.pop()
 			if a == b {
-				vm.cStack = append(vm.cStack, 1) // Push true
+				vm.cStack = append(vm.cStack, 1)
 			} else {
-				vm.cStack = append(vm.cStack, 0) // Push false
+				vm.cStack = append(vm.cStack, 0)
 			}
 		case compiler.OpLt:
 			a := vm.pop()
 			b := vm.pop()
 			if b < a {
-				vm.cStack = append(vm.cStack, 1) // Push true
+				vm.cStack = append(vm.cStack, 1)
 			} else {
-				vm.cStack = append(vm.cStack, 0) // Push false
+				vm.cStack = append(vm.cStack, 0)
 			}
 		case compiler.OpGt:
 			a := vm.pop()
 			b := vm.pop()
 			if b > a {
-				vm.cStack = append(vm.cStack, 1) // Push true
+				vm.cStack = append(vm.cStack, 1)
 			} else {
-				vm.cStack = append(vm.cStack, 0) // Push false
+				vm.cStack = append(vm.cStack, 0)
 			}
 		case compiler.OpGte:
 			a := vm.pop()
 			b := vm.pop()
 			if b >= a {
-				vm.cStack = append(vm.cStack, 1) // Push true
+				vm.cStack = append(vm.cStack, 1)
 			} else {
-				vm.cStack = append(vm.cStack, 0) // Push false
+				vm.cStack = append(vm.cStack, 0)
 			}
 		case compiler.OpLte:
 			a := vm.pop()
 			b := vm.pop()
 			if b <= a {
-				vm.cStack = append(vm.cStack, 1) // Push true
+				vm.cStack = append(vm.cStack, 1)
 			} else {
-				vm.cStack = append(vm.cStack, 0) // Push false
+				vm.cStack = append(vm.cStack, 0)
+			}
+		case compiler.OpAnd:
+			a := vm.pop()
+			b := vm.pop()
+			if a != 0 && b != 0 {
+				vm.cStack = append(vm.cStack, 1)
+			} else {
+				vm.cStack = append(vm.cStack, 0)
+			}
+		case compiler.OpOr:
+			a := vm.pop()
+			b := vm.pop()
+			if a != 0 || b != 0 {
+				vm.cStack = append(vm.cStack, 1)
+			} else {
+				vm.cStack = append(vm.cStack, 0)
 			}
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)

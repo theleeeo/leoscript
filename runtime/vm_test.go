@@ -132,3 +132,101 @@ func Test_VM_IfElse(t *testing.T) {
 		assert.Equal(t, 1, ret)
 	})
 }
+
+func Test_VM_Comparison(t *testing.T) {
+	t.Run("Equality check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (5 == 5) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("Inequality check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (5 != 3) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("Greater than check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (5 > 3) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("Less than check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (3 < 5) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("Greater than or equal check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (5 >= 5) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("Less than or equal check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (3 <= 5) {
+			return 1;
+		} else {
+			return 0;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+}
