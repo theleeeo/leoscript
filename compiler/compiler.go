@@ -127,6 +127,22 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = append(bytes, OpMul)
 		case "/":
 			bytes = append(bytes, OpDiv)
+		case "==":
+			bytes = append(bytes, OpEq)
+		case "<":
+			bytes = append(bytes, OpLt)
+		case ">":
+			bytes = append(bytes, OpGt)
+		case "<=":
+			bytes = append(bytes, OpLte)
+		case ">=":
+			bytes = append(bytes, OpGte)
+		case "!=":
+			// For !=, we can use the equality operator and negate the result
+			bytes = append(bytes, OpEq)
+			bytes = append(bytes, OpPush)
+			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Push false
+			bytes = append(bytes, OpEq)                     // Negate the result of equality
 		default:
 			panic("unsupported binary operator: " + stmt.Op)
 		}
@@ -267,4 +283,9 @@ const (
 	OpCall
 	OpJump
 	OpJumpIfFalse
+	OpEq
+	OpLt
+	OpGt
+	OpLte
+	OpGte
 )

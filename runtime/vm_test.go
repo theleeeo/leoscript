@@ -116,19 +116,19 @@ func Test_VM_IfElse(t *testing.T) {
 		assert.Equal(t, 1, ret)
 	})
 
-	// t.Run("If-else with boolean condition", func(t *testing.T) {
-	// 	lx := lexer.MustTokenize(`
-	// 	if (5 > 3) {
-	// 		return 1;
-	// 	} else {
-	// 		return 2;
-	// 	}
-	// 	`)
-	// 	stmt, _ := parser.NewParser(lx).ParseStatement()
-	// 	exe := compiler.CompileStatement(stmt)
-	// 	vm := runtime.NewVM(exe)
-	// 	ret, err := vm.Run()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, 1, ret)
-	// })
+	t.Run("If-else with boolean condition", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (5 > 3) {
+			return 1;
+		} else {
+			return 2;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
 }

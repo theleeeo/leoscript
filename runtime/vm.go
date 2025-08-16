@@ -33,6 +33,9 @@ func (vm *VM) Run() (int, error) {
 	for vm.pc < len(vm.program) {
 		op := vm.program[vm.pc]
 
+		// PROPOSAL: The binary (and boolean ops) could be changed to be one byte for a bin-op and then one byte (or merge them together using bit-magic) for the specific operation.
+		// It is done in a similar way but only for boolean operations in the python bytecode.
+		// Test this to check for performance benefits.
 		switch op {
 		case compiler.OpPush:
 			value := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
@@ -82,6 +85,46 @@ func (vm *VM) Run() (int, error) {
 			}
 			// If the condition is true, just continue to the next instruction
 			vm.pc += 8 // Move past the jump instruction
+		case compiler.OpEq:
+			a := vm.pop()
+			b := vm.pop()
+			if a == b {
+				vm.cStack = append(vm.cStack, 1) // Push true
+			} else {
+				vm.cStack = append(vm.cStack, 0) // Push false
+			}
+		case compiler.OpLt:
+			a := vm.pop()
+			b := vm.pop()
+			if b < a {
+				vm.cStack = append(vm.cStack, 1) // Push true
+			} else {
+				vm.cStack = append(vm.cStack, 0) // Push false
+			}
+		case compiler.OpGt:
+			a := vm.pop()
+			b := vm.pop()
+			if b > a {
+				vm.cStack = append(vm.cStack, 1) // Push true
+			} else {
+				vm.cStack = append(vm.cStack, 0) // Push false
+			}
+		case compiler.OpGte:
+			a := vm.pop()
+			b := vm.pop()
+			if b >= a {
+				vm.cStack = append(vm.cStack, 1) // Push true
+			} else {
+				vm.cStack = append(vm.cStack, 0) // Push false
+			}
+		case compiler.OpLte:
+			a := vm.pop()
+			b := vm.pop()
+			if b <= a {
+				vm.cStack = append(vm.cStack, 1) // Push true
+			} else {
+				vm.cStack = append(vm.cStack, 0) // Push false
+			}
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
