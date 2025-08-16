@@ -17,19 +17,29 @@ func equalProgram(t *testing.T, p []byte, expected string) {
 	}
 
 	ps = strings.TrimSpace(ps)
-	pOps := strings.Split(ps, "\n")
+	pOpsRaw := strings.Split(ps, "\n")
+	pOps := make([]string, len(pOpsRaw))
+	for i, op := range pOpsRaw {
+		pOps[i] = strings.TrimSpace(op)
+	}
 
 	expected = strings.TrimSpace(expected)
-	exOps := strings.Split(expected, "\n")
+	exOpsRaw := strings.Split(expected, "\n")
+	exOps := make([]string, len(exOpsRaw))
+	for i, op := range exOpsRaw {
+		exOps[i] = strings.TrimSpace(op)
+	}
 
 	if len(pOps) != len(exOps) {
-		t.Errorf("Expected %d operations, got %d\nExpected operations: %v\nGot operations: %v", len(exOps), len(pOps), exOps, pOps)
+		t.Errorf("Expected %d operations, got %d\nExpected operations: %v\nGot operations: %v",
+			len(exOps), len(pOps), exOps, pOps)
 		return
 	}
 
-	for i, op := range pOps {
-		if strings.TrimSpace(op) != strings.TrimSpace(exOps[i]) {
-			t.Errorf("Operation %d mismatch: expected '%s', got '%s'", i, strings.TrimSpace(exOps[i]), strings.TrimSpace(op))
+	for i := range pOps {
+		if pOps[i] != exOps[i] {
+			t.Errorf("Operation %d mismatch: expected '%s', got '%s'\nExpected: %v\nGot: %v",
+				i, exOps[i], pOps[i], exOps, pOps)
 			return
 		}
 	}
@@ -172,6 +182,54 @@ func Test_Function(t *testing.T) {
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
 			`RETURN`,
+		)
+	})
+
+	t.Run("call function with no arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() {
+			var a = 5;
+		}
+
+		fn main() {
+			foo();
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`PUSH 5
+			STORE
+			RETURN
+			CALL 0
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("call function with arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn add(int a, int b) int {
+			return a + b;
+		}
+
+		fn main() {
+			add(5, 10);
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`
+			LOAD 0
+			LOAD 8
+			ADD
+			RETURN
+			PUSH 5
+			PUSH 10
+			CALL 0
+			RETURN
+			`,
 		)
 	})
 }

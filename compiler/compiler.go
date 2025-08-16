@@ -22,8 +22,8 @@ func Compile(p *parser.Program) Executable {
 	}
 
 	for _, stmt := range p.FnDefs {
-		c.code = append(c.code, c.compileStatement(stmt, sc)...)
 		c.functions[stmt.Name] = uint64(len(c.code))
+		c.code = append(c.code, c.compileStatement(stmt, sc)...)
 	}
 
 	return Executable{
@@ -125,7 +125,10 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		bytes = append(bytes, OpStore)
 		// bytes = binary.BigEndian.AppendUint64(bytes, varSize)
 	case parser.VarIdentifier:
-		v := sc.stackAllocs[stmt.Name]
+		v, ok := sc.stackAllocs[stmt.Name]
+		if !ok {
+			panic(fmt.Sprintf("variable %s not found in scope", stmt.Name)) // Should not happen on a correct ast
+		}
 
 		bytes = append(bytes, OpLoad)
 		// bytes = binary.BigEndian.AppendUint64(bytes, v.size)
@@ -156,6 +159,21 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		bytes = append(bytes, OpReturn)
 	case parser.VoidLiteral:
 		// No operation needed for void literals
+	case parser.Call:
+		// Compile the function call arguments
+		for _, arg := range stmt.Args {
+			argBytes := c.compileStatement(arg, sc)
+			bytes = append(bytes, argBytes...)
+		}
+
+		// Call the function
+		start, ok := c.functions[stmt.Name]
+		if !ok {
+			panic(fmt.Sprintf("function %s not found", stmt.Name)) // Should not happen on a correct ast
+		}
+
+		bytes = append(bytes, OpCall)
+		bytes = binary.BigEndian.AppendUint64(bytes, start)
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -172,4 +190,5 @@ const (
 	OpStore
 	OpLoad
 	OpReturn
+	OpCall
 )
