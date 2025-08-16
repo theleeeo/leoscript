@@ -55,6 +55,20 @@ func DebugPrint(exe []byte) string {
 
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 7
+		case OpJumpIfFalse:
+			b.WriteString("JUMP_IF_FALSE")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
+		case OpJump:
+			b.WriteString("JUMP")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}

@@ -201,6 +201,53 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			})
 			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Placeholder for the function call
 		}
+	case parser.If:
+		// Compile the condition
+		cond := c.compileStatement(stmt.Cond, sc)
+		bytes = append(bytes, cond...)
+
+		// Compile the true branch
+		var trueBranch []byte
+		for _, trueStmt := range stmt.Then {
+			trueBranch = append(trueBranch, c.compileStatement(trueStmt, sc)...)
+		}
+
+		var elseBranch []byte
+		for _, elseStmt := range stmt.Else {
+			elseBranch = append(elseBranch, c.compileStatement(elseStmt, sc)...)
+		}
+
+		bytes = append(bytes, OpJumpIfFalse)
+
+		// The offset to jump to if the condition is false
+		var falseOffset uint64
+		if len(elseBranch) > 0 {
+			// If there is an else branch, we need to jump to it if the condition is false
+			falseOffset = uint64(len(c.code) + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
+			bytes = binary.BigEndian.AppendUint64(bytes, falseOffset)
+		} else {
+			// If there is no else branch, we just jump over the true branch
+			falseOffset = uint64(len(c.code) + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
+			bytes = binary.BigEndian.AppendUint64(bytes, falseOffset)
+		}
+
+		bytes = append(bytes, trueBranch...)
+
+		if len(elseBranch) > 0 {
+			// If there is an else branch, we need to jump over it after the true branch
+			bytes = append(bytes, OpJump)
+			// The offset to jump to after the true branch
+			bytes = binary.BigEndian.AppendUint64(bytes, uint64(len(c.code)+len(bytes)+len(elseBranch)+8)) // +8 for the size of the jump location itself
+		}
+
+		bytes = append(bytes, elseBranch...)
+	case parser.BooleanLiteral:
+		bytes = append(bytes, OpPush)
+		if stmt.Value {
+			bytes = binary.BigEndian.AppendUint64(bytes, 1) // true
+		} else {
+			bytes = binary.BigEndian.AppendUint64(bytes, 0) // false
+		}
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -218,4 +265,6 @@ const (
 	OpLoad
 	OpReturn
 	OpCall
+	OpJump
+	OpJumpIfFalse
 )

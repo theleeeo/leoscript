@@ -31,14 +31,14 @@ func equalProgram(t *testing.T, p []byte, expected string) {
 	}
 
 	if len(pOps) != len(exOps) {
-		t.Errorf("Expected %d operations, got %d\nExpected operations: %v\nGot operations: %v",
+		t.Errorf("Expected %d operations, got %d\nExpected operations:\n%v\nGot operations:\n%v",
 			len(exOps), len(pOps), exOps, pOps)
 		return
 	}
 
 	for i := range pOps {
 		if pOps[i] != exOps[i] {
-			t.Errorf("Operation %d mismatch: expected '%s', got '%s'\nExpected: %v\nGot: %v",
+			t.Errorf("Operation %d mismatch: expected '%s', got '%s'\nExpected:\n%v\nGot:\n%v",
 				i, exOps[i], pOps[i], exOps, pOps)
 			return
 		}
@@ -259,6 +259,49 @@ func Test_Function(t *testing.T) {
 			RETURN
 			PUSH 42
 			RETURN
+			`,
+		)
+	})
+}
+
+func Test_IfElse(t *testing.T) {
+	t.Run("if statement with condition", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (true) {
+			int a = 5;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		equalProgram(t,
+			compiler.CompileStatement(stmt),
+			`
+			PUSH 1
+			JUMP_IF_FALSE 28
+			PUSH 5
+			STORE
+			`,
+		)
+	})
+
+	t.Run("if-else statement", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (true) {
+			int a = 5;
+		} else {
+			int a = 10;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		equalProgram(t,
+			compiler.CompileStatement(stmt),
+			`
+			PUSH 1
+			JUMP_IF_FALSE 28
+			PUSH 5
+			STORE
+			JUMP 47
+			PUSH 10
+			STORE
 			`,
 		)
 	})

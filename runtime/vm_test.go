@@ -70,3 +70,65 @@ func Test_VM_Variables(t *testing.T) {
 	// 	assert.Equal(t, uint64(30), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))
 	// })
 }
+
+func Test_VM_IfElse(t *testing.T) {
+	t.Run("True if statement", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (true) {
+			return 1;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	t.Run("False if statement", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (false) {
+			return 1;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret) // No return value, should be 0
+	})
+
+	t.Run("If-else statement", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		if (true) {
+			return 1;
+		} else {
+			return 2;
+		}
+		`)
+		stmt, _ := parser.NewParser(lx).ParseStatement()
+		exe := compiler.CompileStatement(stmt)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret)
+	})
+
+	// t.Run("If-else with boolean condition", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	if (5 > 3) {
+	// 		return 1;
+	// 	} else {
+	// 		return 2;
+	// 	}
+	// 	`)
+	// 	stmt, _ := parser.NewParser(lx).ParseStatement()
+	// 	exe := compiler.CompileStatement(stmt)
+	// 	vm := runtime.NewVM(exe)
+	// 	ret, err := vm.Run()
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 1, ret)
+	// })
+}
