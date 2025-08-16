@@ -7,7 +7,10 @@ import (
 )
 
 func Compile(p *parser.Program) Executable {
-	var code []byte
+	c := &compiler{
+		code:      make([]byte, 0),
+		functions: make(map[string]uint64),
+	}
 
 	sc := &scopeContext{
 		stackAllocs:        make(map[string]variable),
@@ -15,15 +18,16 @@ func Compile(p *parser.Program) Executable {
 	}
 
 	for _, stmt := range p.VarDecls {
-		code = append(code, CompileStatement(stmt, sc)...)
+		c.code = append(c.code, c.compileStatement(stmt, sc)...)
 	}
 
 	for _, stmt := range p.FnDefs {
-		code = append(code, CompileStatement(stmt, sc)...)
+		c.code = append(c.code, c.compileStatement(stmt, sc)...)
+		c.functions[stmt.Name] = uint64(len(c.code))
 	}
 
 	return Executable{
-		code: code,
+		code: c.code,
 	}
 }
 
@@ -31,7 +35,7 @@ type Executable struct {
 	code []byte
 }
 
-func (e *Executable) Raw() []byte {
+func (e Executable) Raw() []byte {
 	return e.code
 }
 
@@ -47,15 +51,27 @@ type variable struct {
 	size        uint64
 }
 
-func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
-	if sc == nil {
-		sc = &scopeContext{
-			stackAllocs:        make(map[string]variable),
-			currentStackOffset: 0,
-		}
-	}
+type compiler struct {
+	code []byte
 
-	var bytes []byte
+	// A mapping for the start-instruction of each function
+	functions map[string]uint64
+}
+
+func CompileStatement(stmt parser.Statement) []byte {
+	c := &compiler{
+		code:      make([]byte, 0),
+		functions: make(map[string]uint64),
+	}
+	c.code = append(c.code, c.compileStatement(stmt, &scopeContext{
+		stackAllocs:        make(map[string]variable),
+		currentStackOffset: 0,
+	})...)
+	return c.code
+}
+
+func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []byte {
+	var bytes []byte // TODO: Possible optimization to pre-allocate the size of bytes based on the expected size of the type of stmt
 
 	switch stmt := stmt.(type) {
 	case parser.IntegerLiteral:
@@ -68,7 +84,7 @@ func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
 			bytes = binary.BigEndian.AppendUint64(bytes, 0)
 
 			bytes = append(bytes, OpPush)
-			expr := CompileStatement(stmt.Expression, sc)
+			expr := c.compileStatement(stmt.Expression, sc)
 			bytes = append(bytes, expr...)
 
 			bytes = append(bytes, OpSub)
@@ -76,8 +92,8 @@ func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
 			panic("unsupported unary operator: " + stmt.Op)
 		}
 	case parser.BinaryExpression:
-		left := CompileStatement(stmt.Left, sc)
-		right := CompileStatement(stmt.Right, sc)
+		left := c.compileStatement(stmt.Left, sc)
+		right := c.compileStatement(stmt.Right, sc)
 
 		bytes = append(bytes, left...)
 		bytes = append(bytes, right...)
@@ -96,15 +112,14 @@ func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
 		}
 	case parser.VarDecl:
 		// The full size required by the variable
-		varSize := stmt.Type.Size()
 		sc.stackAllocs[stmt.Name] = variable{
 			stackOffset: sc.currentStackOffset,
-			size:        varSize,
+			size:        stmt.Type.Size(),
 		}
-		sc.currentStackOffset += varSize
+		sc.currentStackOffset += stmt.Type.Size()
 
 		// The code required to compute the value of the variable.
-		val := CompileStatement(stmt.Value, sc)
+		val := c.compileStatement(stmt.Value, sc)
 
 		bytes = append(bytes, val...)
 		bytes = append(bytes, OpStore)
@@ -115,6 +130,32 @@ func CompileStatement(stmt parser.Statement, sc *scopeContext) []byte {
 		bytes = append(bytes, OpLoad)
 		// bytes = binary.BigEndian.AppendUint64(bytes, v.size)
 		bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
+	case parser.FnDef:
+		if stmt.Stub {
+			panic("stubs not implemented")
+		}
+
+		for _, arg := range stmt.Args {
+			// Allocate space for each parameter in the stack
+			sc.stackAllocs[arg.Name] = variable{
+				stackOffset: sc.currentStackOffset,
+				size:        arg.Type.Size(),
+			}
+			sc.currentStackOffset += arg.Type.Size()
+		}
+
+		// Compile the function body
+		for _, bodyStmt := range stmt.Body {
+			bytes = append(bytes, c.compileStatement(bodyStmt, sc)...) // TODO: Nested scopeContexts
+		}
+	case parser.Return:
+		if stmt.Value != nil {
+			val := c.compileStatement(stmt.Value, sc)
+			bytes = append(bytes, val...)
+		}
+		bytes = append(bytes, OpReturn)
+	case parser.VoidLiteral:
+		// No operation needed for void literals
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -130,4 +171,5 @@ const (
 	OpDiv
 	OpStore
 	OpLoad
+	OpReturn
 )

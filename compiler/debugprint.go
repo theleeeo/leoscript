@@ -46,6 +46,9 @@ func DebugPrint(exe []byte) string {
 
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 8
+		case OpReturn:
+			b.WriteString("RETURN")
+			i++
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}

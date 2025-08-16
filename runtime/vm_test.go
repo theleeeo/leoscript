@@ -15,7 +15,7 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 	t.Run("Single binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("2 + 3;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr, nil)
+		exe := compiler.CompileStatement(expr)
 		vm := runtime.NewVM(exe)
 		ret, err := vm.Run()
 		assert.NoError(t, err)
@@ -25,7 +25,7 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 	t.Run("negative number expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("5 - 6;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr, nil)
+		exe := compiler.CompileStatement(expr)
 		vm := runtime.NewVM(exe)
 		ret, err := vm.Run()
 		assert.NoError(t, err)
@@ -35,7 +35,7 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 	t.Run("multiplication and division binary expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("3 * 4 - 4 / 2;")
 		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr, nil)
+		exe := compiler.CompileStatement(expr)
 		vm := runtime.NewVM(exe)
 		ret, err := vm.Run()
 		assert.NoError(t, err)

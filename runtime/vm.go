@@ -59,7 +59,6 @@ func (vm *VM) Run() (int, error) {
 			vm.cStack = append(vm.cStack, b/a)
 		case compiler.OpStore:
 			value := vm.pop()
-
 			// Store the value in the variable stack
 			vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
 		case compiler.OpLoad:
