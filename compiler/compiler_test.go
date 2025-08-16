@@ -232,4 +232,24 @@ func Test_Function(t *testing.T) {
 			`,
 		)
 	})
+
+	t.Run("call function before its compilation", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int a = foo();
+
+		fn foo() int {
+			return 42;
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`
+			CALL 10
+			STORE
+			PUSH 42
+			RETURN
+			`,
+		)
+	})
 }

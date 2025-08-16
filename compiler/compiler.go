@@ -26,6 +26,15 @@ func Compile(p *parser.Program) Executable {
 		c.code = append(c.code, c.compileStatement(stmt, sc)...)
 	}
 
+	for _, fn := range c.unresolvedFunctions {
+		start, ok := c.functions[fn.name]
+		if !ok {
+			panic(fmt.Sprintf("unresolved function %s not found in functions map", fn.name))
+		}
+		// Replace the placeholder offset with the actual start instruction of the function
+		binary.BigEndian.PutUint64(c.code[fn.placeholderOffset:], start)
+	}
+
 	return Executable{
 		code: c.code,
 	}
@@ -56,6 +65,14 @@ type compiler struct {
 
 	// A mapping for the start-instruction of each function
 	functions map[string]uint64
+
+	unresolvedFunctions []unresolvedFunction
+}
+
+// unresolvedFunction is used to track a function call that has not yet been compiled and therefore does not have a start instruction.
+type unresolvedFunction struct {
+	name              string
+	placeholderOffset uint64 // The offset in the code where the function call is made
 }
 
 func CompileStatement(stmt parser.Statement) []byte {
@@ -138,6 +155,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			panic("stubs not implemented")
 		}
 
+		// TODO: Functions should likely have to first store their parameters in the stack
 		for _, arg := range stmt.Args {
 			// Allocate space for each parameter in the stack
 			sc.stackAllocs[arg.Name] = variable{
@@ -166,14 +184,21 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = append(bytes, argBytes...)
 		}
 
+		bytes = append(bytes, OpCall)
+
 		// Call the function
 		start, ok := c.functions[stmt.Name]
-		if !ok {
-			panic(fmt.Sprintf("function %s not found", stmt.Name)) // Should not happen on a correct ast
+		if ok {
+			bytes = binary.BigEndian.AppendUint64(bytes, start)
+		} else {
+			// If the function is not defined yet, we need to add a placeholder for it
+			c.unresolvedFunctions = append(c.unresolvedFunctions, unresolvedFunction{
+				name:              stmt.Name,
+				placeholderOffset: uint64(len(c.code) + len(bytes)),
+			})
+			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Placeholder for the function call
 		}
 
-		bytes = append(bytes, OpCall)
-		bytes = binary.BigEndian.AppendUint64(bytes, start)
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
