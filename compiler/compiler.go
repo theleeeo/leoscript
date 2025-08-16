@@ -108,6 +108,12 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = append(bytes, expr...)
 
 			bytes = append(bytes, OpSub)
+		case "!":
+			expr := c.compileStatement(stmt.Expression, sc)
+			bytes = append(bytes, expr...)
+			bytes = append(bytes, OpPush)
+			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Push false
+			bytes = append(bytes, OpEq)                     // Negate the result of equality
 		default:
 			panic("unsupported unary operator: " + stmt.Op)
 		}

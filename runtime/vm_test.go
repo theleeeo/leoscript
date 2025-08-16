@@ -230,3 +230,35 @@ func Test_VM_Comparison(t *testing.T) {
 		assert.Equal(t, 1, ret)
 	})
 }
+
+func Test_VM_BooleanOps(t *testing.T) {
+	t.Run("Boolean AND operation", func(t *testing.T) {
+		lx := lexer.MustTokenize(`true && false;`)
+		expr, _ := parser.NewParser(lx).ParseExpr()
+		exe := compiler.CompileStatement(expr)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret) // false
+	})
+
+	t.Run("Boolean OR operation", func(t *testing.T) {
+		lx := lexer.MustTokenize(`true || false;`)
+		expr, _ := parser.NewParser(lx).ParseExpr()
+		exe := compiler.CompileStatement(expr)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // true
+	})
+
+	t.Run("Boolean NOT operation", func(t *testing.T) {
+		lx := lexer.MustTokenize(`!true;`)
+		expr, _ := parser.NewParser(lx).ParseExpr()
+		exe := compiler.CompileStatement(expr)
+		vm := runtime.NewVM(exe)
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret) // false
+	})
+}
