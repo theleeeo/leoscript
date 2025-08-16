@@ -844,7 +844,9 @@ func Test_FunctionDefinitions(t *testing.T) {
 			Name:       "foo",
 			ReturnType: types.Void,
 			Args:       []Argument{},
-			Body:       []Statement{},
+			Body: []Statement{
+				Return{Value: VoidLiteral{}},
+			},
 		}, fnDef)
 	})
 
@@ -896,7 +898,9 @@ func Test_FunctionDefinitions(t *testing.T) {
 			Args: []Argument{
 				{Name: "a", Type: types.Int},
 			},
-			Body: []Statement{},
+			Body: []Statement{
+				Return{Value: VoidLiteral{}},
+			},
 		}, fnDef)
 	})
 
@@ -914,7 +918,9 @@ func Test_FunctionDefinitions(t *testing.T) {
 				{Name: "b", Type: types.Bool},
 				{Name: "c", Type: types.Bool},
 			},
-			Body: []Statement{},
+			Body: []Statement{
+				Return{Value: VoidLiteral{}},
+			},
 		}, fnDef)
 	})
 
@@ -1096,7 +1102,9 @@ func Test_ParseFile(t *testing.T) {
 					Name:       "bar",
 					ReturnType: types.Void,
 					Args:       []Argument{},
-					Body:       []Statement{},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
+					},
 				},
 			},
 			VarDecls: []VarDecl{},
@@ -1512,6 +1520,7 @@ func Test_WhileStatements(t *testing.T) {
 						},
 					},
 				},
+				Return{Value: VoidLiteral{}},
 			},
 		}, fnDef)
 	})
