@@ -145,12 +145,14 @@ func Test_StackVariables(t *testing.T) {
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
-			`PUSH 10
+			`
+			PUSH 10
 			STORE
 			LOAD 0
 			PUSH 20
 			ADD
 			STORE
+			RETURN
 			`,
 		)
 	})
@@ -166,7 +168,9 @@ func Test_Function(t *testing.T) {
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
-			`LOAD 0
+			`
+			RETURN
+			LOAD 0
 			LOAD 8
 			ADD
 			RETURN
@@ -181,7 +185,9 @@ func Test_Function(t *testing.T) {
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
-			`RETURN`,
+			`
+			RETURN
+			RETURN`,
 		)
 	})
 
@@ -198,10 +204,12 @@ func Test_Function(t *testing.T) {
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
-			`PUSH 5
+			`
+			RETURN
+			PUSH 5
 			STORE
 			RETURN
-			CALL 0
+			CALL 1
 			RETURN
 			`,
 		)
@@ -221,13 +229,14 @@ func Test_Function(t *testing.T) {
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
 			`
+			RETURN
 			LOAD 0
 			LOAD 8
 			ADD
 			RETURN
 			PUSH 5
 			PUSH 10
-			CALL 0
+			CALL 1
 			RETURN
 			`,
 		)
@@ -245,8 +254,9 @@ func Test_Function(t *testing.T) {
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
 			`
-			CALL 10
+			CALL 11
 			STORE
+			RETURN
 			PUSH 42
 			RETURN
 			`,

@@ -67,6 +67,11 @@ func (vm *VM) Run() (int, error) {
 			vm.pc += 7
 			value := binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
 			vm.cStack = append(vm.cStack, value)
+		case compiler.OpReturn:
+			if len(vm.cStack) == 0 {
+				return 0, nil // No value to return
+			}
+			return int(vm.pop()), nil
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
@@ -78,6 +83,8 @@ func (vm *VM) Run() (int, error) {
 		return 0, nil
 	}
 
+	// TODO: Should not be encountered here. The program should always end with a return.
+	// Or maybe, if we allow it to run incomplete-programs, just raw bytecode, it should be possible. But that should be handled explicitly either way.
 	return int(vm.pop()), nil
 }
 

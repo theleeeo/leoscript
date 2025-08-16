@@ -17,9 +17,12 @@ func Compile(p *parser.Program) Executable {
 		currentStackOffset: 0,
 	}
 
+	// Compile the initialization code required for the program
 	for _, stmt := range p.VarDecls {
 		c.code = append(c.code, c.compileStatement(stmt, sc)...)
 	}
+	// The initialization code is followed by a return to have the VM break out of its execution, allowing it to start acception external invokations.
+	c.code = append(c.code, OpReturn) // Add a return at the end of the program
 
 	for _, stmt := range p.FnDefs {
 		c.functions[stmt.Name] = uint64(len(c.code))
@@ -198,7 +201,6 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			})
 			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Placeholder for the function call
 		}
-
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
