@@ -164,15 +164,14 @@ func Test_Function(t *testing.T) {
 		)
 	})
 
-	// TODO: Parser should add void return
-	// t.Run("void return", func(t *testing.T) {
-	// 	lx := lexer.MustTokenize(`
-	// 	fn foo() {}
-	// 	`)
-	// 	pg, _ := parser.NewParser(lx).Parse()
-	// 	equalProgram(t,
-	// 		compiler.Compile(pg).Raw(),
-	// 		`RETURN`,
-	// 	)
-	// })
+	t.Run("void return", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() {}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`RETURN`,
+		)
+	})
 }

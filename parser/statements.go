@@ -167,6 +167,19 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 		return FnDef{}, fmt.Errorf("parsing function body: %w", err)
 	}
 
+	// As syntactic sugar, we allow a void function to end without an explicit return statement.
+	// The ast should however contain a void-return to keep the ast consistent.
+	if returnType == types.Void {
+		if len(body) == 0 {
+			body = append(body, Return{Value: VoidLiteral{}})
+		}
+
+		_, hasEndReturn := body[len(body)-1].(Return)
+		if !hasEndReturn {
+			body = append(body, Return{Value: VoidLiteral{}})
+		}
+	}
+
 	return FnDef{
 		Name:       identifier.Value,
 		ReturnType: returnType,
