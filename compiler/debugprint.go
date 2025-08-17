@@ -69,6 +69,20 @@ func DebugPrint(exe []byte) string {
 
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 7
+		case OpLoadGlobal:
+			b.WriteString("LOAD_GLOBAL")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
+		case OpResetVarstack:
+			b.WriteString("RESET_VARSTACK")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}

@@ -769,6 +769,16 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 			},
 		}, pg)
 	})
+
+	// TODO: Dependent variable declarations should be disallowed
+	// t.Run("global var-function dependency", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	var a = 123;
+	// 	fn foo() int {return a;}
+	// 	`)
+	// 	p := NewParser(lx)
+	// 	pg, err := p.Parse()
+	// 	assert.Error(t, err)
 }
 
 func Test_ReturnTypes(t *testing.T) {

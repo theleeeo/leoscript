@@ -8,25 +8,24 @@ import (
 
 func Compile(p *parser.Program) Executable {
 	c := &compiler{
-		code:      make([]byte, 0),
+		code: make([]byte, 0),
+		globalScope: &scopeContext{
+			stackAllocs:        make(map[string]variable),
+			currentStackOffset: 0,
+		},
 		functions: make(map[string]uint64),
-	}
-
-	sc := &scopeContext{
-		stackAllocs:        make(map[string]variable),
-		currentStackOffset: 0,
 	}
 
 	// Compile the initialization code required for the program
 	for _, stmt := range p.VarDecls {
-		c.code = append(c.code, c.compileStatement(stmt, sc)...)
+		c.code = append(c.code, c.compileStatement(stmt, c.globalScope)...)
 	}
 	// The initialization code is followed by a return to have the VM break out of its execution, allowing it to start acception external invokations.
 	c.code = append(c.code, OpReturn) // Add a return at the end of the program
 
 	for _, stmt := range p.FnDefs {
 		c.functions[stmt.Name] = uint64(len(c.code))
-		c.code = append(c.code, c.compileStatement(stmt, sc)...)
+		c.code = append(c.code, c.compileStatement(stmt, c.globalScope)...)
 	}
 
 	for _, fn := range c.unresolvedFunctions {
@@ -52,10 +51,35 @@ func (e Executable) Raw() []byte {
 }
 
 type scopeContext struct {
+	parent *scopeContext
 	// The stack offsets for each variable allocated on the stack
 	stackAllocs map[string]variable
 	// The current stack offset for the next variable to be allocated
 	currentStackOffset uint64
+}
+
+func (sc *scopeContext) allocateVariable(name string, size uint64) {
+	if _, exists := sc.stackAllocs[name]; exists {
+		panic(fmt.Sprintf("variable %s already exists in scope", name))
+	}
+	sc.stackAllocs[name] = variable{
+		stackOffset: sc.currentStackOffset,
+		size:        size,
+	}
+	sc.currentStackOffset += size
+}
+
+func (sc *scopeContext) getVariable(name string) (variable, bool) {
+	v, ok := sc.stackAllocs[name]
+	if ok {
+		return v, true
+	}
+
+	if sc.parent != nil {
+		return sc.parent.getVariable(name)
+	}
+
+	return variable{}, false
 }
 
 type variable struct {
@@ -69,6 +93,8 @@ type compiler struct {
 	// A mapping for the start-instruction of each function
 	functions map[string]uint64
 
+	globalScope *scopeContext
+
 	unresolvedFunctions []unresolvedFunction
 }
 
@@ -80,8 +106,9 @@ type unresolvedFunction struct {
 
 func CompileStatement(stmt parser.Statement) []byte {
 	c := &compiler{
-		code:      make([]byte, 0),
-		functions: make(map[string]uint64),
+		code:        make([]byte, 0),
+		globalScope: nil,
+		functions:   make(map[string]uint64),
 	}
 	c.code = append(c.code, c.compileStatement(stmt, &scopeContext{
 		stackAllocs:        make(map[string]variable),
@@ -97,6 +124,15 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 	case parser.IntegerLiteral:
 		bytes = append(bytes, OpPush)
 		bytes = binary.BigEndian.AppendUint64(bytes, uint64(stmt.Value))
+	case parser.BooleanLiteral:
+		bytes = append(bytes, OpPush)
+		if stmt.Value {
+			bytes = binary.BigEndian.AppendUint64(bytes, 1) // true
+		} else {
+			bytes = binary.BigEndian.AppendUint64(bytes, 0) // false
+		}
+	case parser.VoidLiteral:
+		// No operation needed for void literals
 	case parser.UnaryExpression:
 		switch stmt.Op {
 		case "-":
@@ -157,26 +193,30 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			panic("unsupported binary operator: " + stmt.Op)
 		}
 	case parser.VarDecl:
-		// The full size required by the variable
-		sc.stackAllocs[stmt.Name] = variable{
-			stackOffset: sc.currentStackOffset,
-			size:        stmt.Type.Size(),
-		}
-		sc.currentStackOffset += stmt.Type.Size()
-
 		// The code required to compute the value of the variable.
 		val := c.compileStatement(stmt.Value, sc)
+
+		// The full size required by the variable
+		sc.allocateVariable(stmt.Name, stmt.Type.Size())
 
 		bytes = append(bytes, val...)
 		bytes = append(bytes, OpStore)
 		// bytes = binary.BigEndian.AppendUint64(bytes, varSize)
 	case parser.VarIdentifier:
-		v, ok := sc.stackAllocs[stmt.Name]
-		if !ok {
-			panic(fmt.Sprintf("variable %s not found in scope", stmt.Name)) // Should not happen on a correct ast
+		v, ok := sc.getVariable(stmt.Name)
+		if ok && sc == c.globalScope {
+			bytes = append(bytes, OpLoadGlobal)
+		} else if ok {
+			bytes = append(bytes, OpLoad)
+		} else {
+			v, ok = c.globalScope.getVariable(stmt.Name)
+			if !ok {
+				panic(fmt.Sprintf("variable %s not found in scope", stmt.Name))
+			}
+
+			bytes = append(bytes, OpLoadGlobal)
 		}
 
-		bytes = append(bytes, OpLoad)
 		// bytes = binary.BigEndian.AppendUint64(bytes, v.size)
 		bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
 	case parser.FnDef:
@@ -184,19 +224,20 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			panic("stubs not implemented")
 		}
 
-		// TODO: Functions should likely have to first store their parameters in the stack
+		fnSc := &scopeContext{
+			stackAllocs:        make(map[string]variable),
+			currentStackOffset: 0,
+		}
+
 		for _, arg := range stmt.Args {
 			// Allocate space for each parameter in the stack
-			sc.stackAllocs[arg.Name] = variable{
-				stackOffset: sc.currentStackOffset,
-				size:        arg.Type.Size(),
-			}
-			sc.currentStackOffset += arg.Type.Size()
+			fnSc.allocateVariable(arg.Name, arg.Type.Size())
+			bytes = append(bytes, OpStore)
 		}
 
 		// Compile the function body
 		for _, bodyStmt := range stmt.Body {
-			bytes = append(bytes, c.compileStatement(bodyStmt, sc)...) // TODO: Nested scopeContexts
+			bytes = append(bytes, c.compileStatement(bodyStmt, fnSc)...)
 		}
 	case parser.Return:
 		if stmt.Value != nil {
@@ -204,8 +245,6 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = append(bytes, val...)
 		}
 		bytes = append(bytes, OpReturn)
-	case parser.VoidLiteral:
-		// No operation needed for void literals
 	case parser.Call:
 		// Compile the function call arguments
 		for _, arg := range stmt.Args {
@@ -235,12 +274,24 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		// Compile the true branch
 		var trueBranch []byte
 		for _, trueStmt := range stmt.Then {
-			trueBranch = append(trueBranch, c.compileStatement(trueStmt, sc)...)
+			subStack := &scopeContext{
+				parent:             sc,
+				stackAllocs:        make(map[string]variable),
+				currentStackOffset: sc.currentStackOffset,
+			}
+
+			trueBranch = append(trueBranch, c.compileStatement(trueStmt, subStack)...)
 		}
 
 		var elseBranch []byte
 		for _, elseStmt := range stmt.Else {
-			elseBranch = append(elseBranch, c.compileStatement(elseStmt, sc)...)
+			subStack := &scopeContext{
+				parent:             sc,
+				stackAllocs:        make(map[string]variable),
+				currentStackOffset: sc.currentStackOffset,
+			}
+
+			elseBranch = append(elseBranch, c.compileStatement(elseStmt, subStack)...)
 		}
 
 		bytes = append(bytes, OpJumpIfFalse)
@@ -267,13 +318,8 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		}
 
 		bytes = append(bytes, elseBranch...)
-	case parser.BooleanLiteral:
-		bytes = append(bytes, OpPush)
-		if stmt.Value {
-			bytes = binary.BigEndian.AppendUint64(bytes, 1) // true
-		} else {
-			bytes = binary.BigEndian.AppendUint64(bytes, 0) // false
-		}
+		bytes = append(bytes, OpResetVarstack)
+		bytes = append(bytes, binary.BigEndian.AppendUint64(nil, sc.currentStackOffset)...) // Reset the variable stack back to before the if statement
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -283,12 +329,13 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 
 const (
 	OpPush byte = iota + 1
-	OpMul
 	OpAdd
 	OpSub
+	OpMul
 	OpDiv
 	OpStore
 	OpLoad
+	OpLoadGlobal
 	OpReturn
 	OpCall
 	OpJump
@@ -300,4 +347,5 @@ const (
 	OpGte
 	OpAnd
 	OpOr
+	OpResetVarstack
 )

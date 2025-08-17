@@ -2,6 +2,7 @@ package runtime_test
 
 import (
 	"encoding/binary"
+	"fmt"
 	"leoscript/compiler"
 	"leoscript/lexer"
 	"leoscript/parser"
@@ -260,5 +261,93 @@ func Test_VM_BooleanOps(t *testing.T) {
 		ret, err := vm.Run()
 		assert.NoError(t, err)
 		assert.Equal(t, 0, ret) // false
+	})
+}
+
+func Test_VM_Functions(t *testing.T) {
+	t.Run("Function definition and call", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn add(int a, int b) int {
+			return a + b;
+		}
+
+		var a = add(2, 3);
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(5), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // a should be 5
+	})
+
+	t.Run("Function referencing global variables", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var x = 10;
+
+		fn getX() int {
+			return x;
+		}
+
+		var a = getX();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should be 10
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should also be 10
+	})
+
+	t.Run("local variable shadowing global variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var x = 10;
+
+		fn shadowX() int {
+			var x = 20;
+			return x;
+		}
+
+		var a = shadowX();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should still be 10
+		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should be 20 (from shadowX)
+	})
+
+	t.Run("Function shadows global variable, restored later", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var x = 10;
+
+		fn shadowX() int {
+			var x = 20;
+			return x;
+		}
+
+		var a = shadowX();
+		var b = x;
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		fmt.Println(compiler.DebugPrint(exe.Raw()))
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))   // Global x should still be 10
+		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))  // a should be 20 (from shadowX)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[16:24])) // b should be 10 (global x)
 	})
 }

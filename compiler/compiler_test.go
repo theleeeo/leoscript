@@ -148,7 +148,7 @@ func Test_StackVariables(t *testing.T) {
 			`
 			PUSH 10
 			STORE
-			LOAD 0
+			LOAD_GLOBAL 0
 			PUSH 20
 			ADD
 			STORE
@@ -170,6 +170,8 @@ func Test_Function(t *testing.T) {
 			compiler.Compile(pg).Raw(),
 			`
 			RETURN
+			STORE
+			STORE
 			LOAD 0
 			LOAD 8
 			ADD
@@ -230,6 +232,8 @@ func Test_Function(t *testing.T) {
 			compiler.Compile(pg).Raw(),
 			`
 			RETURN
+			STORE
+			STORE
 			LOAD 0
 			LOAD 8
 			ADD
@@ -279,6 +283,7 @@ func Test_IfElse(t *testing.T) {
 			JUMP_IF_FALSE 28
 			PUSH 5
 			STORE
+			RESET_VARSTACK 0
 			`,
 		)
 	})
@@ -302,6 +307,7 @@ func Test_IfElse(t *testing.T) {
 			JUMP 47
 			PUSH 10
 			STORE
+			RESET_VARSTACK 0
 			`,
 		)
 	})

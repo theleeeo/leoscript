@@ -9,9 +9,20 @@ import (
 type VM struct {
 	cStack        []uint64
 	variableStack []byte
+	callStack     []stackFrame
 
 	program []byte
-	pc      int
+	pc      uint64
+}
+
+type stackFrame struct {
+	// The return address to jump back to after the function call
+	// This is the address of the instruction after the call instruction
+	returnAddress uint64
+	// The base of the stack for this function call
+	// This is used to calculate the offsets of local variables
+	// relative to the base of the stack
+	stackBase uint64
 }
 
 func NewVM(program []byte) *VM {
@@ -30,7 +41,7 @@ func (vm *VM) pop() uint64 {
 }
 
 func (vm *VM) Run() (int, error) {
-	for vm.pc < len(vm.program) {
+	for vm.pc < uint64(len(vm.program)) {
 		op := vm.program[vm.pc]
 
 		// PROPOSAL: The binary (and boolean ops) could be changed to be one byte for a bin-op and then one byte (or merge them together using bit-magic) for the specific operation.
@@ -61,26 +72,54 @@ func (vm *VM) Run() (int, error) {
 			value := vm.pop()
 			// Store the value in the variable stack
 			vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
-		case compiler.OpLoad:
+		case compiler.OpLoad: // Load relative to the stackframe base
 			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			sf := vm.callStack[len(vm.callStack)-1] // Get the current stack frame
+			vm.pc += 8
+
+			value := binary.BigEndian.Uint64(vm.variableStack[sf.stackBase+varOffset : sf.stackBase+varOffset+8])
+			vm.cStack = append(vm.cStack, value)
+		case compiler.OpLoadGlobal: // Load relative to the absolute base of the variable stack
+			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8
 			value := binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
 			vm.cStack = append(vm.cStack, value)
-			vm.pc += 8
 		case compiler.OpReturn:
-			if len(vm.cStack) == 0 {
-				return 0, nil // No value to return
+			// If there is nothing on the call stack, we are returning execution from the main program
+			if len(vm.callStack) == 0 {
+				if len(vm.cStack) == 0 {
+					return 0, nil // No value to return
+				}
+				return int(vm.pop()), nil
 			}
-			return int(vm.pop()), nil
+
+			sf := vm.callStack[len(vm.callStack)-1]
+			vm.pc = sf.returnAddress                           // Set pc to the return address
+			vm.variableStack = vm.variableStack[:sf.stackBase] // Restore the variable stack to the base of the current function call
+			vm.callStack = vm.callStack[:len(vm.callStack)-1]
+			continue // Skip the increment of pc below, we have already set it to the return address
+		case compiler.OpCall:
+			fnStart := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8 // Move past the call instruction
+
+			// Push the pc of the next instruction onto the call stack
+			vm.callStack = append(vm.callStack, stackFrame{
+				returnAddress: vm.pc + 1,
+				stackBase:     uint64(len(vm.variableStack)),
+			})
+			vm.pc = fnStart // Jump to the function start
+
+			continue // Skip the increment of pc below
 		case compiler.OpJump:
 			offset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
-			vm.pc = int(offset) // Jump to the specified offset
-			continue            // Skip the increment of pc below
+			vm.pc = offset // Jump to the specified offset
+			continue       // Skip the increment of pc below
 		case compiler.OpJumpIfFalse:
 			condition := vm.pop()
 			if condition == 0 {
 				// If the condition is false, jump to the specified offset
 				offset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
-				vm.pc = int(offset)
+				vm.pc = offset
 				continue // Skip the increment of pc below
 			}
 			// If the condition is true, just continue to the next instruction
@@ -109,18 +148,18 @@ func (vm *VM) Run() (int, error) {
 			} else {
 				vm.cStack = append(vm.cStack, 0)
 			}
-		case compiler.OpGte:
-			a := vm.pop()
-			b := vm.pop()
-			if b >= a {
-				vm.cStack = append(vm.cStack, 1)
-			} else {
-				vm.cStack = append(vm.cStack, 0)
-			}
 		case compiler.OpLte:
 			a := vm.pop()
 			b := vm.pop()
 			if b <= a {
+				vm.cStack = append(vm.cStack, 1)
+			} else {
+				vm.cStack = append(vm.cStack, 0)
+			}
+		case compiler.OpGte:
+			a := vm.pop()
+			b := vm.pop()
+			if b >= a {
 				vm.cStack = append(vm.cStack, 1)
 			} else {
 				vm.cStack = append(vm.cStack, 0)
@@ -141,11 +180,18 @@ func (vm *VM) Run() (int, error) {
 			} else {
 				vm.cStack = append(vm.cStack, 0)
 			}
+		case compiler.OpResetVarstack:
+			stackStart := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8 // Move past the call instruction
+
+			// Reset the variable stack to the base of the current function call
+			vm.variableStack = vm.variableStack[:stackStart]
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
 
 		vm.pc++
+
 	}
 
 	if len(vm.cStack) == 0 {
