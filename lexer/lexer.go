@@ -114,7 +114,7 @@ func Tokenize(input string) ([]token.Token, error) {
 				continue
 			}
 
-			return nil, fmt.Errorf("invalid character: %c", tk)
+			lx.putBack() // Put back the last character if it was not a comment. Then it will be handled as an operator.
 		}
 
 		switch tk {
