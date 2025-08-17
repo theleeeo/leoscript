@@ -12,6 +12,10 @@ func typeValidationPass(program *Program) (err error) {
 			if expr.Value.ReturnType() != expr.Type {
 				panic(fmt.Sprintf("type mismatch: expected %s, got %s", expr.Type, expr.Value.ReturnType()))
 			}
+
+			if expr.Type == types.Void {
+				panic("cannot declare variable with void type")
+			}
 		case Return:
 			if expr.Value.ReturnType() != wctx.ParentFn.ReturnType {
 				panic(fmt.Sprintf("type mismatch: expected %s, got %s", wctx.ParentFn.ReturnType, expr.Value.ReturnType()))
