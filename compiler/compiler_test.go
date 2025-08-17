@@ -9,7 +9,7 @@ import (
 )
 
 func equalProgram(t *testing.T, p []byte, expected string) {
-	ps := compiler.DebugPrint(p)
+	ps := compiler.DumpOpcode(p)
 
 	if ps == "" {
 		t.Error("Compiled program is empty")
@@ -119,7 +119,7 @@ func Test_StackVariables(t *testing.T) {
 		equalProgram(t,
 			compiler.CompileStatement(stmt),
 			`PUSH 10
-			STORE
+			STORE 0
 			`,
 		)
 	})
@@ -132,7 +132,7 @@ func Test_StackVariables(t *testing.T) {
 			`PUSH 10
 			PUSH 20
 			ADD
-			STORE
+			STORE 0
 			`,
 		)
 	})
@@ -147,11 +147,11 @@ func Test_StackVariables(t *testing.T) {
 			compiler.Compile(pg).Raw(),
 			`
 			PUSH 10
-			STORE
+			STORE_GLOBAL 0
 			LOAD_GLOBAL 0
 			PUSH 20
 			ADD
-			STORE
+			STORE_GLOBAL 8
 			RETURN
 			`,
 		)
@@ -170,8 +170,8 @@ func Test_Function(t *testing.T) {
 			compiler.Compile(pg).Raw(),
 			`
 			RETURN
-			STORE
-			STORE
+			STORE 0
+			STORE 8
 			LOAD 0
 			LOAD 8
 			ADD
@@ -209,7 +209,7 @@ func Test_Function(t *testing.T) {
 			`
 			RETURN
 			PUSH 5
-			STORE
+			STORE 0
 			RETURN
 			CALL 1
 			RETURN
@@ -232,8 +232,8 @@ func Test_Function(t *testing.T) {
 			compiler.Compile(pg).Raw(),
 			`
 			RETURN
-			STORE
-			STORE
+			STORE 0
+			STORE 8
 			LOAD 0
 			LOAD 8
 			ADD
@@ -258,8 +258,8 @@ func Test_Function(t *testing.T) {
 		equalProgram(t,
 			compiler.Compile(pg).Raw(),
 			`
-			CALL 11
-			STORE
+			CALL 19
+			STORE_GLOBAL 0
 			RETURN
 			PUSH 42
 			RETURN
@@ -280,10 +280,9 @@ func Test_IfElse(t *testing.T) {
 			compiler.CompileStatement(stmt),
 			`
 			PUSH 1
-			JUMP_IF_FALSE 28
+			JUMP_IF_FALSE 36
 			PUSH 5
-			STORE
-			RESET_VARSTACK 0
+			STORE 0
 			`,
 		)
 	})
@@ -301,13 +300,97 @@ func Test_IfElse(t *testing.T) {
 			compiler.CompileStatement(stmt),
 			`
 			PUSH 1
-			JUMP_IF_FALSE 28
+			JUMP_IF_FALSE 36
 			PUSH 5
-			STORE
-			JUMP 47
+			STORE 0
+			JUMP 63
 			PUSH 10
-			STORE
-			RESET_VARSTACK 0
+			STORE 0
+			`,
+		)
+	})
+}
+
+func Test_Assignment(t *testing.T) {
+	t.Run("reassign variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() {
+			int a = 5;
+			a = 10;
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`
+			RETURN
+			PUSH 5
+			STORE 0
+			PUSH 10
+			STORE 0
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("conditional assignment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() {
+			int a = 5;
+			if (a > 3) {
+				a = 10;
+			} else {
+				a = 20;
+			}
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`
+			RETURN
+			PUSH 5
+			STORE 0
+			LOAD 0
+			PUSH 3
+			GT
+			JUMP_IF_FALSE 65
+			PUSH 10
+			STORE 0
+			JUMP 92
+			PUSH 20
+			STORE 0
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("assignment in and after if", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() {
+			int a = 5;
+			if (a > 3) {
+				a = 10;
+			}
+			a = 20;
+		}
+		`)
+		pg, _ := parser.NewParser(lx).Parse()
+		equalProgram(t,
+			compiler.Compile(pg).Raw(),
+			`
+			RETURN
+			PUSH 5
+			STORE 0
+			LOAD 0
+			PUSH 3
+			GT
+			JUMP_IF_FALSE 65
+			PUSH 10
+			STORE 0
+			PUSH 20
+			STORE 0
+			RETURN
 			`,
 		)
 	})

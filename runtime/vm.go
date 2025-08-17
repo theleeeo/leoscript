@@ -47,6 +47,29 @@ func (vm *VM) Reset() {
 	vm.pc = 0
 }
 
+func (vm *VM) storeVariable(varOffset uint64, value uint64) {
+	if int(varOffset) > len(vm.variableStack) {
+		panic(fmt.Sprintf("Variable offset %d is out of bounds for variable stack of length %d", varOffset, len(vm.variableStack))) // Should not be able to happen
+	}
+
+	// If the variable is supposed to be stored at the end of the variable stack,
+	// we need to ensure that the variable stack is large enough
+	if int(varOffset) == len(vm.variableStack) {
+		vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
+		return
+	}
+	// Store the value in the variable stack
+	binary.BigEndian.PutUint64(vm.variableStack[varOffset:varOffset+8], value)
+}
+
+func (vm *VM) loadVariable(varOffset uint64) uint64 {
+	if int(varOffset) > len(vm.variableStack) {
+		panic(fmt.Sprintf("Variable offset %d is out of bounds for variable stack of length %d", varOffset, len(vm.variableStack))) // Should not be able to happen
+	}
+
+	return binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
+}
+
 func (vm *VM) Run() (int, error) {
 	for vm.pc < uint64(len(vm.program)) {
 		op := vm.program[vm.pc]
@@ -76,21 +99,31 @@ func (vm *VM) Run() (int, error) {
 			b := vm.pop()
 			vm.cStack = append(vm.cStack, b/a)
 		case compiler.OpStore:
+			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8
+
+			sf := vm.callStack[len(vm.callStack)-1] // Get the current stack frame
+
 			value := vm.pop()
-			// Store the value in the variable stack
-			vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
+			vm.storeVariable(sf.stackBase+varOffset, value)
+		case compiler.OpStoreGlobal:
+			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8
+
+			value := vm.pop()
+			vm.storeVariable(varOffset, value)
 		case compiler.OpLoad: // Load relative to the stackframe base
 			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
 			vm.pc += 8
 
 			sf := vm.callStack[len(vm.callStack)-1] // Get the current stack frame
 
-			value := binary.BigEndian.Uint64(vm.variableStack[sf.stackBase+varOffset : sf.stackBase+varOffset+8])
+			value := vm.loadVariable(sf.stackBase + varOffset)
 			vm.cStack = append(vm.cStack, value)
 		case compiler.OpLoadGlobal: // Load relative to the absolute base of the variable stack
 			varOffset := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
 			vm.pc += 8
-			value := binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
+			value := vm.loadVariable(varOffset)
 			vm.cStack = append(vm.cStack, value)
 		case compiler.OpReturn:
 			// If there is nothing on the call stack, we are returning execution from the main program
@@ -190,14 +223,6 @@ func (vm *VM) Run() (int, error) {
 			} else {
 				vm.cStack = append(vm.cStack, 0)
 			}
-		case compiler.OpResetVarstack:
-			stackStart := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
-			vm.pc += 8 // Move past the call instruction
-
-			sf := vm.callStack[len(vm.callStack)-1] // Get the current stack frame
-
-			// Reset the variable stack to the base of the current function call
-			vm.variableStack = vm.variableStack[:sf.stackBase+stackStart]
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}

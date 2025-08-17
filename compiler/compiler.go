@@ -58,15 +58,14 @@ type scopeContext struct {
 	currentStackOffset uint64
 }
 
-func (sc *scopeContext) allocateVariable(name string, size uint64) {
+func (sc *scopeContext) allocateVariable(name string) {
 	if _, exists := sc.stackAllocs[name]; exists {
 		panic(fmt.Sprintf("variable %s already exists in scope", name))
 	}
 	sc.stackAllocs[name] = variable{
 		stackOffset: sc.currentStackOffset,
-		size:        size,
 	}
-	sc.currentStackOffset += size
+	sc.currentStackOffset += 8
 }
 
 func (sc *scopeContext) getVariable(name string) (variable, bool) {
@@ -84,7 +83,7 @@ func (sc *scopeContext) getVariable(name string) (variable, bool) {
 
 type variable struct {
 	stackOffset uint64
-	size        uint64
+	// size        uint64
 }
 
 type compiler struct {
@@ -196,12 +195,18 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		// The code required to compute the value of the variable.
 		val := c.compileStatement(stmt.Value, sc, 0)
 
-		// The full size required by the variable
-		sc.allocateVariable(stmt.Name, stmt.Type.Size())
-
 		bytes = append(bytes, val...)
-		bytes = append(bytes, OpStore)
-		// bytes = binary.BigEndian.AppendUint64(bytes, varSize)
+
+		// If the variable is a global variable, we need to store it in the global scope
+		if sc == c.globalScope {
+			bytes = append(bytes, OpStoreGlobal)
+		} else {
+			bytes = append(bytes, OpStore)
+		}
+		bytes = binary.BigEndian.AppendUint64(bytes, sc.currentStackOffset)
+
+		// The full size required by the variable
+		sc.allocateVariable(stmt.Name)
 	case parser.VarIdentifier:
 		v, ok := sc.getVariable(stmt.Name)
 		if ok && sc == c.globalScope {
@@ -231,8 +236,9 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 
 		for _, arg := range stmt.Args {
 			// Allocate space for each parameter in the stack
-			fnSc.allocateVariable(arg.Name, arg.Type.Size())
 			bytes = append(bytes, OpStore)
+			bytes = binary.BigEndian.AppendUint64(bytes, fnSc.currentStackOffset)
+			fnSc.allocateVariable(arg.Name)
 		}
 
 		// Compile the function body
@@ -318,9 +324,27 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		}
 
 		bytes = append(bytes, elseBranch...)
-		bytes = append(bytes, OpResetVarstack)
-		bytes = append(bytes, binary.BigEndian.AppendUint64(nil, sc.currentStackOffset)...) // Reset the variable stack back to before the if statement
+	case parser.Assignment:
+		// Compile the value to assign
+		val := c.compileStatement(stmt.Value, sc, 0)
+		bytes = append(bytes, val...)
 
+		// Find the variable to assign to
+		v, ok := sc.getVariable(stmt.Name)
+		if ok && sc == c.globalScope {
+			bytes = append(bytes, OpStoreGlobal)
+		} else if ok {
+			bytes = append(bytes, OpStore)
+		} else {
+			v, ok = c.globalScope.getVariable(stmt.Name)
+			if !ok {
+				panic(fmt.Sprintf("variable %s not found in scope", stmt.Name))
+			}
+
+			bytes = append(bytes, OpStoreGlobal)
+		}
+
+		bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -339,6 +363,9 @@ const (
 	OpSub
 	OpMul
 	OpDiv
+	// (1)
+	// Store the value at arg1 offset from the stack frame base
+	// This is used for local variables in functions
 	OpStore
 	// (1)
 	// Load the variable at arg1 offset from the stack frame base
@@ -364,6 +391,6 @@ const (
 	OpAnd
 	OpOr
 	// (1)
-	// Reset the variable stack to the base of the current stack frame + arg1
-	OpResetVarstack
+	// Store the value at location arg1 counted from the absolute base of the variable stack
+	OpStoreGlobal
 )

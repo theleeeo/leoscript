@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func DebugPrint(exe []byte) string {
+func DumpOpcode(exe []byte) string {
 	b := strings.Builder{}
 
 	i := 0
@@ -36,10 +36,11 @@ func DebugPrint(exe []byte) string {
 			b.WriteString("DIV")
 		case OpStore:
 			b.WriteString("STORE")
-			// b.WriteRune(' ')
+			b.WriteRune(' ')
+			i++
 
-			// b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
-			// i = i + 8
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
 		case OpLoad:
 			b.WriteString("LOAD")
 			b.WriteRune(' ')
@@ -92,8 +93,8 @@ func DebugPrint(exe []byte) string {
 			b.WriteString("AND")
 		case OpOr:
 			b.WriteString("OR")
-		case OpResetVarstack:
-			b.WriteString("RESET_VARSTACK")
+		case OpStoreGlobal:
+			b.WriteString("STORE_GLOBAL")
 			b.WriteRune(' ')
 			i++
 

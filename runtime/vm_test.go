@@ -382,3 +382,91 @@ func Test_Fibonacci(t *testing.T) {
 		assert.Equal(t, uint64(55), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 55 (fib(10))
 	})
 }
+
+func Test_Assignment(t *testing.T) {
+	t.Run("reassign variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() int {
+			int a = 5;
+			a = 10;
+			return a;
+		}
+		var result = foo();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+	})
+
+	t.Run("conditional assignment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() int {
+			int a = 5;
+			if (a > 3) {
+				a = 10;
+			} else {
+				a = 20;
+			}
+			return a;
+		}
+		var result = foo();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+	})
+
+	t.Run("assignment in and after if", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo() int {
+			int a = 5;
+			if (a > 3) {
+				a = 10;
+			}
+			a = 20;
+			return a;
+		}
+		var result = foo();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+	})
+
+	t.Run("reassign global variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = 5;
+
+		fn foo() int {
+			a = 10;
+			return a;
+		}
+
+		var b = foo();
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		assert.NoError(t, err)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Raw())
+		ret, err := vm.Run()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret)
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // a should be 10
+		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // b should also be 10
+	})
+}
