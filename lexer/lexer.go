@@ -83,6 +83,40 @@ func Tokenize(input string) ([]token.Token, error) {
 			continue
 		}
 
+		if tk == '/' {
+			tk := lx.next()
+			if tk == '/' {
+				// Skip single-line comment
+				for {
+					tk = lx.next()
+					if tk == '\n' || tk == 0 {
+						break
+					}
+				}
+				continue
+			}
+
+			if tk == '*' {
+				// Skip multi-line comment
+				for {
+					tk = lx.next()
+					if tk == 0 {
+						return nil, fmt.Errorf("unclosed multi-line comment")
+					}
+					if tk == '*' {
+						if lx.next() == '/' {
+							break
+						} else {
+							lx.putBack()
+						}
+					}
+				}
+				continue
+			}
+
+			return nil, fmt.Errorf("invalid character: %c", tk)
+		}
+
 		switch tk {
 		case ' ', '\n', '\t', '\r':
 			// Skip whitespace

@@ -14,8 +14,8 @@ func DebugPrint(exe []byte) string {
 		op := exe[i]
 
 		// b.WriteString("\033[90m") // Set text color to grey
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(": ")
+		// b.WriteString(strconv.Itoa(i))
+		// b.WriteString(": ")
 		// b.WriteString("\033[0m") // Reset color
 
 		switch op {

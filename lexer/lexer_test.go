@@ -393,3 +393,36 @@ func Test_ControlFlow(t *testing.T) {
 		}, lx)
 	})
 }
+
+func Test_Comments(t *testing.T) {
+	t.Run("Single-line comment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		// This is a comment
+		var x = 10;
+		`)
+		assert.Equal(t, []token.Token{
+			token.VarDecl{},
+			token.Identifier{Value: "x"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 10},
+			token.Semicolon{},
+		}, lx)
+	})
+
+	t.Run("Multi-line comment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		/* 
+		This is a
+		multi-line comment
+		*/
+		var y = 20;
+		`)
+		assert.Equal(t, []token.Token{
+			token.VarDecl{},
+			token.Identifier{Value: "y"},
+			token.Operator{Op: "="},
+			token.Integer{Value: 20},
+			token.Semicolon{},
+		}, lx)
+	})
+}
