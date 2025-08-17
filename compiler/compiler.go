@@ -18,14 +18,14 @@ func Compile(p *parser.Program) Executable {
 
 	// Compile the initialization code required for the program
 	for _, stmt := range p.VarDecls {
-		c.code = append(c.code, c.compileStatement(stmt, c.globalScope)...)
+		c.code = append(c.code, c.compileStatement(stmt, c.globalScope, 0)...)
 	}
 	// The initialization code is followed by a return to have the VM break out of its execution, allowing it to start acception external invokations.
 	c.code = append(c.code, OpReturn) // Add a return at the end of the program
 
 	for _, stmt := range p.FnDefs {
 		c.functions[stmt.Name] = uint64(len(c.code))
-		c.code = append(c.code, c.compileStatement(stmt, c.globalScope)...)
+		c.code = append(c.code, c.compileStatement(stmt, c.globalScope, 0)...)
 	}
 
 	for _, fn := range c.unresolvedFunctions {
@@ -113,11 +113,11 @@ func CompileStatement(stmt parser.Statement) []byte {
 	c.code = append(c.code, c.compileStatement(stmt, &scopeContext{
 		stackAllocs:        make(map[string]variable),
 		currentStackOffset: 0,
-	})...)
+	}, 0)...)
 	return c.code
 }
 
-func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []byte {
+func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pendingBytes int) []byte {
 	var bytes []byte // TODO: Possible optimization to pre-allocate the size of bytes based on the expected size of the type of stmt
 
 	switch stmt := stmt.(type) {
@@ -140,12 +140,12 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			bytes = binary.BigEndian.AppendUint64(bytes, 0)
 
 			bytes = append(bytes, OpPush)
-			expr := c.compileStatement(stmt.Expression, sc)
+			expr := c.compileStatement(stmt.Expression, sc, 0)
 			bytes = append(bytes, expr...)
 
 			bytes = append(bytes, OpSub)
 		case "!":
-			expr := c.compileStatement(stmt.Expression, sc)
+			expr := c.compileStatement(stmt.Expression, sc, 0)
 			bytes = append(bytes, expr...)
 			bytes = append(bytes, OpPush)
 			bytes = binary.BigEndian.AppendUint64(bytes, 0) // Push false
@@ -154,8 +154,8 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			panic("unsupported unary operator: " + stmt.Op)
 		}
 	case parser.BinaryExpression:
-		left := c.compileStatement(stmt.Left, sc)
-		right := c.compileStatement(stmt.Right, sc)
+		left := c.compileStatement(stmt.Left, sc, 0)
+		right := c.compileStatement(stmt.Right, sc, 0)
 
 		bytes = append(bytes, left...)
 		bytes = append(bytes, right...)
@@ -194,7 +194,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		}
 	case parser.VarDecl:
 		// The code required to compute the value of the variable.
-		val := c.compileStatement(stmt.Value, sc)
+		val := c.compileStatement(stmt.Value, sc, 0)
 
 		// The full size required by the variable
 		sc.allocateVariable(stmt.Name, stmt.Type.Size())
@@ -237,18 +237,18 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 
 		// Compile the function body
 		for _, bodyStmt := range stmt.Body {
-			bytes = append(bytes, c.compileStatement(bodyStmt, fnSc)...)
+			bytes = append(bytes, c.compileStatement(bodyStmt, fnSc, len(bytes))...)
 		}
 	case parser.Return:
 		if stmt.Value != nil {
-			val := c.compileStatement(stmt.Value, sc)
+			val := c.compileStatement(stmt.Value, sc, 0)
 			bytes = append(bytes, val...)
 		}
 		bytes = append(bytes, OpReturn)
 	case parser.Call:
 		// Compile the function call arguments
 		for _, arg := range stmt.Args {
-			argBytes := c.compileStatement(arg, sc)
+			argBytes := c.compileStatement(arg, sc, len(bytes))
 			bytes = append(bytes, argBytes...)
 		}
 
@@ -268,7 +268,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		}
 	case parser.If:
 		// Compile the condition
-		cond := c.compileStatement(stmt.Cond, sc)
+		cond := c.compileStatement(stmt.Cond, sc, 0)
 		bytes = append(bytes, cond...)
 
 		// Compile the true branch
@@ -280,7 +280,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 				currentStackOffset: sc.currentStackOffset,
 			}
 
-			trueBranch = append(trueBranch, c.compileStatement(trueStmt, subStack)...)
+			trueBranch = append(trueBranch, c.compileStatement(trueStmt, subStack, len(bytes))...)
 		}
 
 		var elseBranch []byte
@@ -291,7 +291,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 				currentStackOffset: sc.currentStackOffset,
 			}
 
-			elseBranch = append(elseBranch, c.compileStatement(elseStmt, subStack)...)
+			elseBranch = append(elseBranch, c.compileStatement(elseStmt, subStack, len(bytes))...)
 		}
 
 		bytes = append(bytes, OpJumpIfFalse)
@@ -300,11 +300,11 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 		var falseOffset uint64
 		if len(elseBranch) > 0 {
 			// If there is an else branch, we need to jump to it if the condition is false
-			falseOffset = uint64(len(c.code) + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
+			falseOffset = uint64(len(c.code) + pendingBytes + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
 			bytes = binary.BigEndian.AppendUint64(bytes, falseOffset)
 		} else {
 			// If there is no else branch, we just jump over the true branch
-			falseOffset = uint64(len(c.code) + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
+			falseOffset = uint64(len(c.code) + pendingBytes + len(bytes) + len(trueBranch) + 8) // +8 for the size of the jump location itself
 			bytes = binary.BigEndian.AppendUint64(bytes, falseOffset)
 		}
 
@@ -314,12 +314,13 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 			// If there is an else branch, we need to jump over it after the true branch
 			bytes = append(bytes, OpJump)
 			// The offset to jump to after the true branch
-			bytes = binary.BigEndian.AppendUint64(bytes, uint64(len(c.code)+len(bytes)+len(elseBranch)+8)) // +8 for the size of the jump location itself
+			bytes = binary.BigEndian.AppendUint64(bytes, uint64(len(c.code)+pendingBytes+len(bytes)+len(elseBranch)+8)) // +8 for the size of the jump location itself
 		}
 
 		bytes = append(bytes, elseBranch...)
 		bytes = append(bytes, OpResetVarstack)
 		bytes = append(bytes, binary.BigEndian.AppendUint64(nil, sc.currentStackOffset)...) // Reset the variable stack back to before the if statement
+
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}
@@ -327,18 +328,33 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext) []b
 	return bytes
 }
 
+// The opcodes generated by the compiler
+// A number in parentheses in the description indicates a number of arguments that the opcode takes, all 8 bytes long.
+// These arguments are later referenced as arg(n) in the description.
 const (
+	// (1)
+	// Push arg1 onto the stack
 	OpPush byte = iota + 1
 	OpAdd
 	OpSub
 	OpMul
 	OpDiv
 	OpStore
+	// (1)
+	// Load the variable at arg1 offset from the stack frame base
+	// This is used for local variables in functions
 	OpLoad
+	// (1)
+	// Load the variable at arg1 offset from the absolute base of the variable stack
+	// This is used for global variables
 	OpLoadGlobal
 	OpReturn
 	OpCall
+	// (1)
+	// Set the program counter to arg1
 	OpJump
+	// (1)
+	// Set the program counter to arg1 if the top of the stack is 0
 	OpJumpIfFalse
 	OpEq
 	OpLt
@@ -347,5 +363,7 @@ const (
 	OpGte
 	OpAnd
 	OpOr
+	// (1)
+	// Reset the variable stack to the base of the current stack frame + arg1
 	OpResetVarstack
 )

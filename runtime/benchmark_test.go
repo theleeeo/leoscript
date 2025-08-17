@@ -57,4 +57,41 @@ func Benchmark_Fibonacci(b *testing.B) {
 			i.Invoke("fib", 20)
 		}
 	})
+
+	b.Run("bytecode VM", func(b *testing.B) {
+		lx := lexer.MustTokenize(`
+		fn fib(int n) int {
+			if n <= 1 {
+				return n;
+			}
+			return fib(n - 1) + fib(n - 2);
+		}
+		var result = fib(20);
+		`)
+		pg, err := parser.NewParser(lx).Parse()
+		if err != nil {
+			b.Fatalf("Parse error: %v", err)
+		}
+		exe := compiler.Compile(pg)
+		vm := NewVM(exe.Raw())
+
+		for b.Loop() {
+			vm.Run()
+			vm.Reset() // Reset VM state after each iteration
+		}
+	})
+
+	b.Run("native", func(b *testing.B) {
+		var fibonacci func(n int) int
+		fibonacci = func(n int) int {
+			if n <= 1 {
+				return n
+			}
+			return fibonacci(n-1) + fibonacci(n-2)
+		}
+
+		for b.Loop() {
+			fibonacci(20)
+		}
+	})
 }
