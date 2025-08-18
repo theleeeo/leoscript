@@ -144,7 +144,7 @@ func Test_StackVariables(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			PUSH 10
 			STORE_GLOBAL 0
@@ -167,7 +167,7 @@ func Test_Function(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			STORE 0
@@ -186,7 +186,7 @@ func Test_Function(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			RETURN`,
@@ -205,7 +205,7 @@ func Test_Function(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			PUSH 5
@@ -229,7 +229,7 @@ func Test_Function(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			STORE 0
@@ -256,7 +256,7 @@ func Test_Function(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			CALL 19
 			STORE_GLOBAL 0
@@ -321,7 +321,7 @@ func Test_Assignment(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			PUSH 5
@@ -346,7 +346,7 @@ func Test_Assignment(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			PUSH 5
@@ -377,7 +377,7 @@ func Test_Assignment(t *testing.T) {
 		`)
 		pg, _ := parser.NewParser(lx).Parse()
 		equalProgram(t,
-			compiler.Compile(pg).Raw(),
+			compiler.Compile(pg).Code(),
 			`
 			RETURN
 			PUSH 5

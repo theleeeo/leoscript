@@ -73,7 +73,7 @@ func Benchmark_Fibonacci(b *testing.B) {
 			b.Fatalf("Parse error: %v", err)
 		}
 		exe := compiler.Compile(pg)
-		vm := NewVM(exe.Raw())
+		vm := NewVM(exe.Marshal())
 
 		for b.Loop() {
 			vm.Run()

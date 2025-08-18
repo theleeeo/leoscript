@@ -24,14 +24,15 @@ func _() {
 	_ = x[ReturnType-13]
 	_ = x[CommaType-14]
 	_ = x[StubDefType-15]
-	_ = x[IfType-16]
-	_ = x[ElseType-17]
-	_ = x[WhileType-18]
+	_ = x[ExportedType-16]
+	_ = x[IfType-17]
+	_ = x[ElseType-18]
+	_ = x[WhileType-19]
 }
 
-const _TokenType_name = "EOFTypeIntegerTypeBooleanTypeOpenParenTypeCloseParenTypeOpenBraceTypeCloseBraceTypeVarDeclTypeTypeTypeSemicolonTypeIdentifierTypeOperatorTypeFnDefTypeReturnTypeCommaTypeStubDefTypeIfTypeElseTypeWhileType"
+const _TokenType_name = "EOFTypeIntegerTypeBooleanTypeOpenParenTypeCloseParenTypeOpenBraceTypeCloseBraceTypeVarDeclTypeTypeTypeSemicolonTypeIdentifierTypeOperatorTypeFnDefTypeReturnTypeCommaTypeStubDefTypeExportedTypeIfTypeElseTypeWhileType"
 
-var _TokenType_index = [...]uint8{0, 7, 18, 29, 42, 56, 69, 83, 94, 102, 115, 129, 141, 150, 160, 169, 180, 186, 194, 203}
+var _TokenType_index = [...]uint8{0, 7, 18, 29, 42, 56, 69, 83, 94, 102, 115, 129, 141, 150, 160, 169, 180, 192, 198, 206, 215}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

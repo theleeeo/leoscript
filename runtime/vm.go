@@ -11,8 +11,9 @@ type VM struct {
 	variableStack []byte
 	callStack     []stackFrame
 
-	program []byte
-	pc      uint64
+	metadata *compiler.Metadata // Metadata for the program, if available
+	program  []byte
+	pc       uint64
 }
 
 type stackFrame struct {
@@ -26,12 +27,29 @@ type stackFrame struct {
 }
 
 func NewVM(program []byte) *VM {
+	exe := new(compiler.Executable)
+	if err := exe.Unmarshal(program); err != nil {
+		panic(fmt.Sprintf("unmarshalling executable: %v", err))
+	}
+
 	return &VM{
+		metadata:      exe.Metadata(),
+		program:       exe.Code(),
+		pc:            0,
+		cStack:        make([]uint64, 0),
+		variableStack: make([]byte, 0),
+	}
+}
+
+func Evaluate(program []byte) (int, error) {
+	vm := &VM{
 		program:       program,
 		pc:            0,
 		cStack:        make([]uint64, 0),
 		variableStack: make([]byte, 0),
 	}
+
+	return vm.Run()
 }
 
 func (vm *VM) pop() uint64 {

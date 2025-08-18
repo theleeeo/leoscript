@@ -5,6 +5,26 @@ import (
 	"leoscript/token"
 )
 
+func MustParse(tokens []token.Token) *Program {
+	program, err := Parse(tokens)
+	if err != nil {
+		panic(fmt.Sprintf("parsing program: %v", err))
+	}
+
+	return program
+}
+
+func Parse(tokens []token.Token) (*Program, error) {
+	p := NewParser(tokens)
+
+	program, err := p.Parse()
+	if err != nil {
+		return nil, fmt.Errorf("parsing program: %w", err)
+	}
+
+	return program, nil
+}
+
 func NewParser(tokens []token.Token) *Parser {
 	return &Parser{
 		tokens:  tokens,
@@ -105,12 +125,34 @@ func (p *Parser) Parse() (*Program, error) {
 			p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
 		case token.StubDef:
-			stub, err := p.parseStubdef()
+			stub, err := p.parseFnDef()
 			if err != nil {
 				return nil, fmt.Errorf("parsing stub definition: %w", err)
 			}
 
 			p.program.StubDefs = append(p.program.StubDefs, stub)
+
+		case token.Exported:
+			switch p.peekNext().(type) {
+			case token.FnDef:
+				fnDef, err := p.parseFnDef()
+				if err != nil {
+					return nil, fmt.Errorf("parsing function definition: %w", err)
+				}
+
+				p.program.FnDefs = append(p.program.FnDefs, fnDef)
+
+			case token.VarDecl, token.Type:
+				varDecl, err := p.parseVarDecl()
+				if err != nil {
+					return nil, fmt.Errorf("parsing variable declaration: %w", err)
+				}
+
+				p.program.VarDecls = append(p.program.VarDecls, varDecl)
+
+			default:
+				return nil, fmt.Errorf("expected function or variable declaration after exported, got %T", p.peekNext())
+			}
 
 		default:
 			return nil, fmt.Errorf("unexpected token type %T", tk)

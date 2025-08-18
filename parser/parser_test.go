@@ -1580,7 +1580,7 @@ func Test_Stub(t *testing.T) {
 	t.Run("Simple stub", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo();")
 		p := NewParser(lx)
-		prog, err := p.parseStubdef()
+		prog, err := p.parseFnDef()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -1595,7 +1595,7 @@ func Test_Stub(t *testing.T) {
 	t.Run("Stub with arguments", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b);")
 		p := NewParser(lx)
-		prog, err := p.parseStubdef()
+		prog, err := p.parseFnDef()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -1613,7 +1613,7 @@ func Test_Stub(t *testing.T) {
 	t.Run("Stub with return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo() int;")
 		p := NewParser(lx)
-		prog, err := p.parseStubdef()
+		prog, err := p.parseFnDef()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -1628,7 +1628,7 @@ func Test_Stub(t *testing.T) {
 	t.Run("Stub with arguments and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b) int;")
 		p := NewParser(lx)
-		prog, err := p.parseStubdef()
+		prog, err := p.parseFnDef()
 		assert.NoError(t, err)
 
 		assert.EqualExportedValues(t, FnDef{
@@ -1640,6 +1640,108 @@ func Test_Stub(t *testing.T) {
 			},
 			Body: nil,
 			Stub: true,
+		}, prog)
+	})
+}
+
+func Test_ExportedFunction(t *testing.T) {
+	t.Run("Simple exported function", func(t *testing.T) {
+		lx := lexer.MustTokenize("export fn foo() {};")
+		p := NewParser(lx)
+		prog, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args:       []Argument{},
+			Body: []Statement{
+				Return{Value: VoidLiteral{}},
+			},
+			Exported: true,
+		}, prog)
+	})
+
+	t.Run("Exported function with arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize("export fn foo(int a, bool b) {};")
+		p := NewParser(lx)
+		prog, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Void,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+				{Name: "b", Type: types.Bool},
+			},
+			Body: []Statement{
+				Return{Value: VoidLiteral{}},
+			},
+			Exported: true,
+		}, prog)
+	})
+
+	t.Run("Exported function with return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("export fn foo() int {};")
+		p := NewParser(lx)
+		prog, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Int,
+			Args:       []Argument{},
+			Body:       []Statement{},
+			Exported:   true,
+		}, prog)
+	})
+
+	t.Run("Exported function with arguments and return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("export fn foo(int a, bool b) int {};")
+		p := NewParser(lx)
+		prog, err := p.parseFnDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, FnDef{
+			Name:       "foo",
+			ReturnType: types.Int,
+			Args: []Argument{
+				{Name: "a", Type: types.Int},
+				{Name: "b", Type: types.Bool},
+			},
+			Body:     []Statement{},
+			Exported: true,
+		}, prog)
+	})
+}
+
+func Test_ExportedVariable(t *testing.T) {
+	t.Run("Exported variable, inferred type", func(t *testing.T) {
+		lx := lexer.MustTokenize("export var foo = 10;")
+		p := NewParser(lx)
+		prog, err := p.parseVarDecl()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name:     "foo",
+			Type:     types.Unspecified,
+			Value:    IntegerLiteral{Value: 10},
+			Exported: true,
+		}, prog)
+	})
+
+	t.Run("Exported variable", func(t *testing.T) {
+		lx := lexer.MustTokenize("export int foo = 10;")
+		p := NewParser(lx)
+		prog, err := p.parseVarDecl()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name:     "foo",
+			Type:     types.Int,
+			Value:    IntegerLiteral{Value: 10},
+			Exported: true,
 		}, prog)
 	})
 }

@@ -36,6 +36,7 @@ const (
 	ReturnType
 	CommaType
 	StubDefType
+	ExportedType
 
 	// Control Flow
 	IfType
@@ -208,4 +209,11 @@ type StubDef struct{}
 func (StubDef) Type() TokenType { return StubDefType }
 func (StubDef) String() string {
 	return "{stub}"
+}
+
+type Exported struct{}
+
+func (Exported) Type() TokenType { return ExportedType }
+func (Exported) String() string {
+	return "{exported}"
 }

@@ -19,6 +19,7 @@ var keywords = map[string]token.Token{
 	"else":   token.Else{},
 	"while":  token.While{},
 	"stub":   token.StubDef{},
+	"export": token.Exported{},
 }
 
 type lexer struct {

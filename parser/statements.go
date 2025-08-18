@@ -130,6 +130,27 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 }
 
 func (p *Parser) parseFnDef() (FnDef, error) {
+	var exported bool
+	var stub bool
+
+	switch tk := p.peek().(type) {
+	case token.Exported:
+		exported = true
+
+		if err := p.expectNext(token.FnDefType); err != nil {
+			return FnDef{}, fmt.Errorf("expected fn after exported: %w", err)
+		}
+
+	case token.StubDef:
+		stub = true
+
+		// Stubs do not have an "fn" token
+	case token.FnDef:
+		// Do nothing, we are already at the fn token
+	default:
+		panic(fmt.Sprintf("expected exported, stub or fn token, got %T", tk))
+	}
+
 	if err := p.expectNext(token.IdentifierType); err != nil {
 		return FnDef{}, fmt.Errorf("expected identifier after fn: %w", err)
 	}
@@ -158,6 +179,24 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 		returnType = types.Void
 	}
 
+	fnDef := FnDef{
+		Name:       identifier.Value,
+		ReturnType: returnType,
+		Args:       args,
+		Body:       nil,
+		Stub:       stub,
+		Exported:   exported,
+	}
+
+	// Stub functions do not have a body
+	if stub {
+		if err := p.expectCurrent(token.SemicolonType); err != nil {
+			return FnDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
+		}
+
+		return fnDef, nil
+	}
+
 	if _, ok := p.peek().(token.OpenBrace); !ok {
 		return FnDef{}, fmt.Errorf("expected open brace after arguments in function definition")
 	}
@@ -179,16 +218,18 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 			body = append(body, Return{Value: VoidLiteral{}})
 		}
 	}
+	fnDef.Body = body
 
-	return FnDef{
-		Name:       identifier.Value,
-		ReturnType: returnType,
-		Args:       args,
-		Body:       body,
-	}, nil
+	return fnDef, nil
 }
 
 func (p *Parser) parseVarDecl() (VarDecl, error) {
+	var exported bool
+	if _, ok := p.peek().(token.Exported); ok {
+		exported = true
+		p.next() // Consume the exported token
+	}
+
 	var varType types.Type
 
 	switch tk := p.peek().(type) {
@@ -227,9 +268,10 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	}
 
 	return VarDecl{
-		Name:  identifier.Value,
-		Type:  varType,
-		Value: expr,
+		Name:     identifier.Value,
+		Type:     varType,
+		Value:    expr,
+		Exported: exported,
 	}, nil
 }
 
@@ -331,47 +373,5 @@ func (p *Parser) parseWhile() (While, error) {
 	return While{
 		Cond: expr,
 		Body: body,
-	}, nil
-}
-
-func (p *Parser) parseStubdef() (FnDef, error) {
-	if err := p.expectNext(token.IdentifierType); err != nil {
-		return FnDef{}, fmt.Errorf("expected identifier after stub: %w", err)
-	}
-
-	identifier := p.peek().(token.Identifier)
-
-	if err := p.expectNext(token.OpenParenType); err != nil {
-		return FnDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
-	}
-
-	args, err := p.parseFnParams()
-	if err != nil {
-		return FnDef{}, fmt.Errorf("parsing arguments: %w", err)
-	}
-
-	var returnType types.Type
-
-	p.next() // Consume the close parenthesis
-
-	// Check if the stub has a return type
-	if tk, ok := p.peek().(token.Type); ok {
-		returnType = tk.Kind
-		p.next() // Consume the type token
-	} else {
-		// No return type is specified
-		returnType = types.Void
-	}
-
-	if err := p.expectCurrent(token.SemicolonType); err != nil {
-		return FnDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
-	}
-
-	return FnDef{
-		Name:       identifier.Value,
-		ReturnType: returnType,
-		Args:       args,
-		Body:       nil,
-		Stub:       true,
 	}, nil
 }
