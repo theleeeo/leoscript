@@ -420,9 +420,7 @@ func (c *compiler) compileFnDef(fnDef parser.FnDef) []byte {
 		panic("stubs not implemented")
 	}
 
-	if fnDef.Exported {
-		c.recordExportedFunction(fnDef)
-	}
+	c.recordExportedFunction(fnDef)
 
 	var bytes []byte
 
@@ -452,12 +450,12 @@ func (c *compiler) recordExportedFunction(fnDef parser.FnDef) {
 		startOffset: uint64(len(c.code)),
 		args:        make([]fnArg, len(fnDef.Args)),
 		returnType:  fnDef.ReturnType,
+		stub:        fnDef.Stub,
+		exported:    fnDef.Exported,
 	}
 
 	for i, arg := range fnDef.Args {
 		ef.args[i] = fnArg{
-			// name:        arg.Name,
-			// stackOffset: uint64(i) * 8,
 			argType: arg.Type,
 		}
 	}

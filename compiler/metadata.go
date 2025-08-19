@@ -23,6 +23,16 @@ func (md Metadata) Marshal() []byte {
 
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, fn.startOffset)
 
+		// Encode flags: bit 0 = exported, bit 1 = stub
+		var flags byte
+		if fn.exported {
+			flags |= 1 << 0
+		}
+		if fn.stub {
+			flags |= 1 << 1
+		}
+		fnRaw = append(fnRaw, flags)
+
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.args)))
 		for _, arg := range fn.args {
 			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.argType.(types.BasicType)))
@@ -98,6 +108,12 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		startOffset := binary.BigEndian.Uint64(raw[:8])
 		raw = raw[8:]
 
+		if len(raw) < 1 {
+			return nil, errors.New("metadata raw is too short for function flags")
+		}
+		flags := raw[0]
+		raw = raw[1:]
+
 		if len(raw) < 8 {
 			return nil, errors.New("metadata raw is too short for argument count")
 		}
@@ -124,6 +140,8 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 			startOffset: startOffset,
 			args:        args,
 			returnType:  returnType,
+			exported:    flags&0x01 != 0, // bit 0
+			stub:        flags&0x02 != 0, // bit 1
 		}
 	}
 
@@ -185,6 +203,10 @@ type exportedFunction struct {
 	args []fnArg
 	// The return type of the function
 	returnType types.Type
+	// Indicates if the function is exported
+	exported bool
+	// Indicates if the function is a stub
+	stub bool
 }
 
 type exportedVariable struct {

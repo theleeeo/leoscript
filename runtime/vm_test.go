@@ -349,6 +349,7 @@ func Test_Fibonacci(t *testing.T) {
 		pg, err := parser.NewParser(lx).Parse()
 		assert.NoError(t, err)
 		exe := compiler.Compile(pg)
+		compiler.DebugPrint(exe.Marshal())
 		vm := runtime.NewVM(exe.Marshal())
 		ret, err := vm.Run()
 		assert.NoError(t, err)
