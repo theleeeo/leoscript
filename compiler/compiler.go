@@ -445,18 +445,18 @@ func (c *compiler) compileFnDef(fnDef parser.FnDef) []byte {
 }
 
 func (c *compiler) recordExportedFunction(fnDef parser.FnDef) {
-	ef := exportedFunction{
-		name:        fnDef.Name,
-		startOffset: uint64(len(c.code)),
-		args:        make([]fnArg, len(fnDef.Args)),
-		returnType:  fnDef.ReturnType,
+	ef := ExportedFunction{
+		Name:        fnDef.Name,
+		StartOffset: uint64(len(c.code)),
+		Args:        make([]FnArg, len(fnDef.Args)),
+		ReturnType:  fnDef.ReturnType,
 		stub:        fnDef.Stub,
 		exported:    fnDef.Exported,
 	}
 
 	for i, arg := range fnDef.Args {
-		ef.args[i] = fnArg{
-			argType: arg.Type,
+		ef.Args[i] = FnArg{
+			ArgType: arg.Type,
 		}
 	}
 

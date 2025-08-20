@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"leoscript/compiler"
+	"leoscript/types"
 )
 
 type VM struct {
@@ -32,13 +33,20 @@ func NewVM(program []byte) *VM {
 		panic(fmt.Sprintf("unmarshalling executable: %v", err))
 	}
 
-	return &VM{
+	vm := &VM{
 		metadata:      exe.Metadata(),
 		program:       exe.Code(),
 		pc:            0,
 		cStack:        make([]uint64, 0),
 		variableStack: make([]byte, 0),
 	}
+
+	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
+	if err != nil {
+		panic(fmt.Sprintf("initializing VM: %v", err)) // TODO: No panics
+	}
+
+	return vm
 }
 
 func Evaluate(program []byte) (int, error) {
@@ -49,7 +57,8 @@ func Evaluate(program []byte) (int, error) {
 		variableStack: make([]byte, 0),
 	}
 
-	return vm.Run()
+	r, err := vm.Run()
+	return int(r), err
 }
 
 func (vm *VM) pop() uint64 {
@@ -88,8 +97,8 @@ func (vm *VM) loadVariable(varOffset uint64) uint64 {
 	return binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
 }
 
-func (vm *VM) Run() (int, error) {
-	for vm.pc < uint64(len(vm.program)) {
+func (vm *VM) Run() (uint64, error) {
+	for {
 		op := vm.program[vm.pc]
 
 		// PROPOSAL: The binary (and boolean ops) could be changed to be one byte for a bin-op and then one byte (or merge them together using bit-magic) for the specific operation.
@@ -144,18 +153,18 @@ func (vm *VM) Run() (int, error) {
 			value := vm.loadVariable(varOffset)
 			vm.cStack = append(vm.cStack, value)
 		case compiler.OpReturn:
-			// If there is nothing on the call stack, we are returning execution from the main program
-			if len(vm.callStack) == 0 {
-				if len(vm.cStack) == 0 {
-					return 0, nil // No value to return
-				}
-				return int(vm.pop()), nil
-			}
-
 			sf := vm.callStack[len(vm.callStack)-1]
 			vm.pc = sf.returnAddress                           // Set pc to the return address
 			vm.variableStack = vm.variableStack[:sf.stackBase] // Restore the variable stack to the base of the current function call
 			vm.callStack = vm.callStack[:len(vm.callStack)-1]
+
+			// If there is nothing on the call stack, we are returning execution from the main program
+			if len(vm.callStack) == 0 {
+				if len(vm.cStack) == 0 {
+					return 0, nil // No value to return (void function)
+				}
+				return vm.pop(), nil
+			}
 
 			continue // Skip the increment of pc below, we have already set it to the return address
 		case compiler.OpCall:
@@ -247,15 +256,10 @@ func (vm *VM) Run() (int, error) {
 
 		vm.pc++
 
+		if vm.pc >= uint64(len(vm.program)) {
+			return 0, fmt.Errorf("program counter %d is out of bounds for program length %d", vm.pc, len(vm.program))
+		}
 	}
-
-	if len(vm.cStack) == 0 {
-		return 0, nil
-	}
-
-	// TODO: Should not be encountered here. The program should always end with a return.
-	// Or maybe, if we allow it to run incomplete-programs, just raw bytecode, it should be possible. But that should be handled explicitly either way.
-	return int(vm.pop()), nil
 }
 
 func (vm *VM) VariableStack() []byte {
@@ -270,4 +274,69 @@ func (vm *VM) GetVariable(name string) (uint64, error) {
 	}
 
 	return 0, fmt.Errorf("exported variable %s not found", name)
+}
+
+func (vm *VM) invokeRaw(pc uint64, args ...uint64) (uint64, error) {
+	vm.cStack = append(vm.cStack, args...)
+
+	// Call the function
+	vm.callStack = append(vm.callStack, stackFrame{
+		returnAddress: vm.pc + 1,
+		stackBase:     uint64(len(vm.variableStack)),
+	})
+	vm.pc = pc
+
+	ret, err := vm.Run()
+	if err != nil {
+		return 0, err
+	}
+
+	return ret, nil
+}
+
+func (vm *VM) Invoke(name string, args ...any) (any, error) {
+	var fn *compiler.ExportedFunction
+	for _, function := range vm.metadata.Functions() {
+		if function.Name == name {
+			fn = &function
+			break
+		}
+	}
+
+	if fn == nil {
+		return nil, fmt.Errorf("function %s not found", name)
+	}
+
+	if len(args) != len(fn.Args) {
+		return nil, fmt.Errorf("function %s expects %d arguments, got %d", name, len(fn.Args), len(args))
+	}
+
+	// Convert args to uint64
+	uint64Args := make([]uint64, len(args))
+	for i, arg := range args {
+		switch v := arg.(type) {
+		case int:
+			uint64Args[i] = uint64(v)
+		case uint64:
+			uint64Args[i] = v
+		default:
+			return nil, fmt.Errorf("unsupported argument type: %T", arg)
+		}
+	}
+
+	result, err := vm.invokeRaw(fn.StartOffset, uint64Args...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch fn.ReturnType {
+	case types.Void:
+		return nil, nil // Void function, no return value
+	case types.Int:
+		return int(result), nil // Return as int
+	case types.Bool:
+		return result != 0, nil // Return as bool
+	default:
+		return nil, fmt.Errorf("unsupported return type: %s", fn.ReturnType)
+	}
 }

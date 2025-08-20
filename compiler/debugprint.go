@@ -18,9 +18,9 @@ func DebugPrint(rawExe []byte) {
 	fnDefs := md.functions
 
 	// Add a dummy function definition for initialization part of the program
-	fnDefs = append(fnDefs, exportedFunction{
-		name:        "_init",
-		startOffset: 0,
+	fnDefs = append(fnDefs, ExportedFunction{
+		Name:        "_init",
+		StartOffset: 0,
 	})
 
 	b := strings.Builder{}
@@ -122,14 +122,14 @@ func DebugPrint(rawExe []byte) {
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}
 
-		fnIndex := slices.IndexFunc(fnDefs, func(fn exportedFunction) bool {
-			return fn.startOffset == uint64(startIdx)
+		fnIndex := slices.IndexFunc(fnDefs, func(fn ExportedFunction) bool {
+			return fn.StartOffset == uint64(startIdx)
 		})
 		if fnIndex != -1 {
 			fnDef := fnDefs[fnIndex]
 			b.WriteString(" \033[1;34m") // Set text color to blue
 			b.WriteString(":")
-			b.WriteString(fnDef.name)
+			b.WriteString(fnDef.Name)
 			b.WriteString("\033[0m") // Reset color
 		}
 

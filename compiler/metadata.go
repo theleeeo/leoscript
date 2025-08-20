@@ -9,7 +9,7 @@ import (
 
 type Metadata struct {
 	// The exported functions of the program
-	functions []exportedFunction
+	functions []ExportedFunction
 	// The exported variables of the program
 	variables []ExportedVariable
 }
@@ -18,10 +18,10 @@ func (md Metadata) Marshal() []byte {
 	// Serialize the function metadata
 	fnRaw := binary.BigEndian.AppendUint64(nil, uint64(len(md.functions)))
 	for _, fn := range md.functions {
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.name)))
-		fnRaw = append(fnRaw, []byte(fn.name)...)
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Name)))
+		fnRaw = append(fnRaw, []byte(fn.Name)...)
 
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, fn.startOffset)
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, fn.StartOffset)
 
 		// Encode flags: bit 0 = exported, bit 1 = stub
 		var flags byte
@@ -33,12 +33,12 @@ func (md Metadata) Marshal() []byte {
 		}
 		fnRaw = append(fnRaw, flags)
 
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.args)))
-		for _, arg := range fn.args {
-			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.argType.(types.BasicType)))
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Args)))
+		for _, arg := range fn.Args {
+			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.ArgType.(types.BasicType)))
 		}
 
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.returnType.(types.BasicType)))
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.ReturnType.(types.BasicType)))
 	}
 
 	varRaw := binary.BigEndian.AppendUint64(nil, uint64(len(md.variables)))
@@ -89,7 +89,7 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 
 	fnCount := binary.BigEndian.Uint64(raw[:8])
 	raw = raw[8:]
-	md.functions = make([]exportedFunction, fnCount)
+	md.functions = make([]ExportedFunction, fnCount)
 	for i := uint64(0); i < fnCount; i++ {
 		if len(raw) < 8 {
 			return nil, errors.New("metadata raw is too short for function name length")
@@ -119,14 +119,14 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		}
 		argCount := binary.BigEndian.Uint64(raw[:8])
 		raw = raw[8:]
-		args := make([]fnArg, argCount)
+		args := make([]FnArg, argCount)
 		for j := uint64(0); j < argCount; j++ {
 			if len(raw) < 8 {
 				return nil, errors.New("metadata raw is too short for argument type")
 			}
 			argType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
 			raw = raw[8:]
-			args[j] = fnArg{argType: argType}
+			args[j] = FnArg{ArgType: argType}
 		}
 
 		if len(raw) < 8 {
@@ -135,11 +135,11 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		returnType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
 		raw = raw[8:]
 
-		md.functions[i] = exportedFunction{
-			name:        name,
-			startOffset: startOffset,
-			args:        args,
-			returnType:  returnType,
+		md.functions[i] = ExportedFunction{
+			Name:        name,
+			StartOffset: startOffset,
+			Args:        args,
+			ReturnType:  returnType,
 			exported:    flags&0x01 != 0, // bit 0
 			stub:        flags&0x02 != 0, // bit 1
 		}
@@ -190,19 +190,19 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 	return raw, nil
 }
 
-type fnArg struct {
+type FnArg struct {
 	// The type of the function argument
-	argType types.Type
+	ArgType types.Type
 }
 
-type exportedFunction struct {
-	name string
+type ExportedFunction struct {
+	Name string
 	// The offset in the code where the function starts
-	startOffset uint64
+	StartOffset uint64
 	// The arguments of the function
-	args []fnArg
+	Args []FnArg
 	// The return type of the function
-	returnType types.Type
+	ReturnType types.Type
 	// Indicates if the function is exported
 	exported bool
 	// Indicates if the function is a stub
@@ -217,15 +217,15 @@ type ExportedVariable struct {
 	VarType types.Type
 }
 
-// func (md *Metadata) Functions() []exportedFunction {
-// 	var exportedFunctions []exportedFunction
-// 	for _, fn := range md.functions {
-// 		if fn.exported {
-// 			exportedFunctions = append(exportedFunctions, fn)
-// 		}
-// 	}
-// 	return exportedFunctions
-// }
+func (md *Metadata) Functions() []ExportedFunction {
+	var exportedFunctions []ExportedFunction
+	for _, fn := range md.functions {
+		if fn.exported {
+			exportedFunctions = append(exportedFunctions, fn)
+		}
+	}
+	return exportedFunctions
+}
 
 func (md *Metadata) Variables() []ExportedVariable {
 	return md.variables

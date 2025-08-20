@@ -21,61 +21,61 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		md := exe.Metadata()
 		assert.Len(t, md.functions, 3)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 1,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 1,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[0])
 
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 2,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 2,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[1])
 
-		assert.Equal(t, exportedFunction{
-			name:        "baz",
-			returnType:  types.Void,
-			startOffset: 3,
+		assert.Equal(t, ExportedFunction{
+			Name:        "baz",
+			ReturnType:  types.Void,
+			StartOffset: 3,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[2])
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
 		assert.Len(t, md2.functions, 3)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 1,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 1,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[0])
 
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 2,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 2,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[1])
 
-		assert.Equal(t, exportedFunction{
-			name:        "baz",
-			returnType:  types.Void,
-			startOffset: 3,
+		assert.Equal(t, ExportedFunction{
+			Name:        "baz",
+			ReturnType:  types.Void,
+			StartOffset: 3,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[2])
 	})
 
@@ -122,21 +122,21 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		md := exe.Metadata()
 		assert.Len(t, md.functions, 2)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 37,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 37,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[0])
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 38,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 38,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[1])
 
 		assert.Len(t, md.variables, 1)
@@ -145,21 +145,21 @@ func Test_Metadata_Marshaling(t *testing.T) {
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
 		assert.Len(t, md2.functions, 2)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 37,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 37,
 			exported:    true,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[0])
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 38,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 38,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[1])
 
 		assert.Len(t, md2.variables, 1)
@@ -176,41 +176,41 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		md := exe.Metadata()
 		assert.Len(t, md.functions, 2)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 1,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 1,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[0])
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 2,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 2,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md.functions[1])
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
 		assert.Len(t, md2.functions, 2)
-		assert.Equal(t, exportedFunction{
-			name:        "foo",
-			returnType:  types.Void,
-			startOffset: 1,
+		assert.Equal(t, ExportedFunction{
+			Name:        "foo",
+			ReturnType:  types.Void,
+			StartOffset: 1,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[0])
-		assert.Equal(t, exportedFunction{
-			name:        "bar",
-			returnType:  types.Void,
-			startOffset: 2,
+		assert.Equal(t, ExportedFunction{
+			Name:        "bar",
+			ReturnType:  types.Void,
+			StartOffset: 2,
 			exported:    false,
 			stub:        false,
-			args:        []fnArg{},
+			Args:        []FnArg{},
 		}, md2.functions[1])
 	})
 
@@ -225,19 +225,19 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		md := exe.Metadata()
 		assert.Len(t, md.functions, 1)
-		assert.Equal(t, "add", md.functions[0].name)
-		assert.Equal(t, types.Int, md.functions[0].returnType)
-		assert.Len(t, md.functions[0].args, 2)
-		assert.Equal(t, types.Int, md.functions[0].args[0].argType)
-		assert.Equal(t, types.Int, md.functions[0].args[1].argType)
+		assert.Equal(t, "add", md.functions[0].Name)
+		assert.Equal(t, types.Int, md.functions[0].ReturnType)
+		assert.Len(t, md.functions[0].Args, 2)
+		assert.Equal(t, types.Int, md.functions[0].Args[0].ArgType)
+		assert.Equal(t, types.Int, md.functions[0].Args[1].ArgType)
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
 		assert.Len(t, md2.functions, 1)
-		assert.Equal(t, "add", md2.functions[0].name)
-		assert.Equal(t, types.Int, md2.functions[0].returnType)
-		assert.Len(t, md2.functions[0].args, 2)
-		assert.Equal(t, types.Int, md2.functions[0].args[0].argType)
-		assert.Equal(t, types.Int, md2.functions[0].args[1].argType)
+		assert.Equal(t, "add", md2.functions[0].Name)
+		assert.Equal(t, types.Int, md2.functions[0].ReturnType)
+		assert.Len(t, md2.functions[0].Args, 2)
+		assert.Equal(t, types.Int, md2.functions[0].Args[0].ArgType)
+		assert.Equal(t, types.Int, md2.functions[0].Args[1].ArgType)
 	})
 }

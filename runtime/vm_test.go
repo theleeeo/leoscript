@@ -494,3 +494,120 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		assert.Equal(t, uint64(15), ret)
 	})
 }
+
+func Test_InvokeFunction(t *testing.T) {
+	t.Run("Invoke exported function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn add(int a, int b) int {
+			return a + b;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		result, err := vm.Invoke("add", 2, 3)
+		assert.NoError(t, err)
+		assert.Equal(t, 5, result)
+	})
+
+	t.Run("Invoke non-exported function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn multiply(int a, int b) int {
+			return a * b;
+		}
+		var result = multiply(2, 3);
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		result, err := vm.Invoke("multiply", 2, 3)
+		assert.ErrorContains(t, err, "function multiply not found")
+		assert.Equal(t, nil, result) // Should not be able to invoke non-exported function
+	})
+
+	t.Run("Invoke function with wrong number of arguments", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn add(int a, int b) int {
+			return a + b;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		_, err := vm.Invoke("add", 2) // Only one argument provided
+		assert.ErrorContains(t, err, "function add expects 2 arguments, got 1")
+	})
+
+	t.Run("Invoke function with unsupported argument type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn add(int a, int b) int {
+			return a + b;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		_, err := vm.Invoke("add", "string", 3) // First argument is a string
+		assert.ErrorContains(t, err, "unsupported argument type: string")
+	})
+
+	t.Run("Invoke function with void return type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn doNothing() {
+			// This function does nothing
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		result, err := vm.Invoke("doNothing")
+		assert.NoError(t, err)
+		assert.Nil(t, result) // Should return nil for void function
+	})
+
+	t.Run("Invoke non-existent function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn add(int a, int b) int {
+			return a + b;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		_, err := vm.Invoke("subtract", 2, 3) // Non-existent function
+		assert.ErrorContains(t, err, "function subtract not found")
+	})
+
+	t.Run("Invoke function with global variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int x = 10;
+
+		export fn getX() int {
+			return x;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		result, err := vm.Invoke("getX")
+		assert.NoError(t, err)
+		assert.Equal(t, 10, result) // Should return the value of global variable x
+	})
+
+	t.Run("Invoke recursive function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn factorial(int n) int {
+			if n <= 1 {
+				return 1;
+			}
+			return n * factorial(n - 1);
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		result, err := vm.Invoke("factorial", 5)
+		assert.NoError(t, err)
+		assert.Equal(t, 120, result) // Should return 5! = 120
+	})
+}
