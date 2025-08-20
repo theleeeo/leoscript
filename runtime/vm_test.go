@@ -16,30 +16,36 @@ import (
 
 func Test_VM_ArithmeticExpr(t *testing.T) {
 	t.Run("Single binary expression", func(t *testing.T) {
-		lx := lexer.MustTokenize("2 + 3;")
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize("export var a = 2 + 3;")
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 5, ret)
+		ret, err := vm.GetVariable("a")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(5), ret)
 	})
 
 	t.Run("negative number expression", func(t *testing.T) {
-		lx := lexer.MustTokenize("5 - 6;")
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize("export var a = 5 - 6;")
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, -1, ret)
+		ret, err := vm.GetVariable("a")
+		assert.NoError(t, err)
+		assert.Equal(t, -1, int(ret)) // -1 in uint64
 	})
 
 	t.Run("multiplication and division binary expression", func(t *testing.T) {
-		lx := lexer.MustTokenize("3 * 4 - 4 / 2;")
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize("export var a = 3 * 4 - 4 / 2;")
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 10, ret)
+		ret, err := vm.GetVariable("a")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(10), ret) // 12 - 2 = 10
 	})
 }
 
@@ -51,10 +57,8 @@ func Test_VM_Variables(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))
 		assert.Equal(t, uint64(30), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))
 	})
@@ -63,182 +67,252 @@ func Test_VM_Variables(t *testing.T) {
 func Test_VM_IfElse(t *testing.T) {
 	t.Run("True if statement", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (true) {
-			return 1;
+		export fn test() int {
+			if (true) {
+				return 1;
+			}
+		return 0;
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 
-	// NOTE: This does not work because when the if-statement is passed, it will try to reset the stackframe but is not able to since there is none.
-	// LeoScript will however not be ran in this way since the if-statement will always be in a function of some sort and therefor it will always have a stackframe.
-	// t.Run("False if statement", func(t *testing.T) {
-	// 	lx := lexer.MustTokenize(`
-	// 	if (false) {
-	// 		return 1;
-	// 	}
-	// 	`)
-	// 	stmt, _ := parser.NewParser(lx).ParseStatement()
-	// 	exe := compiler.CompileStatement(stmt)
-	// 	vm := runtime.NewVM(exe)
-	// 	ret, err := vm.Run()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, 0, ret) // No return value, should be 0
-	// })
+	t.Run("False if statement", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn test() int {
+			if (false) {
+				return 1;
+			}
+			return 0;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 0, ret) // Should return 0 for false condition
+	})
 
 	t.Run("If-else statement", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (true) {
-			return 1;
-		} else {
-			return 2;
+		export fn test() int {
+			if (true) {
+				return 1;
+			} else {
+				return 2;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 
 	t.Run("If-else with boolean condition", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (5 > 3) {
-			return 1;
-		} else {
-			return 2;
+		export fn test() int {
+			if (5 > 3) {
+				return 1;
+			} else {
+				return 2;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 }
 
 func Test_VM_Comparison(t *testing.T) {
 	t.Run("Equality check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (5 == 5) {
-			return 1;
-		} else {
-			return 0;
-		}
-		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		export fn test() int {
+			if (5 == 5) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 
 	t.Run("Inequality check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (5 != 3) {
-			return 1;
-		} else {
-			return 0;
-		}
-		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		export fn test() int {
+			if (5 != 3) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
+	})
+
+	t.Run("Inequality check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn test() int {
+			if (5 != 3) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret)
 	})
 
 	t.Run("Greater than check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (5 > 3) {
-			return 1;
-		} else {
-			return 0;
+		export fn test() int {
+			if (5 > 3) {
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret)
 	})
 
 	t.Run("Less than check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (3 < 5) {
-			return 1;
-		} else {
-			return 0;
+		export fn test() int {
+			if (3 < 5) {
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 
 	t.Run("Greater than or equal check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (5 >= 5) {
-			return 1;
-		} else {
-			return 0;
+		export fn test() int {
+			if (5 >= 5) {
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 
 	t.Run("Less than or equal check", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if (3 <= 5) {
-			return 1;
-		} else {
-			return 0;
+		export fn test() int {
+			if (3 <= 5) {
+				return 1;
+			} else {
+				return 0;
+			}
 		}
 		`)
-		stmt, _ := parser.NewParser(lx).ParseStatement()
-		exe := compiler.CompileStatement(stmt)
-		ret, err := runtime.Evaluate(exe)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
 	})
 }
 
 func Test_VM_BooleanOps(t *testing.T) {
 	t.Run("Boolean AND operation", func(t *testing.T) {
-		lx := lexer.MustTokenize(`true && false;`)
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize(`
+		export fn test() bool {
+			return true && false;
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret) // false
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, false, ret) // false
 	})
 
 	t.Run("Boolean OR operation", func(t *testing.T) {
-		lx := lexer.MustTokenize(`true || false;`)
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize(`
+		export fn test() bool {
+			return true || false;
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 1, ret) // true
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, true, ret) // true
 	})
 
 	t.Run("Boolean NOT operation", func(t *testing.T) {
-		lx := lexer.MustTokenize(`!true;`)
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		ret, err := runtime.Evaluate(exe)
+		lx := lexer.MustTokenize(`
+		export fn test() bool {
+			return !true;
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret) // false
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, false, ret) // false
 	})
 }
 
@@ -251,13 +325,10 @@ func Test_VM_Functions(t *testing.T) {
 
 		var a = add(2, 3);
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(5), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // a should be 5
 	})
 
@@ -271,13 +342,10 @@ func Test_VM_Functions(t *testing.T) {
 
 		var a = getX();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should be 10
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should also be 10
 	})
@@ -293,13 +361,10 @@ func Test_VM_Functions(t *testing.T) {
 
 		var a = shadowX();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should still be 10
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should be 20 (from shadowX)
 	})
@@ -316,13 +381,10 @@ func Test_VM_Functions(t *testing.T) {
 		var a = shadowX();
 		var b = x;
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))   // Global x should still be 10
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))  // a should be 20 (from shadowX)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[16:24])) // b should be 10 (global x)
@@ -346,14 +408,10 @@ func Test_Fibonacci(t *testing.T) {
 
 		var result = fib(10);
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		compiler.DebugPrint(exe.Marshal())
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(55), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 55 (fib(10))
 	})
 }
@@ -368,13 +426,10 @@ func Test_Assignment(t *testing.T) {
 		}
 		var result = foo();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
 
@@ -391,13 +446,10 @@ func Test_Assignment(t *testing.T) {
 		}
 		var result = foo();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
 
@@ -413,13 +465,10 @@ func Test_Assignment(t *testing.T) {
 		}
 		var result = foo();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
 
@@ -434,13 +483,10 @@ func Test_Assignment(t *testing.T) {
 
 		var b = foo();
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		assert.NoError(t, err)
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		ret, err := vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // a should be 10
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // b should also be 10
 	})
@@ -453,8 +499,8 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(5), ret)
@@ -466,11 +512,10 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		vm.Run()
-		ret, err := vm.GetVariable("b")
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		_, err = vm.GetVariable("b")
 		assert.ErrorContains(t, err, "exported variable b not found")
-		assert.Equal(t, uint64(0), ret) // Should not be able to read non-exported variable
 	})
 
 	t.Run("Read multiple", func(t *testing.T) {
@@ -481,8 +526,8 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		vm.Run()
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(5), ret)
@@ -504,7 +549,8 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		result, err := vm.Invoke("add", 2, 3)
 		assert.NoError(t, err)
 		assert.Equal(t, 5, result)
@@ -519,7 +565,8 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		result, err := vm.Invoke("multiply", 2, 3)
 		assert.ErrorContains(t, err, "function multiply not found")
 		assert.Equal(t, nil, result) // Should not be able to invoke non-exported function
@@ -533,8 +580,9 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		_, err := vm.Invoke("add", 2) // Only one argument provided
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		_, err = vm.Invoke("add", 2) // Only one argument provided
 		assert.ErrorContains(t, err, "function add expects 2 arguments, got 1")
 	})
 
@@ -546,8 +594,9 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		_, err := vm.Invoke("add", "string", 3) // First argument is a string
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		_, err = vm.Invoke("add", "string", 3) // First argument is a string
 		assert.ErrorContains(t, err, "unsupported argument type: string")
 	})
 
@@ -559,7 +608,8 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		result, err := vm.Invoke("doNothing")
 		assert.NoError(t, err)
 		assert.Nil(t, result) // Should return nil for void function
@@ -573,8 +623,9 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
-		_, err := vm.Invoke("subtract", 2, 3) // Non-existent function
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		_, err = vm.Invoke("subtract", 2, 3) // Non-existent function
 		assert.ErrorContains(t, err, "function subtract not found")
 	})
 
@@ -588,7 +639,8 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		result, err := vm.Invoke("getX")
 		assert.NoError(t, err)
 		assert.Equal(t, 10, result) // Should return the value of global variable x
@@ -605,7 +657,8 @@ func Test_InvokeFunction(t *testing.T) {
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := runtime.NewVM(exe.Marshal())
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
 		result, err := vm.Invoke("factorial", 5)
 		assert.NoError(t, err)
 		assert.Equal(t, 120, result) // Should return 5! = 120

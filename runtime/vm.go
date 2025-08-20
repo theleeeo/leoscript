@@ -27,10 +27,10 @@ type stackFrame struct {
 	stackBase uint64
 }
 
-func NewVM(program []byte) *VM {
+func NewVM(program []byte) (*VM, error) {
 	exe := new(compiler.Executable)
 	if err := exe.Unmarshal(program); err != nil {
-		panic(fmt.Sprintf("unmarshalling executable: %v", err))
+		return nil, fmt.Errorf("unmarshalling executable: %v", err)
 	}
 
 	vm := &VM{
@@ -43,10 +43,10 @@ func NewVM(program []byte) *VM {
 
 	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
 	if err != nil {
-		panic(fmt.Sprintf("initializing VM: %v", err)) // TODO: No panics
+		return nil, fmt.Errorf("initializing VM: %v", err)
 	}
 
-	return vm
+	return vm, nil
 }
 
 func Evaluate(program []byte) (int, error) {
@@ -57,7 +57,7 @@ func Evaluate(program []byte) (int, error) {
 		variableStack: make([]byte, 0),
 	}
 
-	r, err := vm.Run()
+	r, err := vm.run()
 	return int(r), err
 }
 
@@ -90,14 +90,14 @@ func (vm *VM) storeVariable(varOffset uint64, value uint64) {
 }
 
 func (vm *VM) loadVariable(varOffset uint64) uint64 {
-	if int(varOffset) > len(vm.variableStack) {
-		panic(fmt.Sprintf("Variable offset %d is out of bounds for variable stack of length %d", varOffset, len(vm.variableStack))) // Should not be able to happen
+	if int(varOffset+8) > len(vm.variableStack) {
+		panic(fmt.Sprintf("range %d-%d is out of bounds for variable stack of length %d", varOffset, varOffset+8, len(vm.variableStack))) // Should not be able to happen
 	}
 
 	return binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
 }
 
-func (vm *VM) Run() (uint64, error) {
+func (vm *VM) run() (uint64, error) {
 	for {
 		op := vm.program[vm.pc]
 
@@ -154,8 +154,6 @@ func (vm *VM) Run() (uint64, error) {
 			vm.cStack = append(vm.cStack, value)
 		case compiler.OpReturn:
 			sf := vm.callStack[len(vm.callStack)-1]
-			vm.pc = sf.returnAddress                           // Set pc to the return address
-			vm.variableStack = vm.variableStack[:sf.stackBase] // Restore the variable stack to the base of the current function call
 			vm.callStack = vm.callStack[:len(vm.callStack)-1]
 
 			// If there is nothing on the call stack, we are returning execution from the main program
@@ -165,6 +163,9 @@ func (vm *VM) Run() (uint64, error) {
 				}
 				return vm.pop(), nil
 			}
+
+			vm.pc = sf.returnAddress                           // Set pc to the return address
+			vm.variableStack = vm.variableStack[:sf.stackBase] // Restore the variable stack to the base of the current function call
 
 			continue // Skip the increment of pc below, we have already set it to the return address
 		case compiler.OpCall:
@@ -286,7 +287,7 @@ func (vm *VM) invokeRaw(pc uint64, args ...uint64) (uint64, error) {
 	})
 	vm.pc = pc
 
-	ret, err := vm.Run()
+	ret, err := vm.run()
 	if err != nil {
 		return 0, err
 	}

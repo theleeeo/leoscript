@@ -740,8 +740,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		lx := lexer.MustTokenize(`
 		var a = a;
 		`)
-		p := NewParser(lx)
-		_, err := p.Parse()
+		_, err := Parse(lx)
 		assert.ErrorContains(t, err, "circular dependency detected: a")
 	})
 
@@ -750,9 +749,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		var a = b;
 		var b = 123;
 		`)
-		p := NewParser(lx)
-		pg, err := p.Parse()
-		assert.NoError(t, err)
+		pg := MustParse(lx)
 
 		assert.EqualExportedValues(t, &Program{
 			VarDecls: []VarDecl{
@@ -994,9 +991,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 			}
 		`)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
+		pg := MustParse(lx)
 
 		assert.EqualExportedValues(t, &Program{
 			VarDecls: []VarDecl{
@@ -1028,7 +1023,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 					},
 				},
 			},
-		}, prog)
+		}, pg)
 	})
 }
 
@@ -1049,9 +1044,7 @@ func Test_ParseFile(t *testing.T) {
 			}
 		`)
 
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
+		pg := MustParse(lx)
 
 		assert.EqualExportedValues(t, &Program{
 			FnDefs: []FnDef{
@@ -1096,16 +1089,14 @@ func Test_ParseFile(t *testing.T) {
 				},
 			},
 			VarDecls: []VarDecl{},
-		}, prog)
+		}, pg)
 	})
 
 	t.Run("no main function", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			fn bar() {}
 		`)
-		p := NewParser(lx)
-		prog, err := p.Parse()
-		assert.NoError(t, err)
+		pg := MustParse(lx)
 		assert.EqualExportedValues(t, &Program{
 			FnDefs: []FnDef{
 				{
@@ -1118,7 +1109,7 @@ func Test_ParseFile(t *testing.T) {
 				},
 			},
 			VarDecls: []VarDecl{},
-		}, prog)
+		}, pg)
 	})
 }
 

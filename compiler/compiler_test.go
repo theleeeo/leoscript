@@ -142,7 +142,7 @@ func Test_StackVariables(t *testing.T) {
 		int a = 10;
 		int b = a + 20;
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -165,7 +165,7 @@ func Test_Function(t *testing.T) {
 			return a + b;
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -184,7 +184,7 @@ func Test_Function(t *testing.T) {
 		lx := lexer.MustTokenize(`
 		fn foo() {}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -203,7 +203,7 @@ func Test_Function(t *testing.T) {
 			foo();
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -227,7 +227,7 @@ func Test_Function(t *testing.T) {
 			add(5, 10);
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -254,7 +254,7 @@ func Test_Function(t *testing.T) {
 			return 42;
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -319,7 +319,7 @@ func Test_Assignment(t *testing.T) {
 			a = 10;
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -344,7 +344,7 @@ func Test_Assignment(t *testing.T) {
 			}
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`
@@ -375,7 +375,7 @@ func Test_Assignment(t *testing.T) {
 			a = 20;
 		}
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
 			compiler.Compile(pg).Code(),
 			`

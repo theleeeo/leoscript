@@ -26,10 +26,14 @@ func Benchmark_Arithmetic(b *testing.B) {
 		`)
 		expr, _ := parser.NewParser(lx).ParseExpr()
 		exe := compiler.CompileStatement(expr)
-		vm := NewVM(exe)
+		vm, err := NewVM(exe)
+		if err != nil {
+			b.Fatalf("VM creation error: %v", err)
+		}
 
 		for b.Loop() {
-			vm.Run()
+			vm.Reset() // Reset VM state before each iteration
+			vm.invokeRaw(0)
 		}
 	})
 }
@@ -44,10 +48,7 @@ func Benchmark_Fibonacci(b *testing.B) {
 			}
 			return fib(n - 1) + fib(n - 2);
 		}`)
-		pg, err := parser.NewParser(lx).Parse()
-		if err != nil {
-			b.Fatalf("Parse error: %v", err)
-		}
+		pg := parser.MustParse(lx)
 		i, err := NewInterpreter(pg).Initialize()
 		if err != nil {
 			b.Fatalf("Interpreter init error: %v", err)
@@ -68,15 +69,12 @@ func Benchmark_Fibonacci(b *testing.B) {
 		}
 		var result = fib(20);
 		`)
-		pg, err := parser.NewParser(lx).Parse()
-		if err != nil {
-			b.Fatalf("Parse error: %v", err)
-		}
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
-		vm := NewVM(exe.Marshal())
+		vm, _ := NewVM(exe.Marshal())
 
 		for b.Loop() {
-			vm.Run()
+			vm.invokeRaw(0)
 			vm.Reset() // Reset VM state after each iteration
 		}
 	})
