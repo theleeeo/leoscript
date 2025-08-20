@@ -11,7 +11,7 @@ type Metadata struct {
 	// The exported functions of the program
 	functions []exportedFunction
 	// The exported variables of the program
-	variables []exportedVariable
+	variables []ExportedVariable
 }
 
 func (md Metadata) Marshal() []byte {
@@ -43,11 +43,11 @@ func (md Metadata) Marshal() []byte {
 
 	varRaw := binary.BigEndian.AppendUint64(nil, uint64(len(md.variables)))
 	for _, varDecl := range md.variables {
-		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(len(varDecl.name)))
-		varRaw = append(varRaw, []byte(varDecl.name)...)
+		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(len(varDecl.Name)))
+		varRaw = append(varRaw, []byte(varDecl.Name)...)
 
-		varRaw = binary.BigEndian.AppendUint64(varRaw, varDecl.offset)
-		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(varDecl.varType.(types.BasicType)))
+		varRaw = binary.BigEndian.AppendUint64(varRaw, varDecl.Offset)
+		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(varDecl.VarType.(types.BasicType)))
 	}
 
 	mdLen := binary.BigEndian.AppendUint64(nil, uint64(len(fnRaw)+len(varRaw)))
@@ -155,7 +155,7 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 
 	varCount := binary.BigEndian.Uint64(raw[:8])
 	raw = raw[8:]
-	md.variables = make([]exportedVariable, varCount)
+	md.variables = make([]ExportedVariable, varCount)
 	for i := uint64(0); i < varCount; i++ {
 		if len(raw) < 8 {
 			return nil, errors.New("metadata raw is too short for variable name length")
@@ -180,10 +180,10 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 		varType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
 		raw = raw[8:]
 
-		md.variables[i] = exportedVariable{
-			name:    name,
-			offset:  offset,
-			varType: varType,
+		md.variables[i] = ExportedVariable{
+			Name:    name,
+			Offset:  offset,
+			VarType: varType,
 		}
 	}
 
@@ -209,10 +209,24 @@ type exportedFunction struct {
 	stub bool
 }
 
-type exportedVariable struct {
-	name string
-	// The offset in the variable stack where the variable will be stored
-	offset uint64
+type ExportedVariable struct {
+	Name string
+	// The Offset in the variable stack where the variable will be stored
+	Offset uint64
 	// The type of the variable
-	varType types.Type
+	VarType types.Type
+}
+
+// func (md *Metadata) Functions() []exportedFunction {
+// 	var exportedFunctions []exportedFunction
+// 	for _, fn := range md.functions {
+// 		if fn.exported {
+// 			exportedFunctions = append(exportedFunctions, fn)
+// 		}
+// 	}
+// 	return exportedFunctions
+// }
+
+func (md *Metadata) Variables() []ExportedVariable {
+	return md.variables
 }

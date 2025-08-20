@@ -90,24 +90,24 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		md := exe.Metadata()
 		assert.Len(t, md.variables, 2)
-		assert.Equal(t, "a", md.variables[0].name)
-		assert.Equal(t, types.Int, md.variables[0].varType)
-		assert.Equal(t, uint64(0), md.variables[0].offset)
+		assert.Equal(t, "a", md.variables[0].Name)
+		assert.Equal(t, types.Int, md.variables[0].VarType)
+		assert.Equal(t, uint64(0), md.variables[0].Offset)
 
-		assert.Equal(t, "b", md.variables[1].name)
-		assert.Equal(t, types.Bool, md.variables[1].varType)
-		assert.Equal(t, uint64(8), md.variables[1].offset)
+		assert.Equal(t, "b", md.variables[1].Name)
+		assert.Equal(t, types.Bool, md.variables[1].VarType)
+		assert.Equal(t, uint64(8), md.variables[1].Offset)
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
 		assert.Len(t, md.variables, 2)
-		assert.Equal(t, "a", md.variables[0].name)
-		assert.Equal(t, types.Int, md.variables[0].varType)
-		assert.Equal(t, uint64(0), md.variables[0].offset)
+		assert.Equal(t, "a", md.variables[0].Name)
+		assert.Equal(t, types.Int, md.variables[0].VarType)
+		assert.Equal(t, uint64(0), md.variables[0].Offset)
 
-		assert.Equal(t, "b", md.variables[1].name)
-		assert.Equal(t, types.Bool, md.variables[1].varType)
-		assert.Equal(t, uint64(8), md.variables[1].offset)
+		assert.Equal(t, "b", md.variables[1].Name)
+		assert.Equal(t, types.Bool, md.variables[1].VarType)
+		assert.Equal(t, uint64(8), md.variables[1].Offset)
 	})
 
 	t.Run("metadata with functions and variables", func(t *testing.T) {
@@ -140,7 +140,7 @@ func Test_Metadata_Marshaling(t *testing.T) {
 		}, md.functions[1])
 
 		assert.Len(t, md.variables, 1)
-		assert.Equal(t, "a", md.variables[0].name)
+		assert.Equal(t, "a", md.variables[0].Name)
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
@@ -163,7 +163,7 @@ func Test_Metadata_Marshaling(t *testing.T) {
 		}, md2.functions[1])
 
 		assert.Len(t, md2.variables, 1)
-		assert.Equal(t, "a", md2.variables[0].name)
+		assert.Equal(t, "a", md2.variables[0].Name)
 	})
 
 	t.Run("no exports", func(t *testing.T) {

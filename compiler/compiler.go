@@ -464,10 +464,10 @@ func (c *compiler) recordExportedFunction(fnDef parser.FnDef) {
 }
 
 func (c *compiler) recordExportedVariable(varDecl parser.VarDecl) {
-	ev := exportedVariable{
-		name:    varDecl.Name,
-		offset:  c.globalScope.stackAllocs[varDecl.Name].stackOffset,
-		varType: varDecl.Type,
+	ev := ExportedVariable{
+		Name:    varDecl.Name,
+		Offset:  c.globalScope.stackAllocs[varDecl.Name].stackOffset,
+		VarType: varDecl.Type,
 	}
 
 	c.md.variables = append(c.md.variables, ev)

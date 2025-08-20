@@ -49,7 +49,7 @@ func Test_VM_Variables(t *testing.T) {
 		int a = 10;
 		int b = a + 20;
 		`)
-		pg, _ := parser.NewParser(lx).Parse()
+		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm := runtime.NewVM(exe.Marshal())
 		ret, err := vm.Run()
@@ -443,5 +443,54 @@ func Test_Assignment(t *testing.T) {
 		assert.Equal(t, 0, ret)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // a should be 10
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // b should also be 10
+	})
+}
+
+func Test_Read_ExportedVariable(t *testing.T) {
+	t.Run("Read exported variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export int a = 5;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		vm.Run()
+		ret, err := vm.GetVariable("a")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(5), ret)
+	})
+
+	t.Run("Read non-exported variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int b = 10;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		vm.Run()
+		ret, err := vm.GetVariable("b")
+		assert.ErrorContains(t, err, "exported variable b not found")
+		assert.Equal(t, uint64(0), ret) // Should not be able to read non-exported variable
+	})
+
+	t.Run("Read multiple", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export int a = 5;
+		export int b = 10;
+		export int c = 15;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm := runtime.NewVM(exe.Marshal())
+		vm.Run()
+		ret, err := vm.GetVariable("a")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(5), ret)
+		ret, err = vm.GetVariable("b")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(10), ret)
+		ret, err = vm.GetVariable("c")
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(15), ret)
 	})
 }

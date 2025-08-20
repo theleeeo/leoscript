@@ -261,3 +261,13 @@ func (vm *VM) Run() (int, error) {
 func (vm *VM) VariableStack() []byte {
 	return vm.variableStack
 }
+
+func (vm *VM) GetVariable(name string) (uint64, error) {
+	for _, variable := range vm.metadata.Variables() {
+		if variable.Name == name {
+			return vm.loadVariable(variable.Offset), nil
+		}
+	}
+
+	return 0, fmt.Errorf("exported variable %s not found", name)
+}
