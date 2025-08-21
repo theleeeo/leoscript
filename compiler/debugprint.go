@@ -81,8 +81,21 @@ func DebugPrint(rawExe []byte) {
 			b.WriteRune(' ')
 			i++
 
-			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe.code[i:i+8])), 10))
+			fnOffset := binary.BigEndian.Uint64(exe.code[i : i+8])
+			b.WriteString(strconv.FormatInt(int64(fnOffset), 10))
 			i = i + 7
+
+			// Find the function definition by its offset
+			fnIndex := slices.IndexFunc(fnDefs, func(fn ExportedFunction) bool {
+				return fn.StartOffset == fnOffset && !fn.stub
+			})
+
+			fnDef := fnDefs[fnIndex]
+			b.WriteString(" \033[1;34m") // Set text color to blue
+			b.WriteRune('(')
+			b.WriteString(fnDef.Name)
+			b.WriteRune(')')
+			b.WriteString("\033[0m") // Reset color
 		case OpJump:
 			b.WriteString("JUMP")
 			b.WriteRune(' ')
@@ -118,12 +131,28 @@ func DebugPrint(rawExe []byte) {
 
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe.code[i:i+8])), 10))
 			i = i + 7
+		case OpInvokeStub:
+			b.WriteString("INVOKE_STUB")
+			b.WriteRune(' ')
+			i++
+
+			stubNumber := binary.BigEndian.Uint64(exe.code[i : i+8])
+			b.WriteString(strconv.FormatInt(int64(stubNumber), 10))
+			i = i + 7
+
+			// Find the stub definition by its number
+			stubDef := md.Stubs()[stubNumber]
+			b.WriteString(" \033[1;34m") // Set text color to blue
+			b.WriteRune('(')
+			b.WriteString(stubDef.Name)
+			b.WriteRune(')')
+			b.WriteString("\033[0m") // Reset color
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}
 
 		fnIndex := slices.IndexFunc(fnDefs, func(fn ExportedFunction) bool {
-			return fn.StartOffset == uint64(startIdx)
+			return fn.StartOffset == uint64(startIdx) && !fn.stub
 		})
 		if fnIndex != -1 {
 			fnDef := fnDefs[fnIndex]
@@ -224,6 +253,13 @@ func DumpOpcode(exe []byte) string {
 			b.WriteString("OR")
 		case OpStoreGlobal:
 			b.WriteString("STORE_GLOBAL")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
+		case OpInvokeStub:
+			b.WriteString("INVOKE_STUB")
 			b.WriteRune(' ')
 			i++
 

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"leoscript/compiler"
 	"leoscript/parser"
 	"leoscript/types"
 	"reflect"
@@ -68,17 +69,18 @@ func (intr *Interpreter) callStub(fn parser.FnDef, parameters []runtimeVal) runt
 }
 
 type externalFunction struct {
+	md     compiler.ExportedFunction
 	fn     reflect.Value
 	fnType reflect.Type
 }
 
-func (ef externalFunction) verifySignature(stub parser.FnDef) error {
+func (ef *externalFunction) verifySignature(stub parser.FnDef) error {
 	if ef.fnType.NumIn() != len(stub.Args) {
 		return fmt.Errorf("expected %d arguments, got %d", ef.fnType.NumIn(), len(stub.Args))
 	}
 
 	for i := 0; i < ef.fnType.NumIn(); i++ {
-		if err := verifyEqualType(ef.fnType.In(i), stub.Args[i].Type); err != nil {
+		if err := verifyEqualType(stub.Args[i].Type, ef.fnType.In(i)); err != nil {
 			return fmt.Errorf("argument %d: %w", i+1, err)
 		}
 	}
@@ -88,7 +90,7 @@ func (ef externalFunction) verifySignature(stub parser.FnDef) error {
 			return fmt.Errorf("expected no return value, got %s", stub.ReturnType)
 		}
 
-		if err := verifyEqualType(ef.fnType.Out(0), stub.ReturnType); err != nil {
+		if err := verifyEqualType(stub.ReturnType, ef.fnType.Out(0)); err != nil {
 			return fmt.Errorf("return value: %w", err)
 		}
 	}
@@ -96,15 +98,47 @@ func (ef externalFunction) verifySignature(stub parser.FnDef) error {
 	return nil
 }
 
-func verifyEqualType(goType reflect.Type, lsType types.Type) error {
-	switch goType.Kind() {
+func (ef *externalFunction) verifySignature2(stub compiler.ExportedFunction) error {
+	if ef.fnType.NumIn() != len(stub.Args) {
+		return fmt.Errorf("expected %d arguments, got %d", ef.fnType.NumIn(), len(stub.Args))
+	}
+
+	for i := range ef.fnType.NumIn() {
+		if err := verifyEqualType(stub.Args[i].Type, ef.fnType.In(i)); err != nil {
+			return fmt.Errorf("argument %d: %w", i+1, err)
+		}
+	}
+
+	if ef.fnType.NumOut() > 1 {
+		return fmt.Errorf("expected at most one return value, got %d", ef.fnType.NumOut())
+	}
+
+	if ef.fnType.NumOut() == 0 && stub.ReturnType != types.Void {
+		return fmt.Errorf("expected a return value of type %s, got void", stub.ReturnType)
+	}
+
+	if ef.fnType.NumOut() == 1 {
+		if stub.ReturnType == types.Void {
+			return fmt.Errorf("expected no return value, got %s", stub.ReturnType)
+		}
+
+		if err := verifyEqualType(stub.ReturnType, ef.fnType.Out(0)); err != nil {
+			return fmt.Errorf("return value: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func verifyEqualType(lsType types.Type, goType reflect.Type) error {
+	switch goType.Kind() { // TODO: Swap this to switch on lsType once TypeKind is implemented
 	case reflect.Int:
 		if lsType != types.Int {
-			return fmt.Errorf("expected int, got %s", lsType)
+			return fmt.Errorf("expected %s, got int", lsType)
 		}
 	case reflect.Bool:
 		if lsType != types.Bool {
-			return fmt.Errorf("expected bool, got %s", lsType)
+			return fmt.Errorf("expected %s, got bool", lsType)
 		}
 	default:
 		return fmt.Errorf("unsupported type: %s", goType)
@@ -112,7 +146,7 @@ func verifyEqualType(goType reflect.Type, lsType types.Type) error {
 	return nil
 }
 
-func (ef externalFunction) Call(args []runtimeVal) runtimeVal {
+func (ef *externalFunction) Call(args []runtimeVal) runtimeVal {
 	if ef.fnType.NumIn() != len(args) {
 		panic(fmt.Sprintf("expected %d arguments, got %d", ef.fnType.NumIn(), len(args)))
 	}
@@ -143,6 +177,43 @@ func (ef externalFunction) Call(args []runtimeVal) runtimeVal {
 		return booleanVal{value: v}
 	case nil:
 		return nil
+	default:
+		panic(fmt.Sprintf("unsupported return type from stub function: %T", v))
+	}
+}
+
+func (ef *externalFunction) call2(args []uint64) uint64 {
+	if len(args) != len(ef.md.Args) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(ef.md.Args), len(args))) // This should never happen
+	}
+
+	inVals := make([]reflect.Value, len(args))
+	for i, arg := range args {
+		switch ef.md.Args[i].Type.(types.BasicType) {
+		case types.Int:
+			inVals[i] = reflect.ValueOf(int(arg))
+		case types.Bool:
+			inVals[i] = reflect.ValueOf(arg != 0)
+		default:
+			panic(fmt.Sprintf("unsupported argument type for stub function: %T", ef.md.Args[i].Type))
+		}
+	}
+
+	out := ef.fn.Call(inVals)
+	if len(out) == 0 {
+		return 0
+	}
+
+	// Only use the first return value, more than one return value is not supported
+	result := out[0].Interface()
+	switch v := result.(type) {
+	case int:
+		return uint64(v)
+	case bool:
+		if v {
+			return 1
+		}
+		return 0
 	default:
 		panic(fmt.Sprintf("unsupported return type from stub function: %T", v))
 	}

@@ -6,6 +6,8 @@ import (
 	"leoscript/parser"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func equalProgram(t *testing.T, p []byte, expected string) {
@@ -389,6 +391,45 @@ func Test_Assignment(t *testing.T) {
 			PUSH 10
 			STORE 0
 			PUSH 20
+			STORE 0
+			RETURN
+			`,
+		)
+	})
+}
+
+func Test_StubFunction(t *testing.T) {
+	t.Run("define stub function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub foo() int;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		equalProgram(t,
+			exe.Code(),
+			`
+			RETURN
+			`,
+		)
+		assert.Len(t, exe.Metadata().Stubs(), 1)
+		assert.Equal(t, "foo", exe.Metadata().Stubs()[0].Name)
+		assert.EqualValues(t, 0, exe.Metadata().Stubs()[0].StartOffset)
+	})
+
+	t.Run("call stub function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub foo() int;
+
+		fn main() {
+			int a = foo();
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			INVOKE_STUB 0
 			STORE 0
 			RETURN
 			`,

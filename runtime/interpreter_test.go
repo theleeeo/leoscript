@@ -659,7 +659,7 @@ func Test_StubVerification(t *testing.T) {
 				return 1
 			}).
 			Initialize()
-		assert.ErrorContains(t, err, "argument 1: expected bool, got Int")
+		assert.ErrorContains(t, err, "argument 1: expected Int, got bool")
 	})
 
 	t.Run("Verify stub with incorrect return type", func(t *testing.T) {
@@ -676,7 +676,7 @@ func Test_StubVerification(t *testing.T) {
 				return arg%2 == 0
 			}).
 			Initialize()
-		assert.ErrorContains(t, err, "return value: expected bool, got Int")
+		assert.ErrorContains(t, err, "return value: expected Int, got bool")
 	})
 
 	t.Run("register non-function stub", func(t *testing.T) {

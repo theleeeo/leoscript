@@ -21,6 +21,8 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(5), ret)
@@ -32,6 +34,8 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
 		assert.Equal(t, -1, int(ret)) // -1 in uint64
@@ -42,6 +46,8 @@ func Test_VM_ArithmeticExpr(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
@@ -58,6 +64,8 @@ func Test_VM_Variables(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))
 		assert.Equal(t, uint64(30), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))
@@ -78,6 +86,8 @@ func Test_VM_IfElse(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret) // Should return 1 for true condition
@@ -95,6 +105,8 @@ func Test_VM_IfElse(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -115,6 +127,8 @@ func Test_VM_IfElse(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret) // Should return 1 for true condition
@@ -133,6 +147,8 @@ func Test_VM_IfElse(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -154,23 +170,7 @@ func Test_VM_Comparison(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
-		ret, err := vm.Invoke("test")
-		assert.NoError(t, err)
-		assert.Equal(t, 1, ret) // Should return 1 for true condition
-	})
-
-	t.Run("Inequality check", func(t *testing.T) {
-		lx := lexer.MustTokenize(`
-		export fn test() int {
-			if (5 != 3) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}`)
-		pg := parser.MustParse(lx)
-		exe := compiler.Compile(pg)
-		vm, err := runtime.NewVM(exe.Marshal())
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -189,6 +189,28 @@ func Test_VM_Comparison(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
+		ret, err := vm.Invoke("test")
+		assert.NoError(t, err)
+		assert.Equal(t, 1, ret) // Should return 1 for true condition
+	})
+
+	t.Run("Inequality check", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn test() int {
+			if (5 != 3) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -209,6 +231,8 @@ func Test_VM_Comparison(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret)
@@ -227,6 +251,8 @@ func Test_VM_Comparison(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -247,6 +273,8 @@ func Test_VM_Comparison(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret) // Should return 1 for true condition
@@ -266,6 +294,8 @@ func Test_VM_Comparison(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, 1, ret) // Should return 1 for true condition
@@ -282,6 +312,8 @@ func Test_VM_BooleanOps(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, false, ret) // false
@@ -296,6 +328,8 @@ func Test_VM_BooleanOps(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
 		assert.Equal(t, true, ret) // true
@@ -309,6 +343,8 @@ func Test_VM_BooleanOps(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.Invoke("test")
 		assert.NoError(t, err)
@@ -329,6 +365,8 @@ func Test_VM_Functions(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(5), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // a should be 5
 	})
 
@@ -345,6 +383,8 @@ func Test_VM_Functions(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should be 10
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should also be 10
@@ -365,6 +405,8 @@ func Test_VM_Functions(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should still be 10
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should be 20 (from shadowX)
 	})
@@ -384,6 +426,8 @@ func Test_VM_Functions(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))   // Global x should still be 10
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))  // a should be 20 (from shadowX)
@@ -412,6 +456,8 @@ func Test_Fibonacci(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(55), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 55 (fib(10))
 	})
 }
@@ -429,6 +475,8 @@ func Test_Assignment(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
@@ -450,6 +498,8 @@ func Test_Assignment(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
 
@@ -469,6 +519,8 @@ func Test_Assignment(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
 	})
 
@@ -487,6 +539,8 @@ func Test_Assignment(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // a should be 10
 		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // b should also be 10
 	})
@@ -501,6 +555,8 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
 		assert.Equal(t, uint64(5), ret)
@@ -513,6 +569,8 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		_, err = vm.GetVariable("b")
 		assert.ErrorContains(t, err, "exported variable b not found")
@@ -527,6 +585,8 @@ func Test_Read_ExportedVariable(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		ret, err := vm.GetVariable("a")
 		assert.NoError(t, err)
@@ -551,6 +611,8 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		result, err := vm.Invoke("add", 2, 3)
 		assert.NoError(t, err)
 		assert.Equal(t, 5, result)
@@ -567,6 +629,8 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		result, err := vm.Invoke("multiply", 2, 3)
 		assert.ErrorContains(t, err, "function multiply not found")
 		assert.Equal(t, nil, result) // Should not be able to invoke non-exported function
@@ -582,6 +646,8 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		_, err = vm.Invoke("add", 2) // Only one argument provided
 		assert.ErrorContains(t, err, "function add expects 2 arguments, got 1")
 	})
@@ -596,6 +662,8 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		_, err = vm.Invoke("add", "string", 3) // First argument is a string
 		assert.ErrorContains(t, err, "unsupported argument type: string")
 	})
@@ -609,6 +677,8 @@ func Test_InvokeFunction(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		result, err := vm.Invoke("doNothing")
 		assert.NoError(t, err)
@@ -625,6 +695,8 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		_, err = vm.Invoke("subtract", 2, 3) // Non-existent function
 		assert.ErrorContains(t, err, "function subtract not found")
 	})
@@ -640,6 +712,8 @@ func Test_InvokeFunction(t *testing.T) {
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+		err = vm.Init()
 		assert.NoError(t, err)
 		result, err := vm.Invoke("getX")
 		assert.NoError(t, err)
@@ -659,8 +733,112 @@ func Test_InvokeFunction(t *testing.T) {
 		exe := compiler.Compile(pg)
 		vm, err := runtime.NewVM(exe.Marshal())
 		assert.NoError(t, err)
+		err = vm.Init()
+		assert.NoError(t, err)
 		result, err := vm.Invoke("factorial", 5)
 		assert.NoError(t, err)
 		assert.Equal(t, 120, result) // Should return 5! = 120
+	})
+}
+
+func Test_Stubs(t *testing.T) {
+	t.Run("Invoke stub function", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub foo(int a, int b) int;
+
+		export var result = foo(2, 3);
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		// Register a stub function
+		vm.RegisterStub("foo", func(a1, a2 int) int {
+			return a1 + a2
+		})
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.GetVariable("result")
+		assert.NoError(t, err)
+		assert.Equal(t, 5, int(result)) // Should return 5 (2 + 3)
+	})
+
+	t.Run("Stub not registered", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub bar(int a) int;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		err = vm.Init()
+		assert.ErrorContains(t, err, "stub function bar not registered")
+	})
+
+	t.Run("Stub with wrong argument count", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub baz(int a) int;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		// Register a stub function with the correct signature
+		vm.RegisterStub("baz", func(a1, a2 int) int {
+			return a1 + a2
+		})
+
+		err = vm.Init()
+		assert.ErrorContains(t, err, "stub function baz signature mismatch: expected 2 arguments, got 1")
+	})
+
+	t.Run("Stub with wrong argument type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub qux(int a) int;
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		// Register a stub function with the correct signature
+		vm.RegisterStub("qux", func(a1 bool) int {
+			return 1
+		})
+
+		err = vm.Init()
+		assert.ErrorContains(t, err, "stub function qux signature mismatch: argument 1: expected Int, got bool")
+	})
+
+	t.Run("Invoke stub with no return value", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		stub noReturn();
+
+		fn foo() int {
+			noReturn();
+			return 42;
+		}
+
+		export var result = foo();
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		// Register a stub function that returns void
+		vm.RegisterStub("noReturn", func() {})
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.GetVariable("result")
+		assert.NoError(t, err)
+		assert.EqualValues(t, 42, result) // Should return 42 for foo()
 	})
 }

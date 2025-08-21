@@ -35,7 +35,7 @@ func (md Metadata) Marshal() []byte {
 
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Args)))
 		for _, arg := range fn.Args {
-			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.ArgType.(types.BasicType)))
+			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.Type.(types.BasicType)))
 		}
 
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.ReturnType.(types.BasicType)))
@@ -126,7 +126,7 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 			}
 			argType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
 			raw = raw[8:]
-			args[j] = FnArg{ArgType: argType}
+			args[j] = FnArg{Type: argType}
 		}
 
 		if len(raw) < 8 {
@@ -192,12 +192,13 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 
 type FnArg struct {
 	// The type of the function argument
-	ArgType types.Type
+	Type types.Type
 }
 
 type ExportedFunction struct {
 	Name string
 	// The offset in the code where the function starts
+	// (Also used as the stubnumber for stub functions. This is a bit lazy, i know)
 	StartOffset uint64
 	// The arguments of the function
 	Args []FnArg
@@ -229,4 +230,14 @@ func (md *Metadata) Functions() []ExportedFunction {
 
 func (md *Metadata) Variables() []ExportedVariable {
 	return md.variables
+}
+
+func (md *Metadata) Stubs() []ExportedFunction {
+	var stubs []ExportedFunction
+	for _, fn := range md.functions {
+		if fn.stub {
+			stubs = append(stubs, fn)
+		}
+	}
+	return stubs
 }

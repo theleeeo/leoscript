@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"leoscript/compiler"
 	"leoscript/types"
+	"reflect"
+	"slices"
 )
 
 type VM struct {
@@ -15,6 +17,8 @@ type VM struct {
 	metadata *compiler.Metadata // Metadata for the program, if available
 	program  []byte
 	pc       uint64
+
+	stubs []*externalFunction
 }
 
 type stackFrame struct {
@@ -39,11 +43,7 @@ func NewVM(program []byte) (*VM, error) {
 		pc:            0,
 		cStack:        make([]uint64, 0),
 		variableStack: make([]byte, 0),
-	}
-
-	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
-	if err != nil {
-		return nil, fmt.Errorf("initializing VM: %v", err)
+		stubs:         make([]*externalFunction, len(exe.Metadata().Stubs())),
 	}
 
 	return vm, nil
@@ -72,6 +72,11 @@ func (vm *VM) Reset() {
 	clear(vm.variableStack)
 	clear(vm.callStack)
 	vm.pc = 0
+
+	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
+	if err != nil {
+		panic(fmt.Sprintf("re-initializing VM: %v", err))
+	}
 }
 
 func (vm *VM) storeVariable(varOffset uint64, value uint64) {
@@ -95,6 +100,19 @@ func (vm *VM) loadVariable(varOffset uint64) uint64 {
 	}
 
 	return binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
+}
+
+func (vm *VM) Init() error {
+	if err := vm.verifyStubs(); err != nil {
+		return fmt.Errorf("verifying stubs: %v", err)
+	}
+
+	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
+	if err != nil {
+		return fmt.Errorf("initializing VM: %v", err)
+	}
+
+	return nil
 }
 
 func (vm *VM) run() (uint64, error) {
@@ -251,6 +269,30 @@ func (vm *VM) run() (uint64, error) {
 			} else {
 				vm.cStack = append(vm.cStack, 0)
 			}
+		case compiler.OpInvokeStub:
+			stubIndex := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8 // Move past the invoke stub instruction
+
+			stubName := vm.metadata.Stubs()[stubIndex].Name
+
+			var stubFunc *externalFunction
+			for i, fn := range vm.stubs {
+				if fn.md.Name == stubName {
+					stubFunc = vm.stubs[i]
+					break
+				}
+			}
+
+			parameters := make([]uint64, len(stubFunc.md.Args))
+			for i := range stubFunc.md.Args {
+				parameters[i] = vm.pop()
+			}
+
+			retVal := stubFunc.call2(parameters)
+
+			if stubFunc.md.ReturnType != types.Void {
+				vm.cStack = append(vm.cStack, retVal) // Push the return value onto the stack
+			}
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
@@ -340,4 +382,50 @@ func (vm *VM) Invoke(name string, args ...any) (any, error) {
 	default:
 		return nil, fmt.Errorf("unsupported return type: %s", fn.ReturnType)
 	}
+}
+
+func (vm *VM) RegisterStub(name string, fn any) {
+	stubs := vm.metadata.Stubs()
+	i := slices.IndexFunc(stubs, func(fn compiler.ExportedFunction) bool {
+		return fn.Name == name
+	})
+
+	if i == -1 {
+		panic(fmt.Sprintf("stub function %s not found in metadata", name))
+	}
+
+	fnVal := reflect.ValueOf(fn)
+	fnType := fnVal.Type()
+
+	if fnType.Kind() != reflect.Func {
+		panic(fmt.Sprintf("expected a function, got %s", fnType.Kind()))
+	}
+
+	if fnType.IsVariadic() {
+		panic("variadic functions are not supported as stubs")
+	}
+
+	if fnType.NumOut() > 1 {
+		panic(fmt.Errorf("only one return value is supported, got %d", fnType.NumOut()))
+	}
+
+	vm.stubs[i] = &externalFunction{
+		md:     stubs[i],
+		fn:     fnVal,
+		fnType: fnType,
+	}
+}
+
+func (vm *VM) verifyStubs() error {
+	for i, stub := range vm.metadata.Stubs() {
+		if vm.stubs[i] == nil {
+			return fmt.Errorf("stub function %s not registered", stub.Name)
+		}
+
+		if err := vm.stubs[i].verifySignature2(stub); err != nil {
+			return fmt.Errorf("stub function %s signature mismatch: %w", stub.Name, err)
+		}
+	}
+
+	return nil
 }

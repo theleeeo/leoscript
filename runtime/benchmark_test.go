@@ -22,18 +22,17 @@ func Benchmark_Arithmetic(b *testing.B) {
 
 	b.Run("bytecode VM", func(b *testing.B) {
 		lx := lexer.MustTokenize(`
-		1 + 2 * 3 - 4 / 2;
-		`)
-		expr, _ := parser.NewParser(lx).ParseExpr()
-		exe := compiler.CompileStatement(expr)
-		vm, err := NewVM(exe)
-		if err != nil {
-			b.Fatalf("VM creation error: %v", err)
-		}
+		export fn main() int {
+			return 1 + 2 * 3 - 4 / 2;
+		}`)
+		expr, _ := parser.NewParser(lx).Parse()
+		exe := compiler.Compile(expr)
+		vm, _ := NewVM(exe.Marshal())
+		vm.Init()
 
 		for b.Loop() {
-			vm.Reset() // Reset VM state before each iteration
-			vm.invokeRaw(0)
+			vm.Reset()        // Reset VM state before each iteration
+			vm.Invoke("main") // Invoke the main function
 		}
 	})
 }
@@ -61,21 +60,26 @@ func Benchmark_Fibonacci(b *testing.B) {
 
 	b.Run("bytecode VM", func(b *testing.B) {
 		lx := lexer.MustTokenize(`
-		fn fib(int n) int {
+		export fn fib(int n) int {
 			if n <= 1 {
 				return n;
 			}
 			return fib(n - 1) + fib(n - 2);
 		}
-		var result = fib(20);
 		`)
 		pg := parser.MustParse(lx)
 		exe := compiler.Compile(pg)
 		vm, _ := NewVM(exe.Marshal())
 
 		for b.Loop() {
-			vm.invokeRaw(0)
 			vm.Reset() // Reset VM state after each iteration
+			ret, err := vm.Invoke("fib", 20)
+			if err != nil {
+				b.Fatalf("VM invoke error: %v", err)
+			}
+			if ret != 6765 {
+				b.Fatalf("Expected 6765, got %d", ret)
+			}
 		}
 	})
 

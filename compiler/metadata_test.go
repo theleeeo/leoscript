@@ -228,8 +228,8 @@ func Test_Metadata_Marshaling(t *testing.T) {
 		assert.Equal(t, "add", md.functions[0].Name)
 		assert.Equal(t, types.Int, md.functions[0].ReturnType)
 		assert.Len(t, md.functions[0].Args, 2)
-		assert.Equal(t, types.Int, md.functions[0].Args[0].ArgType)
-		assert.Equal(t, types.Int, md.functions[0].Args[1].ArgType)
+		assert.Equal(t, types.Int, md.functions[0].Args[0].Type)
+		assert.Equal(t, types.Int, md.functions[0].Args[1].Type)
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
@@ -237,7 +237,7 @@ func Test_Metadata_Marshaling(t *testing.T) {
 		assert.Equal(t, "add", md2.functions[0].Name)
 		assert.Equal(t, types.Int, md2.functions[0].ReturnType)
 		assert.Len(t, md2.functions[0].Args, 2)
-		assert.Equal(t, types.Int, md2.functions[0].Args[0].ArgType)
-		assert.Equal(t, types.Int, md2.functions[0].Args[1].ArgType)
+		assert.Equal(t, types.Int, md2.functions[0].Args[0].Type)
+		assert.Equal(t, types.Int, md2.functions[0].Args[1].Type)
 	})
 }
