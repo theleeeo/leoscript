@@ -1736,3 +1736,74 @@ func Test_ExportedVariable(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_StringLiteral(t *testing.T) {
+	t.Run("Simple string literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"hello world";`)
+		p := NewParser(lx)
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StringLiteral{Value: "hello world"}, prog)
+	})
+
+	t.Run("String literal with escape sequences", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"hello\nworld\t!";`)
+		p := NewParser(lx)
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, StringLiteral{Value: "hello\nworld\t!"}, prog)
+	})
+
+	t.Run("String literal in expression", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"foo" + "bar";`)
+		p := NewParser(lx)
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left:  StringLiteral{Value: "foo"},
+			Right: StringLiteral{Value: "bar"},
+			Op:    "+",
+		}, prog)
+	})
+
+	t.Run("String literal in complex expression", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"foo" + "bar" + (1 < 4) * 5;`)
+		p := NewParser(lx)
+		prog, err := p.ParseExpr()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, BinaryExpression{
+			Left: BinaryExpression{
+				Left:  StringLiteral{Value: "foo"},
+				Right: StringLiteral{Value: "bar"},
+				Op:    "+",
+			},
+			Right: BinaryExpression{
+				Left: BinaryExpression{
+					Left:  IntegerLiteral{Value: 1},
+					Right: IntegerLiteral{Value: 4},
+					Op:    "<",
+				},
+				Right: IntegerLiteral{Value: 5},
+				Op:    "*",
+			},
+			Op: "+",
+		}, prog)
+	})
+
+	t.Run("String variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`string foo = "hello";`)
+		p := NewParser(lx)
+		prog, err := p.parseVarDecl()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name:  "foo",
+			Type:  types.String,
+			Value: StringLiteral{Value: "hello"},
+		}, prog)
+	})
+}

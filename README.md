@@ -4,6 +4,11 @@ LeoScript is a custom scripting language designed to REVOLUTIONIZE THE WORLD.
 It is an unholy amalgamation of various programming languages with the purpose of being integrated as a scripting language in various applications.
 It is neither fast nor easy but fuck it, we ball.
 
+## IMPORTANT NOTE READ THIS
+
+LeoScript is very much a work in progress. It is by no means production ready yet and nothing is neither stable or finalized.
+Use it at your own risk but trouble is guaranteed.
+
 ## Acknowledgements
 
 First and foremost want to thank the pope for his support and guidance in the development of LeoScript.

@@ -8,11 +8,16 @@ import (
 )
 
 var keywords = map[string]token.Token{
-	"true":   token.Boolean{Value: true},
-	"false":  token.Boolean{Value: false},
-	"var":    token.VarDecl{},
+	// Literals
+	"true":  token.Boolean{Value: true},
+	"false": token.Boolean{Value: false},
+
+	// Types
 	"int":    token.Type{Kind: types.Int},
 	"bool":   token.Type{Kind: types.Bool},
+	"string": token.Type{Kind: types.String},
+
+	"var":    token.VarDecl{},
 	"fn":     token.FnDef{},
 	"return": token.Return{},
 	"if":     token.If{},
@@ -44,6 +49,10 @@ func (lx *lexer) putBack() {
 }
 
 func (lx *lexer) peek() byte {
+	if lx.pos >= len(lx.input) {
+		return 0
+	}
+
 	return lx.input[lx.pos]
 }
 
@@ -84,21 +93,20 @@ func Tokenize(input string) ([]token.Token, error) {
 			continue
 		}
 
-		if tk == '/' {
-			tk := lx.next()
-			if tk == '/' {
-				// Skip single-line comment
+		switch tk {
+		case ' ', '\n', '\t', '\r':
+			// Skip whitespace
+		case '/':
+			// Check if the next token matches a pattern for a comment
+			switch tk := lx.next(); tk {
+			case '/': // Single line comment
 				for {
 					tk = lx.next()
 					if tk == '\n' || tk == 0 {
 						break
 					}
 				}
-				continue
-			}
-
-			if tk == '*' {
-				// Skip multi-line comment
+			case '*': // Multi-line comment
 				for {
 					tk = lx.next()
 					if tk == 0 {
@@ -112,16 +120,13 @@ func Tokenize(input string) ([]token.Token, error) {
 						}
 					}
 				}
-				continue
+			default:
+				// The next character did not match a comment pattern.
+				// Put the next token back and push the operator token.
+				lx.putBack()
+				lx.pushToken(token.Operator{Op: "/"})
 			}
-
-			lx.putBack() // Put back the last character if it was not a comment. Then it will be handled as an operator.
-		}
-
-		switch tk {
-		case ' ', '\n', '\t', '\r':
-			// Skip whitespace
-		case '+', '-', '*', '/':
+		case '+', '-', '*':
 			lx.pushToken(token.Operator{Op: string(tk)})
 		case '(':
 			lx.pushToken(token.OpenParen{})
@@ -178,7 +183,13 @@ func Tokenize(input string) ([]token.Token, error) {
 				lx.putBack()
 				lx.pushToken(token.Operator{Op: "="})
 			}
+		case '"':
+			str, err := lx.parseString()
+			if err != nil {
+				return nil, err
+			}
 
+			lx.pushToken(token.StringLiteral{Value: str})
 		default:
 			return nil, fmt.Errorf("invalid character: %c", tk)
 		}
@@ -221,4 +232,38 @@ func (lx *lexer) parseAlpha() string {
 	lx.putBack()
 
 	return value.String()
+}
+
+func (lx *lexer) parseString() (string, error) {
+	value := strings.Builder{}
+
+	for tk := lx.next(); tk != 0 && tk != '"'; tk = lx.next() {
+		if tk == '\\' {
+			tk = lx.next()
+			if tk == 0 {
+				return "", fmt.Errorf("unclosed string literal")
+			}
+
+			switch tk {
+			case 'n':
+				value.WriteByte('\n')
+			case 't':
+				value.WriteByte('\t')
+			case '"':
+				value.WriteByte('"')
+			case '\\':
+				value.WriteByte('\\')
+			default:
+				return "", fmt.Errorf("invalid escape sequence: \\%c", tk)
+			}
+			continue
+		}
+		value.WriteByte(tk)
+	}
+
+	if lx.peek() != '"' {
+		return "", fmt.Errorf("unclosed string literal")
+	}
+
+	return value.String(), nil
 }

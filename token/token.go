@@ -20,6 +20,7 @@ const (
 	// Literals
 	IntegerType
 	BooleanType
+	StringLiteralType
 
 	// Parentheses
 	OpenParenType
@@ -168,7 +169,7 @@ func (Return) String() string {
 }
 
 type Type struct {
-	Kind types.Type
+	Kind types.Type // TODO: Rename this one Kind is implemented?
 }
 
 func (Type) Type() TokenType { return TypeType }
@@ -216,4 +217,13 @@ type Exported struct{}
 func (Exported) Type() TokenType { return ExportedType }
 func (Exported) String() string {
 	return "{exported}"
+}
+
+type StringLiteral struct {
+	Value string
+}
+
+func (StringLiteral) Type() TokenType { return StringLiteralType }
+func (s StringLiteral) String() string {
+	return fmt.Sprintf("{string:%s}", s.Value)
 }

@@ -426,3 +426,32 @@ func Test_Comments(t *testing.T) {
 		}, lx)
 	})
 }
+
+func Test_StringLiterals(t *testing.T) {
+	t.Run("Basic string literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"hello world"`)
+		assert.Equal(t, []token.Token{
+			token.StringLiteral{Value: "hello world"},
+		}, lx)
+	})
+
+	t.Run("String literal with escaped quotes", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"hello \"world\" "`)
+		assert.Equal(t, []token.Token{
+			token.StringLiteral{Value: "hello \"world\" "},
+		}, lx)
+	})
+
+	t.Run("Unclosed string literal", func(t *testing.T) {
+		lx, err := lexer.Tokenize(`"hello world`)
+		assert.ErrorContains(t, err, "unclosed string literal")
+		assert.Nil(t, lx)
+	})
+
+	t.Run("String with escape sequences", func(t *testing.T) {
+		lx := lexer.MustTokenize(`"\\hello\nworld\t\\"`)
+		assert.Equal(t, []token.Token{
+			token.StringLiteral{Value: "\\hello\nworld\t\\"},
+		}, lx)
+	})
+}

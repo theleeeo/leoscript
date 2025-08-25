@@ -4,11 +4,7 @@ go 1.24
 
 tool golang.org/x/tools/cmd/stringer
 
-require (
-	github.com/d5/tengo/v2 v2.17.0
-	github.com/stretchr/testify v1.10.0
-	github.com/yuin/gopher-lua v1.1.1
-)
+require github.com/stretchr/testify v1.10.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

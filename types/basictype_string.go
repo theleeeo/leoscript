@@ -12,11 +12,12 @@ func _() {
 	_ = x[Void-1]
 	_ = x[Bool-2]
 	_ = x[Int-3]
+	_ = x[String-4]
 }
 
-const _BasicType_name = "UnspecifiedVoidBoolInt"
+const _BasicType_name = "UnspecifiedVoidBoolIntString"
 
-var _BasicType_index = [...]uint8{0, 11, 15, 19, 22}
+var _BasicType_index = [...]uint8{0, 11, 15, 19, 22, 28}
 
 func (i BasicType) String() string {
 	if i < 0 || i >= BasicType(len(_BasicType_index)-1) {

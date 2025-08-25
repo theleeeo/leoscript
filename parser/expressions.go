@@ -79,6 +79,8 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 		return IntegerLiteral{Value: tk.Value}, nil
 	case token.Boolean:
 		return BooleanLiteral{Value: tk.Value}, nil
+	case token.StringLiteral:
+		return StringLiteral{Value: tk.Value}, nil
 	case token.Operator:
 		return p.parseUnaryExpr()
 	case token.OpenParen:

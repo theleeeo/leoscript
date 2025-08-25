@@ -161,3 +161,13 @@ func (c Call) String() string {
 	}
 	return fmt.Sprintf("%s(%s)", c.Name, strings.Join(args, ", "))
 }
+
+type StringLiteral struct {
+	Value string
+}
+
+func (StringLiteral) ReturnType() types.Type { return types.String }
+
+func (s StringLiteral) String() string {
+	return fmt.Sprintf("%q", s.Value)
+}
