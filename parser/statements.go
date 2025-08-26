@@ -247,20 +247,22 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 
 	identifier := p.peek().(token.Identifier)
 
-	if err := p.expectNext(token.OperatorType); err != nil {
-		return VarDecl{}, fmt.Errorf("expected assignment operator after identifier: %w", err)
-	}
+	p.next() // Consume the identifier
 
-	if op := p.peek().(token.Operator).Op; op != "=" {
-		return VarDecl{}, fmt.Errorf("expected assignment operator, got %v", op)
-	}
+	var valExpr Expression
+	if op, ok := p.peek().(token.Operator); ok {
+		if op.Op != "=" {
+			return VarDecl{}, fmt.Errorf("expected assignment operator, got %v", op.Op)
+		}
 
-	p.next() // Consume the assignment operator
+		p.next() // Consume the assignment operator
 
-	// Parse the expression on the right side of the assignment
-	expr, err := p.ParseExpr()
-	if err != nil {
-		return VarDecl{}, fmt.Errorf("parsing right hand expression: %w", err)
+		// Parse the expression on the right side of the assignment
+		expr, err := p.ParseExpr()
+		if err != nil {
+			return VarDecl{}, fmt.Errorf("parsing right hand expression: %w", err)
+		}
+		valExpr = expr
 	}
 
 	if err := p.expectCurrent(token.SemicolonType); err != nil {
@@ -270,7 +272,7 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	return VarDecl{
 		Name:     identifier.Value,
 		Type:     varType,
-		Value:    expr,
+		Value:    valExpr,
 		Exported: exported,
 	}, nil
 }
