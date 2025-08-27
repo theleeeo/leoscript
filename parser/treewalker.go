@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 )
@@ -12,6 +13,13 @@ func must(err error) {
 	}
 }
 
+var (
+	// The TreeWalker does a top-down traversal of the AST, first doing a callback for a node and only later walking its children.
+	// In some cases however, you want the children to have been walked first.
+	// By returning this error, the TreeWalker will walk the children before calling the callback again.
+	ErrReturnLater = errors.New("walk children first") // Ugly hack or whatever but darn it, it makes the api simpler.
+)
+
 type WalkingContext struct {
 	Scope *Scope
 
@@ -21,20 +29,21 @@ type WalkingContext struct {
 }
 
 type TreeWalker struct {
-	CallbackFn func(wctx WalkingContext, node Statement) Statement
+	CallbackFn func(wctx WalkingContext, node Statement) (Statement, error)
 }
 
 // NewTreeWalker creates a new TreeWalker with the provided callbacks.
-func NewTreeWalker(callbackFn func(wctx WalkingContext, node Statement) Statement) *TreeWalker {
+func NewTreeWalker(callbackFn func(wctx WalkingContext, node Statement) (Statement, error)) *TreeWalker {
 	return &TreeWalker{
 		CallbackFn: callbackFn,
 	}
 }
 
-// WalkProgram walks through the program and applies the refCheck to each statement and expression.
-//
 // TODO: Do a check and avoid walking nil statements or expressions.
 // If a statement or expression is nil, it should be removed from the ast by some cleaning pass in the end.
+//
+// TODO: Pass information about if ErrReturnLater was used
+// WalkProgram walks through the AST and calls the callback for (almost) each node.
 func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -97,19 +106,22 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 }
 
 func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Statement {
+	retStmt, callbackErr := tw.CallbackFn(wctx, stmt)
+	if callbackErr != nil && callbackErr != ErrReturnLater {
+		panic(callbackErr)
+	}
+
+	// If the ReturnLater sentinel is returned, retStmt is not yet populated and will be nil. Continue to use the original statement.
+	if callbackErr != ErrReturnLater {
+		stmt = retStmt
+	}
+
 	switch rv := stmt.(type) {
 	case VarDecl:
 		rv.Value = tw.walkExpression(rv.Value, wctx)
-
-		// If the statement is a variable declaration, we register it in the scope.
-		must(wctx.Scope.RegisterVar(rv))
 		stmt = rv
 	case Argument:
-		// If the statement is an argument, we register it in the scope.
-		must(wctx.Scope.RegisterVar(VarDecl{
-			Name: rv.Name,
-			Type: rv.Type,
-		}))
+		// NOOP, no children
 	case Return:
 		rv.Value = tw.walkExpression(rv.Value, wctx)
 		stmt = rv
@@ -169,11 +181,51 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		stmt = rv
 	}
 
-	// TODO: Only register vars and funcs to the scope efter the callback and if they are not removed
-	return tw.CallbackFn(wctx, stmt)
+	if callbackErr == ErrReturnLater {
+		// A lot of annoying shit happens if we were to do a complete walk of the node again.
+		// Just force the api to work as such that the children is EITHER walked last by default OR walked before by opting in using ErrReturnLater, not both.
+
+		retStmt, err := tw.CallbackFn(wctx, stmt)
+		if err != nil {
+			if err == ErrReturnLater {
+				panic("ErrReturnLater returned twice for the same node")
+			}
+			panic(err)
+		}
+		stmt = retStmt
+	}
+
+	switch rv := stmt.(type) {
+	case VarDecl:
+		must(wctx.Scope.RegisterVar(stmt.(VarDecl)))
+	case Argument:
+		must(wctx.Scope.RegisterVar(VarDecl{
+			Name: rv.Name,
+			Type: rv.Type,
+		}))
+	case FnDef:
+		wctx.Scope.deregisterFn(rv.Name)
+		must(wctx.Scope.RegisterFn(rv))
+	}
+
+	return stmt
 }
 
 func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expression {
+	retVal, callbackErr := tw.CallbackFn(wctx, expr)
+	if callbackErr != nil && callbackErr != ErrReturnLater {
+		panic(callbackErr)
+	}
+
+	retExpr, ok := retVal.(Expression)
+	if !ok {
+		panic(fmt.Errorf("non-expression returned when walking expression: %T", retVal))
+	}
+
+	if callbackErr != ErrReturnLater {
+		expr = retExpr
+	}
+
 	switch rv := (expr).(type) {
 	case Call:
 		for i := range rv.Args {
@@ -196,10 +248,22 @@ func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expre
 		panic(fmt.Errorf("unhandled expression type: %T", rv))
 	}
 
-	retVal := tw.CallbackFn(wctx, expr)
-	if newExpr, ok := retVal.(Expression); ok {
-		return newExpr
+	if callbackErr == ErrReturnLater {
+		retVal, err := tw.CallbackFn(wctx, expr)
+		if err != nil {
+			if err == ErrReturnLater {
+				panic("ErrReturnLater returned twice for the same node")
+			}
+			panic(err)
+		}
+
+		retExpr, ok := retVal.(Expression)
+		if !ok {
+			panic(fmt.Errorf("non-expression returned when walking expression: %T", retVal))
+		}
+
+		expr = retExpr
 	}
 
-	panic(fmt.Errorf("non-expression returned when walking expression: %T", retVal))
+	return expr
 }

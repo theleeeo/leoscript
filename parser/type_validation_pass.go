@@ -6,7 +6,7 @@ import (
 )
 
 func typeValidationPass(program *Program) (err error) {
-	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
+	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) (Statement, error) {
 		switch expr := node.(type) {
 		case VarDecl:
 			if expr.Value.ReturnType() != expr.Type {
@@ -72,7 +72,7 @@ func typeValidationPass(program *Program) (err error) {
 				panic(fmt.Sprintf("unsupported binary operator: %s", expr.Op))
 			}
 		}
-		return node
+		return node, nil
 	})
 
 	return tw.WalkProgram(program)

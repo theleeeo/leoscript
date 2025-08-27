@@ -29,8 +29,8 @@ func Test_TreeWalking(t *testing.T) {
 		},
 	}
 
-	callback := func(wctx WalkingContext, stmt Statement) Statement {
-		return stmt
+	callback := func(wctx WalkingContext, stmt Statement) (Statement, error) {
+		return stmt, nil
 	}
 
 	tw := NewTreeWalker(callback)
@@ -51,18 +51,18 @@ func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
 		},
 	}
 
-	callback := func(wctx WalkingContext, stmt Statement) Statement {
+	callback := func(wctx WalkingContext, stmt Statement) (Statement, error) {
 		switch s := stmt.(type) {
 		case VarDecl:
 			if s.Name == "x" {
-				return nil // Remove it
+				return nil, nil // Remove it
 			}
 		case FnDef:
 			if s.Name == "foo" {
-				return nil // Remove it
+				return nil, nil // Remove it
 			}
 		}
-		return stmt
+		return stmt, nil
 	}
 
 	tw := NewTreeWalker(callback)
@@ -118,12 +118,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case VarDecl:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -151,12 +151,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case FnDef:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -184,12 +184,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case Argument:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -222,12 +222,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case Call:
 				visitedNodes = append(visitedNodes, n.String())
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -256,12 +256,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case VarIdentifier:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -292,13 +292,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
-			switch n := node.(type) {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
+			switch node.(type) {
 			case If:
 				visitedNodes = append(visitedNodes, "if")
-				return n
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -324,12 +323,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch node.(type) {
 			case Return:
 				visitedNodes = append(visitedNodes, "return")
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -354,12 +353,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case Assignment:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -386,12 +385,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case BinaryExpression:
 				visitedNodes = append(visitedNodes, n.String())
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -418,12 +417,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case UnaryExpression:
 				visitedNodes = append(visitedNodes, n.String())
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -453,12 +452,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case Call:
 				visitedNodes = append(visitedNodes, n.String())
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)
@@ -486,12 +485,12 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		pg := MustParse(lx)
 
 		var visitedNodes []string
-		callback := func(wctx WalkingContext, node Statement) Statement {
+		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch node.(type) {
 			case While:
 				visitedNodes = append(visitedNodes, "while")
 			}
-			return node
+			return node, nil
 		}
 
 		tw := NewTreeWalker(callback)

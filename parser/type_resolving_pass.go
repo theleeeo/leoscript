@@ -6,7 +6,7 @@ import (
 )
 
 func typeResolvingPass(program *Program) (err error) {
-	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) Statement {
+	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) (Statement, error) {
 		switch expr := node.(type) {
 		case Call:
 			resFn, ok := wctx.Scope.ResolveFn(expr.Name)
@@ -16,7 +16,7 @@ func typeResolvingPass(program *Program) (err error) {
 
 			expr.returnType = resFn.ReturnType
 
-			return expr
+			return expr, nil
 		case VarIdentifier:
 			varIdent, ok := wctx.Scope.ResolveVar(expr.Name)
 			if !ok {
@@ -25,20 +25,20 @@ func typeResolvingPass(program *Program) (err error) {
 
 			expr.returnType = varIdent.Type
 
-			return expr
+			return expr, nil
 		case VarDecl:
 			if expr.Type == types.Unspecified {
+				// If the variable is implicitly typed and the value is not yet resolved, come back after the child is visited.
+				if expr.Value.ReturnType() == types.Unspecified {
+					return nil, ErrReturnLater
+				}
 				// If the type is unspecified, we need to resolve it from the value.
 				expr.Type = expr.Value.ReturnType()
 			}
 
-			// Re-register the varDecl to the scope so the variable in the scope contains the correct type.
-			wctx.Scope.deregisterVar(expr.Name)
-			wctx.Scope.RegisterVar(expr)
-
-			return expr
+			return expr, nil
 		}
-		return node
+		return node, nil
 	})
 
 	return tw.WalkProgram(program)
