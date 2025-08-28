@@ -3,12 +3,13 @@ package parser
 import (
 	"fmt"
 	"leoscript/token"
+	"leoscript/types"
 )
 
 func MustParse(tokens []token.Token) *Program {
 	program, err := Parse(tokens)
 	if err != nil {
-		panic(fmt.Sprintf("parsing program: %v", err))
+		panic(err)
 	}
 
 	return program
@@ -88,6 +89,10 @@ func (p *Parser) peekNext() token.Token {
 }
 
 type Program struct {
+	// The struct definitions
+	// TODO: Generalize into a "types" once there are more?
+	Structs []*types.Struct
+
 	// Global variable declarations
 	VarDecls []VarDecl
 
@@ -101,14 +106,7 @@ type Program struct {
 func (p *Parser) Parse() (*Program, error) {
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
 		switch tk.(type) {
-		case token.Type:
-			varDecl, err := p.parseVarDecl()
-			if err != nil {
-				return nil, fmt.Errorf("parsing variable declaration: %w", err)
-			}
-
-			p.program.VarDecls = append(p.program.VarDecls, varDecl)
-		case token.VarDecl:
+		case token.Type, token.VarDecl, token.Identifier:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return nil, fmt.Errorf("parsing variable declaration: %w", err)
@@ -142,7 +140,7 @@ func (p *Parser) Parse() (*Program, error) {
 
 				p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
-			case token.VarDecl, token.Type:
+			case token.Type, token.VarDecl, token.Identifier:
 				varDecl, err := p.parseVarDecl()
 				if err != nil {
 					return nil, fmt.Errorf("parsing variable declaration: %w", err)
@@ -153,6 +151,14 @@ func (p *Parser) Parse() (*Program, error) {
 			default:
 				return nil, fmt.Errorf("expected function or variable declaration after exported, got %T", p.peekNext())
 			}
+
+		case token.StructDef:
+			structDef, err := p.parseStructDef()
+			if err != nil {
+				return nil, fmt.Errorf("parsing struct definition: %w", err)
+			}
+
+			p.program.Structs = append(p.program.Structs, &structDef)
 
 		default:
 			return nil, fmt.Errorf("unexpected token type %T", tk)
@@ -171,6 +177,10 @@ func (p *Parser) Parse() (*Program, error) {
 
 	if err := typeValidationPass(p.program); err != nil {
 		return nil, fmt.Errorf("type validation pass failed: %w", err)
+	}
+
+	if err := initializeDefaultPass(p.program); err != nil {
+		return nil, fmt.Errorf("initialize default pass failed: %w", err)
 	}
 
 	return p.program, nil

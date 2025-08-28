@@ -237,6 +237,8 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		varType = tk.Kind
 	case token.VarDecl:
 		varType = types.Unspecified
+	case token.Identifier:
+		varType = unresolvedTypeIdentifier{Name: tk.Value}
 	default:
 		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
 	}
@@ -275,6 +277,22 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		Value:    valExpr,
 		Exported: exported,
 	}, nil
+}
+
+type unresolvedTypeIdentifier struct {
+	Name string
+}
+
+func (u unresolvedTypeIdentifier) String() string {
+	return fmt.Sprintf("unresolved type: %s", u.Name)
+}
+
+func (u unresolvedTypeIdentifier) Kind() types.Kind {
+	return types.KindInvalid
+}
+
+func (u unresolvedTypeIdentifier) Size() uint64 {
+	return 0
 }
 
 func (p *Parser) parseIf() (If, error) {

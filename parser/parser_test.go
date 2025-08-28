@@ -767,15 +767,73 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		}, pg)
 	})
 
-	// TODO: Dependent variable declarations should be disallowed
-	// t.Run("global var-function dependency", func(t *testing.T) {
-	// 	lx := lexer.MustTokenize(`
-	// 	var a = 123;
-	// 	fn foo() int {return a;}
-	// 	`)
-	// 	p := NewParser(lx)
-	// 	pg, err := p.Parse()
-	// 	assert.Error(t, err)
+	t.Run("Uninitialized typed variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		int a;
+		`)
+		p := NewParser(lx)
+		prog, err := p.ParseStatement()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, VarDecl{
+			Name:  "a",
+			Type:  types.Int,
+			Value: nil,
+		}, prog)
+	})
+
+	t.Run("Var declared with struct type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		MyStruct foo;
+		}`)
+		p := NewParser(lx)
+		decl, err := p.parseVarDecl()
+		assert.NoError(t, err)
+		assert.Equal(t, "foo", decl.Name)
+		assert.Equal(t, unresolvedTypeIdentifier{
+			Name: "MyStruct",
+		}, decl.Type.(unresolvedTypeIdentifier))
+	})
+
+	t.Run("typed with implicit struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		MyStruct foo = { x: 10, y: true, z: "hello" };
+		}`)
+		p := NewParser(lx)
+		decl, err := p.parseVarDecl()
+		assert.NoError(t, err)
+		assert.Equal(t, "foo", decl.Name)
+		assert.Equal(t, unresolvedTypeIdentifier{
+			Name: "MyStruct",
+		}, decl.Type.(unresolvedTypeIdentifier))
+		assert.EqualExportedValues(t, StructLiteral{
+			Type: types.Unspecified,
+			Fields: []FieldLiteral{
+				{Name: "x", Value: IntegerLiteral{Value: 10}},
+				{Name: "y", Value: BooleanLiteral{Value: true}},
+				{Name: "z", Value: StringLiteral{Value: "hello"}},
+			},
+		}, decl.Value)
+	})
+
+	t.Run("implicit var with typed struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var foo = MyStruct{ x: 10, y: true, z: "hello" };
+		}`)
+		p := NewParser(lx)
+		decl, err := p.parseVarDecl()
+		assert.NoError(t, err)
+		assert.Equal(t, "foo", decl.Name)
+		assert.Equal(t, types.Unspecified, decl.Type)
+		assert.EqualExportedValues(t, StructLiteral{
+			Type: unresolvedTypeIdentifier{Name: "MyStruct"},
+			Fields: []FieldLiteral{
+				{Name: "x", Value: IntegerLiteral{Value: 10}},
+				{Name: "y", Value: BooleanLiteral{Value: true}},
+				{Name: "z", Value: StringLiteral{Value: "hello"}},
+			},
+		}, decl.Value)
+	})
 }
 
 func Test_ReturnTypes(t *testing.T) {
@@ -1804,6 +1862,217 @@ func Test_StringLiteral(t *testing.T) {
 			Name:  "foo",
 			Type:  types.String,
 			Value: StringLiteral{Value: "hello"},
+		}, prog)
+	})
+}
+
+func Test_StructDef(t *testing.T) {
+	t.Run("Simple struct", func(t *testing.T) {
+		lx := lexer.MustTokenize(`struct Point { int x; int y; }`)
+		p := NewParser(lx)
+		prog, err := p.parseStructDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, types.Struct{
+			Name: "Point",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+				{Name: "y", Type: types.Int},
+			},
+		}, prog)
+	})
+
+	t.Run("Struct with no fields", func(t *testing.T) {
+		lx := lexer.MustTokenize(`struct Point {}`)
+		p := NewParser(lx)
+		prog, err := p.parseStructDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, types.Struct{
+			Name:   "Point",
+			Fields: []types.Field{},
+		}, prog)
+	})
+
+	t.Run("Struct with various field types", func(t *testing.T) {
+		lx := lexer.MustTokenize(`struct Point { int x; bool y; string z; }`)
+		p := NewParser(lx)
+		prog, err := p.parseStructDef()
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, types.Struct{
+			Name: "Point",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+				{Name: "y", Type: types.Bool},
+				{Name: "z", Type: types.String},
+			},
+		}, prog)
+	})
+
+	t.Run("Typed and uninitialized variable of struct type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+			bool y;
+			string z;
+		}
+		Foo p;
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooStruct := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+				{Name: "y", Type: types.Bool},
+				{Name: "z", Type: types.String},
+			},
+		}
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooStruct,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name: "p",
+					Type: fooStruct,
+					Value: StructLiteral{
+						Type: fooStruct,
+						Fields: []FieldLiteral{
+							{Name: "x", Value: IntegerLiteral{Value: 0}},
+							{Name: "y", Value: BooleanLiteral{Value: false}},
+							{Name: "z", Value: StringLiteral{Value: ""}},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("typed variable with implicit struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+			bool y;
+			string z;
+		}
+		Foo p = { x: 10, y: true, z: "hello" };
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooStruct := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+				{Name: "y", Type: types.Bool},
+				{Name: "z", Type: types.String},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooStruct,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name: "p",
+					Type: fooStruct,
+					Value: StructLiteral{
+						Type: fooStruct,
+						Fields: []FieldLiteral{
+							{Name: "x", Value: IntegerLiteral{Value: 10}},
+							{Name: "y", Value: BooleanLiteral{Value: true}},
+							{Name: "z", Value: StringLiteral{Value: "hello"}},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("implicit variable with implicit struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+		}
+		var b = { x: 10 };
+		`)
+		_, err := Parse(lx)
+		assert.ErrorContains(t, err, "cannot use an implicit struct literal without an explicitly typed variable")
+	})
+
+	t.Run("typed variable with explicit struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+		}
+		Foo p = Foo{ x: 10 };
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooType,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name: "p",
+					Type: fooType,
+					Value: StructLiteral{
+						Type: fooType,
+						Fields: []FieldLiteral{
+							{Name: "x", Value: IntegerLiteral{Value: 10}},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("implicit variable with explicit struct literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+		}
+		var p = Foo{ x: 10 };
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooType,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name: "p",
+					Type: fooType,
+					Value: StructLiteral{
+						Type: fooType,
+						Fields: []FieldLiteral{
+							{Name: "x", Value: IntegerLiteral{Value: 10}},
+						},
+					},
+				},
+			},
 		}, prog)
 	})
 }

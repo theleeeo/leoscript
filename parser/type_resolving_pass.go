@@ -27,13 +27,74 @@ func typeResolvingPass(program *Program) (err error) {
 
 			return expr, nil
 		case VarDecl:
-			if expr.Type == types.Unspecified {
-				// If the variable is implicitly typed and the value is not yet resolved, come back after the child is visited.
-				if expr.Value.ReturnType() == types.Unspecified {
-					return nil, ErrReturnLater
+			// Already fine
+			if expr.Type.Kind() != types.KindInvalid {
+				return expr, nil
+			}
+
+			if t, ok := expr.Type.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
+				if !ok {
+					panic(fmt.Sprint("unknown type:", t.Name))
 				}
-				// If the type is unspecified, we need to resolve it from the value.
-				expr.Type = expr.Value.ReturnType()
+				expr.Type = resolvedType
+
+				return expr, nil
+			}
+
+			//
+			// Must resolve the type from the value
+			//
+
+			if expr.Value == nil {
+				panic("cannot infer type on an uninitialized variable")
+			}
+
+			// Child is a variable identifier whose type is not yet resolved
+			if expr.Value.ReturnType() == types.Unspecified {
+				return nil, ErrReturnLater
+			}
+
+			// Child has a type identifier that is not yet resolved
+			if _, ok := expr.Value.ReturnType().(unresolvedTypeIdentifier); ok {
+				return nil, ErrReturnLater
+			}
+
+			// If the type is unspecified, we need to resolve it from the value.
+			expr.Type = expr.Value.ReturnType()
+
+			return expr, nil
+		case StructLiteral:
+			if t, ok := expr.Type.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
+				if !ok {
+					panic(fmt.Sprint("unknown type:", t.Name))
+				}
+				expr.Type = resolvedType
+
+				return expr, nil
+			}
+
+			switch pn := wctx.ParentNode.(type) {
+			case VarDecl: // If the parent node is a variable declaration, we can infer the type from it.
+				// If the variable is implicitly typed and the value is not yet resolved, come back after the child is visited.
+				if pn.Type == types.Unspecified {
+					panic("cannot use an implicit struct literal without an explicitly typed variable")
+				}
+
+				expr.Type = pn.Type
+			case Assignment:
+				varIdent, ok := wctx.Scope.ResolveVar(pn.Name)
+				if !ok {
+					panic(fmt.Sprint("unknown variable:", pn.Name))
+				}
+				expr.Type = varIdent.Type
+			case Call:
+				resFn, ok := wctx.Scope.ResolveFn(pn.Name)
+				if !ok {
+					panic(fmt.Sprint("unknown function:", pn.Name))
+				}
+				expr.Type = resFn.ReturnType
 			}
 
 			return expr, nil

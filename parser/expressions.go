@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"leoscript/token"
+	"leoscript/types"
 )
 
 func (p *Parser) ParseExpr() (Expression, error) {
@@ -39,6 +40,9 @@ func (p *Parser) ParseExpr() (Expression, error) {
 			root = expr
 
 		case token.OpenBrace:
+			return root, nil
+
+		case token.CloseBrace: // Found in struct literals
 			return root, nil
 
 		case token.Comma:
@@ -86,11 +90,16 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	case token.OpenParen:
 		return p.handleSubgroup()
 	case token.Identifier:
-		if p.peekNext().Type() == token.OpenParenType {
+		switch p.peekNext().(type) {
+		case token.OpenParen:
 			return p.parseFnCall()
+		case token.OpenBrace:
+			return p.parseStructLiteral()
 		}
 
 		return p.parseVarIdentifier()
+	case token.OpenBrace:
+		return p.parseStructLiteral()
 	}
 
 	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
@@ -203,4 +212,69 @@ func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 		Op:       binTk.Op,
 		priority: binTk.Priority(),
 	}, nil
+}
+
+func (p *Parser) parseStructLiteral() (Expression, error) {
+	structLit := StructLiteral{}
+
+	if ident, ok := p.peek().(token.Identifier); ok {
+		structLit.Type = unresolvedTypeIdentifier{Name: ident.Value}
+		p.next() // Consume the type identifier
+	} else {
+		structLit.Type = types.Unspecified
+	}
+
+	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+		return nil, fmt.Errorf("expected open brace for struct literal: %w", err)
+	}
+
+	p.next() // Consume the open brace
+
+	for {
+		field, err := p.parseFieldLiteral()
+		if err != nil {
+			return nil, fmt.Errorf("parsing struct field: %w", err)
+		}
+		structLit.Fields = append(structLit.Fields, field)
+
+		if _, ok := p.peek().(token.CloseBrace); ok {
+			break
+		}
+
+		if err := p.expectCurrent(token.CommaType); err != nil {
+			return nil, fmt.Errorf("expected comma after struct field: %w", err)
+		}
+
+		p.next() // Consume the comma
+	}
+
+	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+		return nil, fmt.Errorf("expected close brace for struct literal: %w", err)
+	}
+
+	return structLit, nil
+}
+
+func (p *Parser) parseFieldLiteral() (FieldLiteral, error) {
+	fieldLit := FieldLiteral{}
+
+	if err := p.expectCurrent(token.IdentifierType); err != nil {
+		return FieldLiteral{}, fmt.Errorf("expected field name: %w", err)
+	}
+
+	fieldLit.Name = p.peek().(token.Identifier).Value
+
+	if err := p.expectNext(token.ColonType); err != nil {
+		return FieldLiteral{}, fmt.Errorf("expected colon after field name: %w", err)
+	}
+
+	p.next() // Consume the colon
+
+	value, err := p.ParseExpr()
+	if err != nil {
+		return FieldLiteral{}, fmt.Errorf("parsing field value: %w", err)
+	}
+	fieldLit.Value = value
+
+	return fieldLit, nil
 }

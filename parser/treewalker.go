@@ -26,6 +26,12 @@ type WalkingContext struct {
 	// The function whose body we are currently walking.
 	// Will be nil if we are not in a function body (only in the global scope).
 	ParentFn *FnDef
+
+	ParentNode Statement // TODO: There should maybe be a common "Node" type encasing both statement and expression
+	// Will be set to the index the current node is in its parent.
+	// Only relevant for node types that have lists of children, like a function call, array literal, etc.
+	// Will not be set for statements in a block or arguments in a function definition.
+	IndexInParentNode int
 }
 
 type TreeWalker struct {
@@ -54,6 +60,10 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 	globalScope := NewScope(nil)
 
 	// Setup the global scope with the global variable declarations and function definitions.
+	for _, structDef := range program.Structs {
+		must(globalScope.RegisterType(structDef.Name, structDef))
+	}
+
 	for _, varDecl := range program.VarDecls {
 		must(globalScope.RegisterVar(varDecl))
 	}
@@ -71,8 +81,9 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 		globalScope.deregisterVar(program.VarDecls[i].Name)
 
 		resp := tw.walkStatement(program.VarDecls[i], WalkingContext{
-			Scope:    globalScope,
-			ParentFn: nil, // No parent function in the global scope
+			Scope:      globalScope,
+			ParentFn:   nil, // No parent function in the global scope
+			ParentNode: nil, // TODO: What do? There is no parent node but like... Is this fine?
 		})
 		if resp == nil {
 			// If the callback returns nil, we remove the variable declaration.
@@ -89,8 +100,9 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 		globalScope.deregisterFn(program.FnDefs[i].Name)
 
 		resp := tw.walkStatement(program.FnDefs[i], WalkingContext{
-			Scope:    globalScope,
-			ParentFn: &program.FnDefs[i],
+			Scope:      globalScope,
+			ParentFn:   &program.FnDefs[i],
+			ParentNode: nil, // TODO: What do? There is no parent node but like... Is this fine?
 		})
 		if resp == nil {
 			// If the callback returns nil, we remove the function definition.
@@ -118,22 +130,31 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 
 	switch rv := stmt.(type) {
 	case VarDecl:
-		rv.Value = tw.walkExpression(rv.Value, wctx)
+		// Uninitialized variables do not have a value.
+		if rv.Value != nil {
+			wctx.ParentNode = rv
+			rv.Value = tw.walkExpression(rv.Value, wctx)
+		}
+
 		stmt = rv
 	case Argument:
 		// NOOP, no children
 	case Return:
+		wctx.ParentNode = rv
 		rv.Value = tw.walkExpression(rv.Value, wctx)
 		stmt = rv
 	case Assignment:
+		wctx.ParentNode = rv
 		rv.Value = tw.walkExpression(rv.Value, wctx)
 		stmt = rv
 	case Call:
+		wctx.ParentNode = rv
 		for i := range rv.Args {
 			rv.Args[i] = tw.walkExpression(rv.Args[i], wctx)
 		}
 		stmt = rv
 	case If:
+		wctx.ParentNode = rv
 		rv.Cond = tw.walkExpression(rv.Cond, wctx)
 		for i := range rv.Then {
 			rv.Then[i] = tw.walkStatement(rv.Then[i], wctx)
@@ -143,6 +164,7 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		}
 		stmt = rv
 	case While:
+		wctx.ParentNode = rv
 		rv.Cond = tw.walkExpression(rv.Cond, wctx)
 		for i := range rv.Body {
 			rv.Body[i] = tw.walkStatement(rv.Body[i], wctx)
@@ -158,8 +180,9 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		for i < len(rv.Args) {
 			// walk the args
 			retVal := tw.walkStatement(rv.Args[i], WalkingContext{
-				Scope:    functionScope,
-				ParentFn: &rv, // Set the parent function to the current function
+				Scope:      functionScope,
+				ParentFn:   &rv, // Set the parent function to the current function
+				ParentNode: nil, // The parent node is the function present in ParentFn
 			})
 			if retVal == nil {
 				// If the callback returns nil, we remove the argument.
@@ -173,8 +196,9 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 
 		for i := range rv.Body {
 			rv.Body[i] = tw.walkStatement(rv.Body[i], WalkingContext{
-				Scope:    functionScope,
-				ParentFn: &rv, // Set the parent function to the current function
+				Scope:      functionScope,
+				ParentFn:   &rv, // Set the parent function to the current function
+				ParentNode: nil, // The parent node is the function present in ParentFn
 			})
 		}
 
@@ -242,7 +266,9 @@ func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expre
 	case IntegerLiteral,
 		BooleanLiteral,
 		VoidLiteral,
-		VarIdentifier:
+		VarIdentifier,
+		StringLiteral,
+		StructLiteral:
 		// Nothing to walk
 	default:
 		panic(fmt.Errorf("unhandled expression type: %T", rv))

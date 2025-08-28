@@ -1,18 +1,23 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"leoscript/types"
+)
 
 type Scope struct {
 	parent *Scope
 
 	fnDefs   map[string]FnDef
 	varDecls map[string]VarDecl
+	types    map[string]types.Type
 }
 
 func NewScope(parent *Scope) *Scope {
 	return &Scope{parent: parent,
 		fnDefs:   make(map[string]FnDef),
 		varDecls: make(map[string]VarDecl),
+		types:    make(map[string]types.Type),
 	}
 }
 
@@ -66,4 +71,22 @@ func (s *Scope) deregisterVar(name string) {
 	}
 
 	delete(s.varDecls, name)
+}
+
+func (s *Scope) ResolveType(name string) (types.Type, bool) {
+	typeDecl, ok := s.types[name]
+	if !ok && s.parent != nil {
+		return s.parent.ResolveType(name)
+	}
+
+	return typeDecl, ok
+}
+
+func (s *Scope) RegisterType(name string, typeDecl types.Type) error {
+	if _, ok := s.types[name]; ok {
+		return fmt.Errorf("type with name \"%s\" already declared", name)
+	}
+
+	s.types[name] = typeDecl
+	return nil
 }

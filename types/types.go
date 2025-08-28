@@ -1,28 +1,30 @@
 package types
 
-import "strconv"
+import (
+	"strconv"
+)
 
-////go:generate stringer -type=Kind
-// type Kind int
+//go:generate stringer -type=Kind
+type Kind int
 
-// const (
-// 	KindInvalid Kind = iota
-// 	KindInt
-// 	KindBool
-// 	KindString
-// )
+const (
+	KindInvalid Kind = iota
+	KindInt
+	KindBool
+	KindString
+	KindStruct
+)
 
 type Type interface {
-	isType()
 	Size() uint64
-	// Kind() Kind
+	Kind() Kind
 }
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=BasicType
 type BasicType int
 
 const (
-	Unspecified BasicType = iota
+	Unspecified BasicType = iota // TODO: Maybe remove in favor of a more explicit "unresolvedIdentifier". Like how it is for unresolved type identifier but for vars/calls
 
 	// No type. Used for void functions
 	Void
@@ -31,8 +33,6 @@ const (
 	Int
 	String
 )
-
-func (b BasicType) isType() {}
 
 func (b BasicType) Size() uint64 {
 	switch b {
@@ -49,15 +49,41 @@ func (b BasicType) Size() uint64 {
 	panic("unhandled basic type: " + strconv.Itoa(int(b)))
 }
 
-// func (b BasicType) Kind() Kind {
-// 	switch b {
-// 	case Void:
-// 		return KindInvalid
-// 	case Bool:
-// 		return KindBool
-// 	case Int:
-// 		return KindInt
-// 	}
+func (b BasicType) Kind() Kind {
+	switch b {
+	case Unspecified:
+		return KindInvalid
+	case Void:
+		return KindInvalid
+	case Bool:
+		return KindBool
+	case Int:
+		return KindInt
+	case String:
+		return KindString
+	}
 
-// 	panic("unhandled basic type: " + strconv.Itoa(int(b)))
-// }
+	panic("unhandled basic type: " + strconv.Itoa(int(b)))
+}
+
+type Struct struct {
+	Name   string
+	Fields []Field
+}
+
+type Field struct {
+	Name string
+	Type Type
+}
+
+func (s Struct) Size() uint64 {
+	var size uint64
+	for _, field := range s.Fields {
+		size += field.Type.Size()
+	}
+	return size
+}
+
+func (s Struct) Kind() Kind {
+	return KindStruct
+}

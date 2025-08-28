@@ -38,6 +38,8 @@ const (
 	CommaType
 	StubDefType
 	ExportedType
+	StructDefType
+	ColonType
 
 	// Control Flow
 	IfType
@@ -226,4 +228,18 @@ type StringLiteral struct {
 func (StringLiteral) Type() TokenType { return StringLiteralType }
 func (s StringLiteral) String() string {
 	return fmt.Sprintf("{string:%s}", s.Value)
+}
+
+type StructDef struct{}
+
+func (StructDef) Type() TokenType { return StructDefType }
+func (StructDef) String() string {
+	return "{struct}"
+}
+
+type Colon struct{}
+
+func (Colon) Type() TokenType { return ColonType }
+func (Colon) String() string {
+	return "{:}"
 }

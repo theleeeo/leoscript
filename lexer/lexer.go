@@ -25,6 +25,7 @@ var keywords = map[string]token.Token{
 	"while":  token.While{},
 	"stub":   token.StubDef{},
 	"export": token.Exported{},
+	"struct": token.StructDef{},
 }
 
 type lexer struct {
@@ -190,6 +191,8 @@ func Tokenize(input string) ([]token.Token, error) {
 			}
 
 			lx.pushToken(token.StringLiteral{Value: str})
+		case ':':
+			lx.pushToken(token.Colon{})
 		default:
 			return nil, fmt.Errorf("invalid character: %c", tk)
 		}

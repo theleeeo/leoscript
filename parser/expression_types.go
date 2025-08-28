@@ -171,3 +171,25 @@ func (StringLiteral) ReturnType() types.Type { return types.String }
 func (s StringLiteral) String() string {
 	return fmt.Sprintf("%q", s.Value)
 }
+
+type StructLiteral struct {
+	Type   types.Type
+	Fields []FieldLiteral
+}
+
+type FieldLiteral struct {
+	Name  string
+	Value Expression
+}
+
+func (s StructLiteral) ReturnType() types.Type {
+	return s.Type
+}
+
+func (s StructLiteral) String() string {
+	var fields []string
+	for _, field := range s.Fields {
+		fields = append(fields, fmt.Sprintf("%s: %s", field.Name, field.Value.String()))
+	}
+	return fmt.Sprintf("struct %v { %s }", s.Type, strings.Join(fields, ", "))
+}

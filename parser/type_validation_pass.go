@@ -7,69 +7,76 @@ import (
 
 func typeValidationPass(program *Program) (err error) {
 	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) (Statement, error) {
-		switch expr := node.(type) {
+		switch n := node.(type) {
 		case VarDecl:
-			if expr.Value.ReturnType() != expr.Type {
-				panic(fmt.Sprintf("type mismatch: expected %s, got %s", expr.Type, expr.Value.ReturnType()))
+			if n.Type.Kind() == types.KindInvalid {
+				panic("invalid type")
 			}
 
-			if expr.Type == types.Void {
+			if n.Type == types.Void {
 				panic("cannot declare variable with void type")
 			}
-		case Return:
-			if expr.Value.ReturnType() != wctx.ParentFn.ReturnType {
-				panic(fmt.Sprintf("type mismatch: expected %s, got %s", wctx.ParentFn.ReturnType, expr.Value.ReturnType()))
-			}
-		case If:
-			if expr.Cond.ReturnType() != types.Bool {
-				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", expr.Cond.ReturnType()))
-			}
-		case While:
-			if expr.Cond.ReturnType() != types.Bool {
-				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", expr.Cond.ReturnType()))
-			}
-		case Assignment:
-			v, _ := wctx.Scope.ResolveVar(expr.Name)
-			if expr.Value.ReturnType() != v.Type {
-				panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", v.Type, expr.Value.ReturnType()))
-			}
-		case UnaryExpression:
-			switch expr.Op {
-			case "!":
-				if expr.Expression.ReturnType() != types.Bool {
-					panic(fmt.Sprintf("type mismatch: expected Bool for '!', got %s", expr.Expression.ReturnType()))
+
+			if n.Value != nil {
+				if n.Value.ReturnType() != n.Type {
+					panic(fmt.Sprintf("type mismatch: expected %s, got %s", n.Type, n.Value.ReturnType()))
 				}
-			case "-":
-				if expr.Expression.ReturnType() != types.Int {
-					panic(fmt.Sprintf("type mismatch: expected Int for '-', got %s", expr.Expression.ReturnType()))
-				}
-			case "+":
-				if expr.Expression.ReturnType() != types.Int {
-					panic(fmt.Sprintf("type mismatch: expected Int for '+', got %s", expr.Expression.ReturnType()))
-				}
-			default:
-				panic(fmt.Sprintf("unsupported unary operator: %s", expr.Op))
-			}
-		case BinaryExpression:
-			if expr.Left.ReturnType() != expr.Right.ReturnType() {
-				panic(fmt.Sprintf("type mismatch in binary expression: left %s, right %s", expr.Left.ReturnType(), expr.Right.ReturnType()))
 			}
 
-			switch expr.Op {
-			case "==", "!=", "<", ">", "<=", ">=":
-				if expr.Left.ReturnType() != types.Int && expr.Left.ReturnType() != types.Bool {
-					panic(fmt.Sprintf("type mismatch: expected Int or Bool for comparison, got %s", expr.Left.ReturnType()))
+		case Return:
+			if n.Value.ReturnType() != wctx.ParentFn.ReturnType {
+				panic(fmt.Sprintf("type mismatch: expected %s, got %s", wctx.ParentFn.ReturnType, n.Value.ReturnType()))
+			}
+		case If:
+			if n.Cond.ReturnType() != types.Bool {
+				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", n.Cond.ReturnType()))
+			}
+		case While:
+			if n.Cond.ReturnType() != types.Bool {
+				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", n.Cond.ReturnType()))
+			}
+		case Assignment:
+			v, _ := wctx.Scope.ResolveVar(n.Name)
+			if n.Value.ReturnType() != v.Type {
+				panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", v.Type, n.Value.ReturnType()))
+			}
+		case UnaryExpression:
+			switch n.Op {
+			case "!":
+				if n.Expression.ReturnType() != types.Bool {
+					panic(fmt.Sprintf("type mismatch: expected Bool for '!', got %s", n.Expression.ReturnType()))
 				}
-			case "+", "-", "*", "/":
-				if expr.Left.ReturnType() != types.Int {
-					panic(fmt.Sprintf("type mismatch: expected Int for arithmetic operation, got %s", expr.Left.ReturnType()))
+			case "-":
+				if n.Expression.ReturnType() != types.Int {
+					panic(fmt.Sprintf("type mismatch: expected Int for '-', got %s", n.Expression.ReturnType()))
 				}
-			case "&&", "||":
-				if expr.Left.ReturnType() != types.Bool {
-					panic(fmt.Sprintf("type mismatch: expected Bool for logical operation, got %s", expr.Left.ReturnType()))
+			case "+":
+				if n.Expression.ReturnType() != types.Int {
+					panic(fmt.Sprintf("type mismatch: expected Int for '+', got %s", n.Expression.ReturnType()))
 				}
 			default:
-				panic(fmt.Sprintf("unsupported binary operator: %s", expr.Op))
+				panic(fmt.Sprintf("unsupported unary operator: %s", n.Op))
+			}
+		case BinaryExpression:
+			if n.Left.ReturnType() != n.Right.ReturnType() {
+				panic(fmt.Sprintf("type mismatch in binary expression: left %s, right %s", n.Left.ReturnType(), n.Right.ReturnType()))
+			}
+
+			switch n.Op {
+			case "==", "!=", "<", ">", "<=", ">=":
+				if n.Left.ReturnType() != types.Int && n.Left.ReturnType() != types.Bool {
+					panic(fmt.Sprintf("type mismatch: expected Int or Bool for comparison, got %s", n.Left.ReturnType()))
+				}
+			case "+", "-", "*", "/":
+				if n.Left.ReturnType() != types.Int {
+					panic(fmt.Sprintf("type mismatch: expected Int for arithmetic operation, got %s", n.Left.ReturnType()))
+				}
+			case "&&", "||":
+				if n.Left.ReturnType() != types.Bool {
+					panic(fmt.Sprintf("type mismatch: expected Bool for logical operation, got %s", n.Left.ReturnType()))
+				}
+			default:
+				panic(fmt.Sprintf("unsupported binary operator: %s", n.Op))
 			}
 		}
 		return node, nil
