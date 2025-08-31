@@ -18,12 +18,12 @@ func typeResolvingPass(program *Program) (err error) {
 
 			return expr, nil
 		case VarIdentifier:
-			varIdent, ok := wctx.Scope.ResolveVar(expr.Name)
+			vt, ok := wctx.Scope.ResolveVarType(expr.Name)
 			if !ok {
 				panic(fmt.Sprint("unknown variable:", expr.Name))
 			}
 
-			expr.returnType = varIdent.Type
+			expr.returnType = vt
 
 			return expr, nil
 		case VarDecl:
@@ -84,11 +84,11 @@ func typeResolvingPass(program *Program) (err error) {
 
 				expr.Type = pn.Type
 			case Assignment:
-				varIdent, ok := wctx.Scope.ResolveVar(pn.Name)
+				vt, ok := wctx.Scope.ResolveVarType(pn.Name)
 				if !ok {
 					panic(fmt.Sprint("unknown variable:", pn.Name))
 				}
-				expr.Type = varIdent.Type
+				expr.Type = vt
 			case Call:
 				resFn, ok := wctx.Scope.ResolveFn(pn.Name)
 				if !ok {

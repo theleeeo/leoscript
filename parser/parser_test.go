@@ -2076,3 +2076,96 @@ func Test_StructDef(t *testing.T) {
 		}, prog)
 	})
 }
+
+func Test_StructFieldAccess(t *testing.T) {
+	t.Run("field access", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+		}
+		Foo p;
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooType,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name: "p",
+					Type: fooType,
+					Value: StructLiteral{
+						Type: fooType,
+						Fields: []FieldLiteral{
+							{Name: "x", Value: IntegerLiteral{Value: 0}},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("assign to field", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+		}
+		fn main() int {
+			Foo p;
+			p.x = 5;
+			return p.x;
+		}
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name: "Foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooType,
+			},
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "main",
+					Args:       []Argument{},
+					ReturnType: types.Int,
+					Body: []Statement{
+						VarDecl{
+							Name: "p",
+							Type: fooType,
+							Value: StructLiteral{
+								Type: fooType,
+								Fields: []FieldLiteral{
+									{Name: "x", Value: IntegerLiteral{Value: 0}},
+								},
+							},
+						},
+						Assignment{
+							Name:  "p.x",
+							Value: IntegerLiteral{Value: 5},
+						},
+						Return{
+							Value: VarIdentifier{Name: "p.x"},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+}

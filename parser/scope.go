@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"leoscript/types"
+	"slices"
+	"strings"
 )
 
 type Scope struct {
@@ -47,13 +49,32 @@ func (s *Scope) deregisterFn(name string) {
 	delete(s.fnDefs, name)
 }
 
-func (s *Scope) ResolveVar(name string) (VarDecl, bool) {
-	varDecl, ok := s.varDecls[name]
+func (s *Scope) ResolveVarType(name string) (types.Type, bool) {
+	varName, fieldSelection, _ := strings.Cut(name, ".")
+
+	varDecl, ok := s.varDecls[varName]
 	if !ok && s.parent != nil {
-		return s.parent.ResolveVar(name)
+		return s.parent.ResolveVarType(name)
 	}
 
-	return varDecl, ok
+	if fieldSelection != "" {
+		varStruct, ok := varDecl.Type.(*types.Struct)
+		if !ok {
+			panic(fmt.Sprint("variable is not a struct:", varDecl.Name))
+		}
+
+		fieldIndex := slices.IndexFunc(varStruct.Fields, func(f types.Field) bool {
+			return f.Name == fieldSelection
+		})
+
+		if fieldIndex == -1 {
+			panic(fmt.Sprint("unknown field:", fieldSelection))
+		}
+
+		return varStruct.Fields[fieldIndex].Type, ok
+	}
+
+	return varDecl.Type, ok
 }
 
 func (s *Scope) RegisterVar(varDecl VarDecl) error {

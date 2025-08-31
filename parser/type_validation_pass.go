@@ -36,9 +36,9 @@ func typeValidationPass(program *Program) (err error) {
 				panic(fmt.Sprintf("type mismatch: expected Bool, got %s", n.Cond.ReturnType()))
 			}
 		case Assignment:
-			v, _ := wctx.Scope.ResolveVar(n.Name)
-			if n.Value.ReturnType() != v.Type {
-				panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", v.Type, n.Value.ReturnType()))
+			vt, _ := wctx.Scope.ResolveVarType(n.Name)
+			if n.Value.ReturnType() != vt {
+				panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", vt, n.Value.ReturnType()))
 			}
 		case UnaryExpression:
 			switch n.Op {

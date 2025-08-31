@@ -76,7 +76,7 @@ type Field struct {
 	Type Type
 }
 
-func (s Struct) Size() uint64 {
+func (s *Struct) Size() uint64 {
 	var size uint64
 	for _, field := range s.Fields {
 		size += field.Type.Size()
@@ -84,6 +84,6 @@ func (s Struct) Size() uint64 {
 	return size
 }
 
-func (s Struct) Kind() Kind {
+func (s *Struct) Kind() Kind {
 	return KindStruct
 }

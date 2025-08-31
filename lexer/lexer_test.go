@@ -455,3 +455,61 @@ func Test_StringLiterals(t *testing.T) {
 		}, lx)
 	})
 }
+
+func Test_Structs(t *testing.T) {
+	t.Run("Struct definition", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			x: int,
+			y: int
+		}
+		`)
+		assert.Equal(t, []token.Token{
+			token.StructDef{},
+			token.Identifier{Value: "Point"},
+			token.OpenBrace{},
+			token.Identifier{Value: "x"},
+			token.Colon{},
+			token.Type{Kind: types.Int},
+			token.Comma{},
+			token.Identifier{Value: "y"},
+			token.Colon{},
+			token.Type{Kind: types.Int},
+			token.CloseBrace{},
+		}, lx)
+	})
+
+	t.Run("Field access", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var p = Point { x: 10, y: 20 };
+		var x = p.x;
+		var y = p.y;
+		`)
+		assert.Equal(t, []token.Token{
+			token.VarDecl{},
+			token.Identifier{Value: "p"},
+			token.Operator{Op: "="},
+			token.Identifier{Value: "Point"},
+			token.OpenBrace{},
+			token.Identifier{Value: "x"},
+			token.Colon{},
+			token.Integer{Value: 10},
+			token.Comma{},
+			token.Identifier{Value: "y"},
+			token.Colon{},
+			token.Integer{Value: 20},
+			token.CloseBrace{},
+			token.Semicolon{},
+			token.VarDecl{},
+			token.Identifier{Value: "x"},
+			token.Operator{Op: "="},
+			token.Identifier{Value: "p.x"},
+			token.Semicolon{},
+			token.VarDecl{},
+			token.Identifier{Value: "y"},
+			token.Operator{Op: "="},
+			token.Identifier{Value: "p.y"},
+			token.Semicolon{},
+		}, lx)
+	})
+}

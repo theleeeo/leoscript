@@ -81,15 +81,34 @@ func Tokenize(input string) ([]token.Token, error) {
 		}
 
 		if isAlpha(tk) {
-			value := lx.parseAlpha()
+			var v strings.Builder
 
-			// Check if the value is a reserved keyword
-			if keyword, ok := keywords[value]; ok {
-				lx.pushToken(keyword)
-				continue
+			for {
+				value := lx.parseAlpha()
+
+				// Check if the value is a reserved keyword
+				if keyword, ok := keywords[value]; ok {
+					if v.Len() > 0 {
+						return nil, fmt.Errorf("invalid identifier: %s%s", v.String(), value) // TODO
+					}
+					lx.pushToken(keyword)
+					break
+				}
+
+				v.WriteString(value)
+
+				if lx.next() != '.' {
+					lx.putBack()
+					break
+				}
+
+				v.WriteByte('.')
+				lx.next() // Consume the dot (.)
 			}
 
-			lx.pushToken(token.Identifier{Value: value})
+			if v.Len() > 0 {
+				lx.pushToken(token.Identifier{Value: v.String()})
+			}
 
 			continue
 		}

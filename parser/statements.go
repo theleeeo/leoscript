@@ -13,10 +13,16 @@ func (p *Parser) ParseStatement() (Statement, error) {
 	case token.VarDecl, token.Type:
 		return p.parseVarDecl()
 	case token.Identifier:
-		if _, ok := p.peekNext().(token.OpenParen); ok {
+		switch p.peekNext().(type) {
+		case token.OpenParen:
 			return p.ParseExpr()
+		case token.Identifier:
+			return p.parseVarDecl()
+		case token.Operator:
+			return p.parseAssignment()
+		default:
+			return nil, fmt.Errorf("unexpected token after identifier: %T", p.peek())
 		}
-		return p.parseAssignment()
 	case token.Return:
 		return p.parseReturn()
 	case token.If:
