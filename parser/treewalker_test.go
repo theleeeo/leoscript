@@ -15,8 +15,8 @@ func Test_TreeWalking(t *testing.T) {
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
 		},
 		FnDefs: []FnDef{
-			{Name: "foo", Args: []Argument{}, Body: []Statement{}, ReturnType: types.Void},
-			{Name: "bar", Args: []Argument{{Name: "a", Type: types.Int}}, Body: []Statement{
+			{Name: "foo", Params: []Parameter{}, Body: []Statement{}, ReturnType: types.Void},
+			{Name: "bar", Params: []Parameter{{Name: "a", Type: types.Int}}, Body: []Statement{
 				VarDecl{Name: "result", Value: IntegerLiteral{Value: 0}},
 				Assignment{
 					Name: "result",
@@ -46,8 +46,8 @@ func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
 			{Name: "y", Value: IntegerLiteral{Value: 42}},
 		},
 		FnDefs: []FnDef{
-			{Name: "foo", Args: []Argument{}, Body: []Statement{}, ReturnType: types.Void},
-			{Name: "bar", Args: []Argument{}, Body: []Statement{}, ReturnType: types.Int},
+			{Name: "foo", Params: []Parameter{}, Body: []Statement{}, ReturnType: types.Void},
+			{Name: "bar", Params: []Parameter{}, Body: []Statement{}, ReturnType: types.Int},
 		},
 	}
 
@@ -170,7 +170,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		assert.ElementsMatch(t, []string{"foo", "bar"}, visitedNodes)
 	})
 
-	t.Run("function arguments", func(t *testing.T) {
+	t.Run("function parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			fn add(int a, int b) int {
 				return a + b;
@@ -186,7 +186,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		var visitedNodes []string
 		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
-			case Argument:
+			case Parameter:
 				visitedNodes = append(visitedNodes, n.Name)
 			}
 			return node, nil

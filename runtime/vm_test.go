@@ -779,7 +779,7 @@ func Test_Stubs(t *testing.T) {
 		assert.ErrorContains(t, err, "stub function bar not registered")
 	})
 
-	t.Run("Stub with wrong argument count", func(t *testing.T) {
+	t.Run("Stub with wrong parameter count", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 		stub baz(int a) int;
 		`)
@@ -794,10 +794,10 @@ func Test_Stubs(t *testing.T) {
 		})
 
 		err = vm.Init()
-		assert.ErrorContains(t, err, "stub function baz signature mismatch: expected 2 arguments, got 1")
+		assert.ErrorContains(t, err, "stub function baz signature mismatch: expected 2 parameters, got 1")
 	})
 
-	t.Run("Stub with wrong argument type", func(t *testing.T) {
+	t.Run("Stub with wrong parameter type", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 		stub qux(int a) int;
 		`)
@@ -812,7 +812,7 @@ func Test_Stubs(t *testing.T) {
 		})
 
 		err = vm.Init()
-		assert.ErrorContains(t, err, "stub function qux signature mismatch: argument 1: expected Int, got bool")
+		assert.ErrorContains(t, err, "stub function qux signature mismatch: parameter 1: expected Int, got bool")
 	})
 
 	t.Run("Invoke stub with no return value", func(t *testing.T) {

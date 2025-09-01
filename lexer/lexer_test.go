@@ -249,7 +249,7 @@ func Test_FunctionDefinition(t *testing.T) {
 		}, lx)
 	})
 
-	// t.Run("Function definition, single argument", func(t *testing.T) {
+	// t.Run("Function definition, single parameter", func(t *testing.T) {
 	// err := lexer.MustTokenize("fn foo(a) {}"
 	// })
 
@@ -258,7 +258,7 @@ func Test_FunctionDefinition(t *testing.T) {
 	// 	}, lx)
 	// })
 
-	// t.Run("Function definition, multiple arguments", func(t *testing.T) {
+	// t.Run("Function definition, multiple parameters", func(t *testing.T) {
 	// err := lexer.MustTokenize("fn foo(a, b) {}"
 	// })
 

@@ -89,16 +89,16 @@ func (p *Parser) parseAssignment() (Statement, error) {
 	}, nil
 }
 
-func (p *Parser) parseFnParams() ([]Argument, error) {
-	// Check if the function has no arguments
+func (p *Parser) parseFnParams() ([]Parameter, error) {
+	// Check if the function has no parameters
 	if _, ok := p.next().(token.CloseParen); ok {
-		return []Argument{}, nil
+		return []Parameter{}, nil
 	}
 
-	args := make([]Argument, 0)
+	args := make([]Parameter, 0)
 	for {
 		if err := p.expectCurrent(token.TypeType); err != nil {
-			return nil, fmt.Errorf("expected type in argument list: %w", err)
+			return nil, fmt.Errorf("expected type in parameter list: %w", err)
 		}
 
 		argType := p.peek().(token.Type).Kind
@@ -106,26 +106,26 @@ func (p *Parser) parseFnParams() ([]Argument, error) {
 		p.next() // Consume the type
 
 		if err := p.expectCurrent(token.IdentifierType); err != nil {
-			return nil, fmt.Errorf("expected identifier after type in argument list: %w", err)
+			return nil, fmt.Errorf("expected identifier after type in parameter list: %w", err)
 		}
 
 		identifier := p.peek().(token.Identifier)
 
-		args = append(args, Argument{
+		args = append(args, Parameter{
 			Name: identifier.Value,
 			Type: argType,
 		})
 
 		p.next() // Consume the identifier
 
-		// If we have hit the close parenthesis, we have parsed all arguments
+		// If we have hit the close parenthesis, we have parsed all parameters
 		if _, ok := p.peek().(token.CloseParen); ok {
 			break
 		}
 
-		// If there is another argument, there should be a comma
+		// If there is another parameter, there should be a comma
 		if err := p.expectCurrent(token.CommaType); err != nil {
-			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
+			return nil, fmt.Errorf("expected comma after parameter in parameter list: %w", err)
 		}
 
 		// Consume the comma
@@ -169,7 +169,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	args, err := p.parseFnParams()
 	if err != nil {
-		return FnDef{}, fmt.Errorf("parsing arguments: %w", err)
+		return FnDef{}, fmt.Errorf("parsing parameters: %w", err)
 	}
 
 	var returnType types.Type
@@ -188,7 +188,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	fnDef := FnDef{
 		Name:       identifier.Value,
 		ReturnType: returnType,
-		Args:       args,
+		Params:     args,
 		Body:       nil,
 		Stub:       stub,
 		Exported:   exported,
@@ -204,7 +204,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	}
 
 	if _, ok := p.peek().(token.OpenBrace); !ok {
-		return FnDef{}, fmt.Errorf("expected open brace after arguments in function definition")
+		return FnDef{}, fmt.Errorf("expected open brace after parameters in function definition")
 	}
 
 	body, err := p.parseBlock()

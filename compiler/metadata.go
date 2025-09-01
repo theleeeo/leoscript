@@ -33,9 +33,9 @@ func (md Metadata) Marshal() []byte {
 		}
 		fnRaw = append(fnRaw, flags)
 
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Args)))
-		for _, arg := range fn.Args {
-			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(arg.Type.(types.BasicType)))
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Params)))
+		for _, param := range fn.Params {
+			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(param.Type.(types.BasicType)))
 		}
 
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.ReturnType.(types.BasicType)))
@@ -115,18 +115,18 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		raw = raw[1:]
 
 		if len(raw) < 8 {
-			return nil, errors.New("metadata raw is too short for argument count")
+			return nil, errors.New("metadata raw is too short for parameter count")
 		}
-		argCount := binary.BigEndian.Uint64(raw[:8])
+		paramCount := binary.BigEndian.Uint64(raw[:8])
 		raw = raw[8:]
-		args := make([]FnArg, argCount)
-		for j := uint64(0); j < argCount; j++ {
+		params := make([]FnParam, paramCount)
+		for j := uint64(0); j < paramCount; j++ {
 			if len(raw) < 8 {
-				return nil, errors.New("metadata raw is too short for argument type")
+				return nil, errors.New("metadata raw is too short for parameter type")
 			}
-			argType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
+			paramType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
 			raw = raw[8:]
-			args[j] = FnArg{Type: argType}
+			params[j] = FnParam{Type: paramType}
 		}
 
 		if len(raw) < 8 {
@@ -138,7 +138,7 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		md.functions[i] = ExportedFunction{
 			Name:        name,
 			StartOffset: startOffset,
-			Args:        args,
+			Params:      params,
 			ReturnType:  returnType,
 			exported:    flags&0x01 != 0, // bit 0
 			stub:        flags&0x02 != 0, // bit 1
@@ -190,8 +190,8 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 	return raw, nil
 }
 
-type FnArg struct {
-	// The type of the function argument
+type FnParam struct {
+	// The type of the function parameter
 	Type types.Type
 }
 
@@ -200,8 +200,8 @@ type ExportedFunction struct {
 	// The offset in the code where the function starts
 	// (Also used as the stubnumber for stub functions. This is a bit lazy, i know)
 	StartOffset uint64
-	// The arguments of the function
-	Args []FnArg
+	// The parameters of the function
+	Params []FnParam
 	// The return type of the function
 	ReturnType types.Type
 	// Indicates if the function is exported

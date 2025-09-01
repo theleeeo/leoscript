@@ -645,7 +645,7 @@ func Test_StubVerification(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Verify stub with incorrect argument type", func(t *testing.T) {
+	t.Run("Verify stub with incorrect parameter type", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 			stub foo(int x) int;
 
@@ -659,7 +659,7 @@ func Test_StubVerification(t *testing.T) {
 				return 1
 			}).
 			Initialize()
-		assert.ErrorContains(t, err, "argument 1: expected Int, got bool")
+		assert.ErrorContains(t, err, "parameter 1: expected Int, got bool")
 	})
 
 	t.Run("Verify stub with incorrect return type", func(t *testing.T) {

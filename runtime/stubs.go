@@ -57,8 +57,8 @@ func (intr *Interpreter) verifyStubs() error {
 }
 
 func (intr *Interpreter) callStub(fn parser.FnDef, parameters []runtimeVal) runtimeVal {
-	if len(parameters) != len(fn.Args) {
-		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Args), len(parameters)))
+	if len(parameters) != len(fn.Params) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Params), len(parameters)))
 	}
 
 	if stubFunc, ok := intr.stubs[fn.Name]; ok {
@@ -75,13 +75,13 @@ type externalFunction struct {
 }
 
 func (ef *externalFunction) verifySignature(stub parser.FnDef) error {
-	if ef.fnType.NumIn() != len(stub.Args) {
-		return fmt.Errorf("expected %d arguments, got %d", ef.fnType.NumIn(), len(stub.Args))
+	if ef.fnType.NumIn() != len(stub.Params) {
+		return fmt.Errorf("expected %d parameters, got %d", ef.fnType.NumIn(), len(stub.Params))
 	}
 
 	for i := 0; i < ef.fnType.NumIn(); i++ {
-		if err := verifyEqualType(stub.Args[i].Type, ef.fnType.In(i)); err != nil {
-			return fmt.Errorf("argument %d: %w", i+1, err)
+		if err := verifyEqualType(stub.Params[i].Type, ef.fnType.In(i)); err != nil {
+			return fmt.Errorf("parameter %d: %w", i+1, err)
 		}
 	}
 
@@ -99,13 +99,13 @@ func (ef *externalFunction) verifySignature(stub parser.FnDef) error {
 }
 
 func (ef *externalFunction) verifySignature2(stub compiler.ExportedFunction) error {
-	if ef.fnType.NumIn() != len(stub.Args) {
-		return fmt.Errorf("expected %d arguments, got %d", ef.fnType.NumIn(), len(stub.Args))
+	if ef.fnType.NumIn() != len(stub.Params) {
+		return fmt.Errorf("expected %d parameters, got %d", ef.fnType.NumIn(), len(stub.Params))
 	}
 
 	for i := range ef.fnType.NumIn() {
-		if err := verifyEqualType(stub.Args[i].Type, ef.fnType.In(i)); err != nil {
-			return fmt.Errorf("argument %d: %w", i+1, err)
+		if err := verifyEqualType(stub.Params[i].Type, ef.fnType.In(i)); err != nil {
+			return fmt.Errorf("parameter %d: %w", i+1, err)
 		}
 	}
 
@@ -183,19 +183,19 @@ func (ef *externalFunction) Call(args []runtimeVal) runtimeVal {
 }
 
 func (ef *externalFunction) call2(args []uint64) uint64 {
-	if len(args) != len(ef.md.Args) {
-		panic(fmt.Sprintf("expected %d arguments, got %d", len(ef.md.Args), len(args))) // This should never happen
+	if len(args) != len(ef.md.Params) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(ef.md.Params), len(args))) // This should never happen
 	}
 
 	inVals := make([]reflect.Value, len(args))
 	for i, arg := range args {
-		switch ef.md.Args[i].Type.(types.BasicType) {
+		switch ef.md.Params[i].Type.(types.BasicType) {
 		case types.Int:
 			inVals[i] = reflect.ValueOf(int(arg))
 		case types.Bool:
 			inVals[i] = reflect.ValueOf(arg != 0)
 		default:
-			panic(fmt.Sprintf("unsupported argument type for stub function: %T", ef.md.Args[i].Type))
+			panic(fmt.Sprintf("unsupported argument type for stub function: %T", ef.md.Params[i].Type))
 		}
 	}
 

@@ -283,12 +283,12 @@ func (vm *VM) run() (uint64, error) {
 				}
 			}
 
-			parameters := make([]uint64, len(stubFunc.md.Args))
-			for i := range stubFunc.md.Args {
-				parameters[i] = vm.pop()
+			arguments := make([]uint64, len(stubFunc.md.Params))
+			for i := range stubFunc.md.Params {
+				arguments[i] = vm.pop()
 			}
 
-			retVal := stubFunc.call2(parameters)
+			retVal := stubFunc.call2(arguments)
 
 			if stubFunc.md.ReturnType != types.Void {
 				vm.cStack = append(vm.cStack, retVal) // Push the return value onto the stack
@@ -350,8 +350,8 @@ func (vm *VM) Invoke(name string, args ...any) (any, error) {
 		return nil, fmt.Errorf("function %s not found", name)
 	}
 
-	if len(args) != len(fn.Args) {
-		return nil, fmt.Errorf("function %s expects %d arguments, got %d", name, len(fn.Args), len(args))
+	if len(args) != len(fn.Params) {
+		return nil, fmt.Errorf("function %s expects %d arguments, got %d", name, len(fn.Params), len(args))
 	}
 
 	// Convert args to uint64

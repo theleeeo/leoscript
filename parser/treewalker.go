@@ -30,8 +30,8 @@ type WalkingContext struct {
 	ParentNode Statement // TODO: There should maybe be a common "Node" type encasing both statement and expression
 	// Will be set to the index the current node is in its parent.
 	// Only relevant for node types that have lists of children, like a function call, array literal, etc.
-	// Will not be set for statements in a block or arguments in a function definition.
-	IndexInParentNode int
+	// Will not be set for statements in a block or parameters in a function definition.
+	// IndexInParentNode int
 }
 
 type TreeWalker struct {
@@ -137,7 +137,7 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		}
 
 		stmt = rv
-	case Argument:
+	case Parameter:
 		// NOOP, no children
 	case Return:
 		wctx.ParentNode = rv
@@ -177,19 +177,19 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 
 		// Walk the function body statements
 		i := 0
-		for i < len(rv.Args) {
+		for i < len(rv.Params) {
 			// walk the args
-			retVal := tw.walkStatement(rv.Args[i], WalkingContext{
+			retVal := tw.walkStatement(rv.Params[i], WalkingContext{
 				Scope:      functionScope,
 				ParentFn:   &rv, // Set the parent function to the current function
 				ParentNode: nil, // The parent node is the function present in ParentFn
 			})
 			if retVal == nil {
-				// If the callback returns nil, we remove the argument.
-				rv.Args = slices.Delete(rv.Args, i, i+1)
+				// If the callback returns nil, we remove the parameter.
+				rv.Params = slices.Delete(rv.Params, i, i+1)
 				continue
 			}
-			rv.Args[i] = retVal.(Argument) // TODO: Check the type
+			rv.Params[i] = retVal.(Parameter) // TODO: Check the type
 
 			i++
 		}
@@ -222,7 +222,7 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 	switch rv := stmt.(type) {
 	case VarDecl:
 		must(wctx.Scope.RegisterVar(stmt.(VarDecl)))
-	case Argument:
+	case Parameter:
 		must(wctx.Scope.RegisterVar(VarDecl{
 			Name: rv.Name,
 			Type: rv.Type,

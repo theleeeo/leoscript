@@ -20,7 +20,7 @@ type VarDecl struct {
 type FnDef struct {
 	Name       string
 	ReturnType types.Type
-	Args       []Argument
+	Params     []Parameter
 	Body       []Statement
 
 	// Indicates if this function is a stub, meaning it has no body and is only declared.
@@ -35,7 +35,7 @@ type Return struct {
 	Value Expression
 }
 
-type Argument struct {
+type Parameter struct {
 	Name string
 	Type types.Type
 }

@@ -713,7 +713,7 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Int,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				Return{
 					Value: IntegerLiteral{Value: 0},
@@ -908,7 +908,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				Return{Value: VoidLiteral{}},
 			},
@@ -924,7 +924,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				Return{
 					Value: BinaryExpression{
@@ -945,13 +945,13 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			ReturnType: types.Int,
 			Body:       []Statement{},
 		}, fnDef)
 	})
 
-	t.Run("Function definition with one argument", func(t *testing.T) {
+	t.Run("Function definition with one parameter", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a) {}")
 		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
@@ -960,7 +960,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 			},
 			Body: []Statement{
@@ -969,7 +969,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		}, fnDef)
 	})
 
-	t.Run("Function definition with arguments", func(t *testing.T) {
+	t.Run("Function definition with parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a, bool b, bool c) {}")
 		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
@@ -978,7 +978,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 				{Name: "b", Type: types.Bool},
 				{Name: "c", Type: types.Bool},
@@ -989,7 +989,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		}, fnDef)
 	})
 
-	t.Run("Function definition with arguments and return type", func(t *testing.T) {
+	t.Run("Function definition with parameters and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(bool a, int b) bool {}")
 		p := NewParser(lx)
 		fnDef, err := p.parseFnDef()
@@ -998,7 +998,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Bool,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Bool},
 				{Name: "b", Type: types.Int},
 			},
@@ -1021,7 +1021,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				VarDecl{
 					Name:  "a",
@@ -1064,7 +1064,7 @@ func Test_FunctionDefinitions(t *testing.T) {
 
 					Name:       "main",
 					ReturnType: types.Int,
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					Body: []Statement{
 						VarDecl{
 							Name:  "b",
@@ -1109,7 +1109,7 @@ func Test_ParseFile(t *testing.T) {
 				{
 					Name:       "foo",
 					ReturnType: types.Int,
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					Body: []Statement{
 						Call{
 							Name: "bar",
@@ -1123,7 +1123,7 @@ func Test_ParseFile(t *testing.T) {
 				{
 					Name:       "bar",
 					ReturnType: types.Void,
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					Body: []Statement{
 						Return{Value: VoidLiteral{}},
 					},
@@ -1131,7 +1131,7 @@ func Test_ParseFile(t *testing.T) {
 				{
 					Name:       "main",
 					ReturnType: types.Int,
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					Body: []Statement{
 						Return{
 							Value: BinaryExpression{
@@ -1160,7 +1160,7 @@ func Test_ParseFile(t *testing.T) {
 				{
 					Name:       "bar",
 					ReturnType: types.Void,
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					Body: []Statement{
 						Return{Value: VoidLiteral{}},
 					},
@@ -1214,7 +1214,7 @@ func Test_If(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "main",
 			ReturnType: types.Int,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				If{
 					Cond: BooleanLiteral{Value: true},
@@ -1560,7 +1560,7 @@ func Test_WhileStatements(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "main",
 			ReturnType: types.Void,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				While{
 					Cond: BinaryExpression{
@@ -1635,13 +1635,13 @@ func Test_Stub(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			ReturnType: types.Void,
 			Name:       "foo",
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body:       nil,
 			Stub:       true,
 		}, prog)
 	})
 
-	t.Run("Stub with arguments", func(t *testing.T) {
+	t.Run("Stub with parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b);")
 		p := NewParser(lx)
 		prog, err := p.parseFnDef()
@@ -1650,7 +1650,7 @@ func Test_Stub(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 				{Name: "b", Type: types.Bool},
 			},
@@ -1668,13 +1668,13 @@ func Test_Stub(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Int,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body:       nil,
 			Stub:       true,
 		}, prog)
 	})
 
-	t.Run("Stub with arguments and return type", func(t *testing.T) {
+	t.Run("Stub with parameters and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b) int;")
 		p := NewParser(lx)
 		prog, err := p.parseFnDef()
@@ -1683,7 +1683,7 @@ func Test_Stub(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Int,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 				{Name: "b", Type: types.Bool},
 			},
@@ -1703,7 +1703,7 @@ func Test_ExportedFunction(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body: []Statement{
 				Return{Value: VoidLiteral{}},
 			},
@@ -1711,7 +1711,7 @@ func Test_ExportedFunction(t *testing.T) {
 		}, prog)
 	})
 
-	t.Run("Exported function with arguments", func(t *testing.T) {
+	t.Run("Exported function with parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize("export fn foo(int a, bool b) {};")
 		p := NewParser(lx)
 		prog, err := p.parseFnDef()
@@ -1720,7 +1720,7 @@ func Test_ExportedFunction(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Void,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 				{Name: "b", Type: types.Bool},
 			},
@@ -1740,13 +1740,13 @@ func Test_ExportedFunction(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Int,
-			Args:       []Argument{},
+			Params:     []Parameter{},
 			Body:       []Statement{},
 			Exported:   true,
 		}, prog)
 	})
 
-	t.Run("Exported function with arguments and return type", func(t *testing.T) {
+	t.Run("Exported function with parameters and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("export fn foo(int a, bool b) int {};")
 		p := NewParser(lx)
 		prog, err := p.parseFnDef()
@@ -1755,7 +1755,7 @@ func Test_ExportedFunction(t *testing.T) {
 		assert.EqualExportedValues(t, FnDef{
 			Name:       "foo",
 			ReturnType: types.Int,
-			Args: []Argument{
+			Params: []Parameter{
 				{Name: "a", Type: types.Int},
 				{Name: "b", Type: types.Bool},
 			},
@@ -2143,7 +2143,7 @@ func Test_StructFieldAccess(t *testing.T) {
 			FnDefs: []FnDef{
 				{
 					Name:       "main",
-					Args:       []Argument{},
+					Params:     []Parameter{},
 					ReturnType: types.Int,
 					Body: []Statement{
 						VarDecl{

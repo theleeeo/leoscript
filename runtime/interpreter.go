@@ -273,15 +273,15 @@ func (intr *Interpreter) evaluateExpression(expr parser.Expression) runtimeVal {
 }
 
 func (intr *Interpreter) callFunction(parentScope *scope, fn parser.FnDef, parameters []runtimeVal) runtimeVal {
-	if len(parameters) != len(fn.Args) {
-		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Args), len(parameters)))
+	if len(parameters) != len(fn.Params) {
+		panic(fmt.Sprintf("expected %d arguments, got %d", len(fn.Params), len(parameters)))
 	}
 
 	// Create a new scope for the function
 	fnScope := newScope(parentScope)
 
 	// Add arguments to the scope
-	for i, arg := range fn.Args {
+	for i, arg := range fn.Params {
 		fnScope.DeclareVar(arg.Name, parameters[i])
 	}
 
