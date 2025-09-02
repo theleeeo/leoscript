@@ -60,7 +60,7 @@ func (s *Scope) ResolveVarType(name string) (types.Type, bool) {
 	if fieldSelection != "" {
 		varStruct, ok := varDecl.Type.(*types.Struct)
 		if !ok {
-			panic(fmt.Sprint("variable is not a struct:", varDecl.Name))
+			panic(fmt.Sprint("variable is not a struct: ", varDecl.Name))
 		}
 
 		fieldIndex := slices.IndexFunc(varStruct.Fields, func(f types.Field) bool {

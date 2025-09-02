@@ -197,6 +197,7 @@ func DumpOpcode(exe []byte) string {
 			b.WriteRune(' ')
 			i++
 
+			// Stack offset
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 7
 		case OpLoad:
@@ -256,6 +257,7 @@ func DumpOpcode(exe []byte) string {
 			b.WriteRune(' ')
 			i++
 
+			// Stack offset
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 7
 		case OpInvokeStub:

@@ -1083,6 +1083,93 @@ func Test_FunctionDefinitions(t *testing.T) {
 			},
 		}, pg)
 	})
+
+	t.Run("struct parameter", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			bool a;
+			bool b;
+		}
+
+		fn bar(Foo p) bool {
+			return p.a && p.b;
+		}
+		`)
+		pg, err := NewParser(lx).Parse()
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name:   "Foo",
+			Fields: []types.Field{{Name: "a", Type: types.Bool}, {Name: "b", Type: types.Bool}},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				{
+					Name:   "Foo",
+					Fields: []types.Field{{Name: "a", Type: types.Bool}, {Name: "b", Type: types.Bool}},
+				},
+			},
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "bar",
+					ReturnType: types.Bool,
+					Params:     []Parameter{{Name: "p", Type: fooType}},
+					Body: []Statement{
+						Return{
+							Value: BinaryExpression{
+								Left:  VarIdentifier{Name: "p.a"},
+								Right: VarIdentifier{Name: "p.b"},
+								Op:    "&&",
+							},
+						},
+					},
+				},
+			},
+		}, pg)
+	})
+
+	t.Run("struct return type", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		fn getPoint() Point {
+			return Point{x: 5, y: 10};
+		}
+		`)
+		pg := MustParse(lx)
+
+		pointType := &types.Struct{
+			Name:   "Point",
+			Fields: []types.Field{{Name: "x", Type: types.Int}, {Name: "y", Type: types.Int}},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				pointType,
+			},
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "getPoint",
+					ReturnType: pointType,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{
+							Value: StructLiteral{
+								Type:   pointType,
+								Fields: []FieldLiteral{{Name: "x", Value: IntegerLiteral{Value: 5}}, {Name: "y", Value: IntegerLiteral{Value: 10}}},
+							},
+						},
+					},
+				},
+			},
+		}, pg)
+	})
 }
 
 func Test_ParseFile(t *testing.T) {

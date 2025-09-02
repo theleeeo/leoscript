@@ -97,11 +97,15 @@ func (p *Parser) parseFnParams() ([]Parameter, error) {
 
 	args := make([]Parameter, 0)
 	for {
-		if err := p.expectCurrent(token.TypeType); err != nil {
-			return nil, fmt.Errorf("expected type in parameter list: %w", err)
+		var argType types.Type
+		switch tk := p.peek().(type) {
+		case token.Type:
+			argType = tk.Kind
+		case token.Identifier:
+			argType = unresolvedTypeIdentifier{Name: tk.Value}
+		default:
+			return nil, fmt.Errorf("expected type in parameter list, got %T", tk)
 		}
-
-		argType := p.peek().(token.Type).Kind
 
 		p.next() // Consume the type
 
@@ -177,10 +181,14 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	p.next() // Consume the close parenthesis
 
 	// Check if the function has a return type
-	if tk, ok := p.peek().(token.Type); ok {
+	switch tk := p.peek().(type) {
+	case token.Type:
 		returnType = tk.Kind
 		p.next() // Consume the type token
-	} else {
+	case token.Identifier:
+		returnType = unresolvedTypeIdentifier{Name: tk.Value}
+		p.next() // Consume the identifier token
+	default:
 		// No return type is specified
 		returnType = types.Void
 	}
@@ -203,8 +211,8 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 		return fnDef, nil
 	}
 
-	if _, ok := p.peek().(token.OpenBrace); !ok {
-		return FnDef{}, fmt.Errorf("expected open brace after parameters in function definition")
+	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+		return FnDef{}, fmt.Errorf("expected open brace after parameters in function definition: %w", err)
 	}
 
 	body, err := p.parseBlock()
@@ -290,7 +298,7 @@ type unresolvedTypeIdentifier struct {
 }
 
 func (u unresolvedTypeIdentifier) String() string {
-	return fmt.Sprintf("unresolved type: %s", u.Name)
+	return fmt.Sprintf("{unresolved type: %s}", u.Name)
 }
 
 func (u unresolvedTypeIdentifier) Kind() types.Kind {

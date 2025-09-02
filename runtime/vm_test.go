@@ -842,3 +842,88 @@ func Test_Stubs(t *testing.T) {
 		assert.EqualValues(t, 42, result) // Should return 42 for foo()
 	})
 }
+
+func Test_Struct(t *testing.T) {
+	t.Run("struct variable and field assignment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		export fn main() int {
+			Point p = {x:5, y:10};
+			return p.x + p.y;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.Invoke("main")
+		assert.NoError(t, err)
+		assert.Equal(t, 15, result) // Should return 5 + 10
+	})
+
+	t.Run("save to field", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		export fn main() int {
+			Point p;
+			p.x = 5;
+			p.y = 10;
+			return p.x + p.y;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.Invoke("main")
+		assert.NoError(t, err)
+		assert.Equal(t, 15, result) // Should return 5 + 10
+	})
+
+	t.Run("pass around struct", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		fn addToX(Point p, int value) Point {
+			p.x = p.x + value;
+			return p;
+		}
+
+		export fn main() int {
+			Point p = {x: 1, y: 1};
+			p = addToX(p, 3);
+			return p.x + p.y;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.Invoke("main")
+		assert.NoError(t, err)
+		assert.Equal(t, 5, result)
+	})
+}

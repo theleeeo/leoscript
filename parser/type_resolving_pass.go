@@ -98,6 +98,29 @@ func typeResolvingPass(program *Program) (err error) {
 			}
 
 			return expr, nil
+		case FnDef:
+			if t, ok := expr.ReturnType.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
+				if !ok {
+					panic(fmt.Sprint("unknown type:", t.Name))
+				}
+				expr.ReturnType = resolvedType
+
+				return expr, nil
+			}
+		case Parameter:
+			if expr.Type.Kind() != types.KindInvalid {
+				return expr, nil
+			}
+
+			t := expr.Type.(unresolvedTypeIdentifier)
+			resolvedType, ok := wctx.Scope.ResolveType(t.Name)
+			if !ok {
+				panic(fmt.Sprint("unknown type:", t.Name))
+			}
+			expr.Type = resolvedType
+
+			return expr, nil
 		}
 		return node, nil
 	})

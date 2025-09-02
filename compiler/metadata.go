@@ -14,6 +14,7 @@ type Metadata struct {
 	variables []ExportedVariable
 }
 
+// TODO: Handle Structs
 func (md Metadata) Marshal() []byte {
 	// Serialize the function metadata
 	fnRaw := binary.BigEndian.AppendUint64(nil, uint64(len(md.functions)))
@@ -35,10 +36,10 @@ func (md Metadata) Marshal() []byte {
 
 		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(len(fn.Params)))
 		for _, param := range fn.Params {
-			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(param.Type.(types.BasicType)))
+			fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(param.Type.Kind()))
 		}
 
-		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.ReturnType.(types.BasicType)))
+		fnRaw = binary.BigEndian.AppendUint64(fnRaw, uint64(fn.ReturnType.Kind()))
 	}
 
 	varRaw := binary.BigEndian.AppendUint64(nil, uint64(len(md.variables)))
@@ -47,7 +48,7 @@ func (md Metadata) Marshal() []byte {
 		varRaw = append(varRaw, []byte(varDecl.Name)...)
 
 		varRaw = binary.BigEndian.AppendUint64(varRaw, varDecl.Offset)
-		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(varDecl.VarType.(types.BasicType)))
+		varRaw = binary.BigEndian.AppendUint64(varRaw, uint64(varDecl.VarType.Kind()))
 	}
 
 	mdLen := binary.BigEndian.AppendUint64(nil, uint64(len(fnRaw)+len(varRaw)))
@@ -80,6 +81,23 @@ func (md *Metadata) Unmarshal(raw []byte) error {
 	}
 
 	return nil
+}
+
+func typeFromKind(t types.Kind) types.Type {
+	switch t {
+	case types.KindInt:
+		return types.Int
+	case types.KindBool:
+		return types.Bool
+	case types.KindString:
+		return types.String
+	case types.KindStruct:
+		return &types.Struct{} // TODO
+	case types.KindInvalid:
+		return types.Void // TODO
+	default:
+		panic("unknown type kind: " + t.String())
+	}
 }
 
 func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error) {
@@ -124,7 +142,9 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 			if len(raw) < 8 {
 				return nil, errors.New("metadata raw is too short for parameter type")
 			}
-			paramType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
+			paramKind := types.Kind(binary.BigEndian.Uint64(raw[:8]))
+			paramType := typeFromKind(paramKind)
+
 			raw = raw[8:]
 			params[j] = FnParam{Type: paramType}
 		}
@@ -132,7 +152,8 @@ func (md *Metadata) unmarshalFunctions(raw []byte) (remaining []byte, err error)
 		if len(raw) < 8 {
 			return nil, errors.New("metadata raw is too short for return type")
 		}
-		returnType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
+		returnKind := types.Kind(binary.BigEndian.Uint64(raw[:8]))
+		returnType := typeFromKind(returnKind)
 		raw = raw[8:]
 
 		md.functions[i] = ExportedFunction{
@@ -177,7 +198,8 @@ func (md *Metadata) unmarshalVariables(raw []byte) (remaining []byte, err error)
 		if len(raw) < 8 {
 			return nil, errors.New("metadata raw is too short for variable type")
 		}
-		varType := types.BasicType(binary.BigEndian.Uint64(raw[:8]))
+		varKind := types.Kind(binary.BigEndian.Uint64(raw[:8]))
+		varType := typeFromKind(varKind)
 		raw = raw[8:]
 
 		md.variables[i] = ExportedVariable{

@@ -9,8 +9,8 @@ type Kind int
 
 const (
 	KindInvalid Kind = iota
-	KindInt
 	KindBool
+	KindInt
 	KindString
 	KindStruct
 )
@@ -39,7 +39,7 @@ func (b BasicType) Size() uint64 {
 	case Void:
 		return 0
 	case Bool:
-		return 1
+		return 8
 	case Int:
 		return 8
 	case String:

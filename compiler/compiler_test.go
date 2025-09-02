@@ -117,24 +117,26 @@ func Test_ArithmeticExpr(t *testing.T) {
 func Test_StackVariables(t *testing.T) {
 	t.Run("store a simple integer variable", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 10;")
-		stmt, _ := parser.NewParser(lx).ParseStatement()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
-			compiler.CompileStatement(stmt),
+			compiler.Compile(pg).Code(),
 			`PUSH 10
-			STORE 0
+			STORE_GLOBAL 0
+			RETURN
 			`,
 		)
 	})
 
 	t.Run("store integer result of expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 10 + 20;")
-		stmt, _ := parser.NewParser(lx).ParseStatement()
+		pg := parser.MustParse(lx)
 		equalProgram(t,
-			compiler.CompileStatement(stmt),
+			compiler.Compile(pg).Code(),
 			`PUSH 10
 			PUSH 20
 			ADD
-			STORE 0
+			STORE_GLOBAL 0
+			RETURN
 			`,
 		)
 	})
@@ -264,6 +266,34 @@ func Test_Function(t *testing.T) {
 			STORE_GLOBAL 0
 			RETURN
 			PUSH 42
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("call function with a variable as argument", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn foo(int a) int {
+			return a;
+		}
+
+		fn main() {
+			int b = 5;
+			foo(b);
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			STORE 0
+			LOAD 0
+			RETURN
+			PUSH 5
+			STORE 0
+			LOAD 0
+			CALL 1
 			RETURN
 			`,
 		)
@@ -431,6 +461,180 @@ func Test_StubFunction(t *testing.T) {
 			RETURN
 			INVOKE_STUB 0
 			STORE 0
+			RETURN
+			`,
+		)
+	})
+}
+
+func Test_Struct(t *testing.T) {
+	t.Run("global struct variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			struct Point {
+				int x;
+				int y;
+			}
+
+			Point p;
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			PUSH 0
+			PUSH 0
+			STORE_GLOBAL 0
+			STORE_GLOBAL 8
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("assign to struct fields", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		fn main() {
+			Point p;
+			p.x = 5;
+			p.y = 10;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 0
+			PUSH 0
+			STORE 0
+			STORE 8
+			PUSH 5
+			STORE 0
+			PUSH 10
+			STORE 8
+			RETURN
+		`,
+		)
+	})
+
+	t.Run("global struct variable with initialization", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			struct Point {
+				int x;
+				int y;
+			}
+
+			Point p = {x:5, y:10};
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			PUSH 5
+			PUSH 10
+			STORE_GLOBAL 0
+			STORE_GLOBAL 8
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("local struct variable with initialization", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+			struct Point {
+				int x;
+				int y;
+				int z;
+			}
+
+			fn main() {
+				Point p = {x:5, y:10, z:15};
+			}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 5
+			PUSH 10
+			PUSH 15
+			STORE 0
+			STORE 8
+			STORE 16
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("struct as function parameter", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Foo {
+			int x;
+			int y;
+		}
+
+		fn addFields(Foo p) int {
+			return p.x + p.y;
+		}
+
+		fn main() int {
+			var p = Foo{x:5, y:10};
+			return addFields(p);
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			STORE 0
+			STORE 8
+			LOAD 0
+			LOAD 8
+			ADD
+			RETURN
+			PUSH 5
+			PUSH 10
+			STORE 0
+			STORE 8
+			LOAD 0
+			LOAD 8
+			CALL 1
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("assign full struct to struct variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct Point {
+			int x;
+			int y;
+		}
+
+		fn main() {
+			Point p;
+			p = {x:5, y:10};
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 0
+			PUSH 0
+			STORE 0
+			STORE 8
+			PUSH 5
+			PUSH 10
+			STORE 0
+			STORE 8
 			RETURN
 			`,
 		)

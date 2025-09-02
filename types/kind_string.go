@@ -9,15 +9,15 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[KindInvalid-0]
-	_ = x[KindInt-1]
-	_ = x[KindBool-2]
+	_ = x[KindBool-1]
+	_ = x[KindInt-2]
 	_ = x[KindString-3]
 	_ = x[KindStruct-4]
 }
 
-const _Kind_name = "KindInvalidKindIntKindBoolKindStringKindStruct"
+const _Kind_name = "KindInvalidKindBoolKindIntKindStringKindStruct"
 
-var _Kind_index = [...]uint8{0, 11, 18, 26, 36, 46}
+var _Kind_index = [...]uint8{0, 11, 19, 26, 36, 46}
 
 func (i Kind) String() string {
 	if i < 0 || i >= Kind(len(_Kind_index)-1) {
