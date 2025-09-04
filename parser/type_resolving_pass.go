@@ -6,7 +6,31 @@ import (
 )
 
 func typeResolvingPass(program *Program) (err error) {
-	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) (Statement, error) {
+	// BeforeWalk resolves function return types that are unresolved at the start of the walk.
+	// This is needed because the ReturnType might be used to infer implicit variables and they are walked before the actual functions by the treewalker.
+	beforeWalk := func(pg *Program, globalScope *Scope) error {
+		for i := range pg.FnDefs {
+			if pg.FnDefs[i].ReturnType.Kind() != types.KindInvalid {
+				continue
+			}
+
+			if _, ok := pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := globalScope.ResolveType(pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier).Name)
+				if !ok {
+					return fmt.Errorf("unknown type: %s", pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier).Name)
+				}
+				// Set the function definition's return type to the resolved type.
+				pg.FnDefs[i].ReturnType = resolvedType
+
+				// Update the function in the scope.
+				globalScope.deregisterFn(pg.FnDefs[i].Name)
+				globalScope.RegisterFn(pg.FnDefs[i])
+			}
+		}
+		return nil
+	}
+
+	callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 		switch expr := node.(type) {
 		case Call:
 			resFn, ok := wctx.Scope.ResolveFn(expr.Name)
@@ -123,6 +147,11 @@ func typeResolvingPass(program *Program) (err error) {
 			return expr, nil
 		}
 		return node, nil
+	}
+
+	tw := NewTreeWalker(TreeWalkerConfig{
+		CallbackFn: callback,
+		BeforeWalk: beforeWalk,
 	})
 
 	return tw.WalkProgram(program)

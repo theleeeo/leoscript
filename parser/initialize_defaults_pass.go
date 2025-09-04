@@ -32,20 +32,22 @@ func defaultValue(t types.Type) Expression {
 
 // Checks for uninitialized variables and adds a literal representing the default value.
 func initializeDefaultPass(program *Program) (err error) {
-	tw := NewTreeWalker(func(wctx WalkingContext, node Statement) (Statement, error) {
-		switch n := node.(type) {
-		case VarDecl:
-			if n.Value != nil {
-				// Variable is initialized, no action needed
-				return node, nil
+	tw := NewTreeWalker(TreeWalkerConfig{
+		CallbackFn: func(wctx WalkingContext, node Statement) (Statement, error) {
+			switch n := node.(type) {
+			case VarDecl:
+				if n.Value != nil {
+					// Variable is initialized, no action needed
+					return node, nil
+				}
+
+				// Variable is uninitialized, set to default value
+				n.Value = defaultValue(n.Type)
+				return n, nil
 			}
 
-			// Variable is uninitialized, set to default value
-			n.Value = defaultValue(n.Type)
-			return n, nil
-		}
-
-		return node, nil
+			return node, nil
+		},
 	})
 
 	return tw.WalkProgram(program)

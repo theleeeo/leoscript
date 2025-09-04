@@ -36,12 +36,19 @@ type WalkingContext struct {
 
 type TreeWalker struct {
 	CallbackFn func(wctx WalkingContext, node Statement) (Statement, error)
+	BeforeWalk func(pg *Program, globalScope *Scope) error
+}
+
+type TreeWalkerConfig struct {
+	BeforeWalk func(pg *Program, globalScope *Scope) error
+	CallbackFn func(wctx WalkingContext, node Statement) (Statement, error)
 }
 
 // NewTreeWalker creates a new TreeWalker with the provided callbacks.
-func NewTreeWalker(callbackFn func(wctx WalkingContext, node Statement) (Statement, error)) *TreeWalker {
+func NewTreeWalker(config TreeWalkerConfig) *TreeWalker {
 	return &TreeWalker{
-		CallbackFn: callbackFn,
+		CallbackFn: config.CallbackFn,
+		BeforeWalk: config.BeforeWalk,
 	}
 }
 
@@ -74,6 +81,12 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 
 	for _, stub := range program.StubDefs {
 		must(globalScope.RegisterFn(stub))
+	}
+
+	if tw.BeforeWalk != nil {
+		if err := tw.BeforeWalk(program, globalScope); err != nil {
+			return fmt.Errorf("before walk: %w", err)
+		}
 	}
 
 	i := 0

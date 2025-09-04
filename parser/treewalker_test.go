@@ -33,7 +33,9 @@ func Test_TreeWalking(t *testing.T) {
 		return stmt, nil
 	}
 
-	tw := NewTreeWalker(callback)
+	tw := NewTreeWalker(TreeWalkerConfig{
+		CallbackFn: callback,
+	})
 	err := tw.WalkProgram(pg)
 	assert.NoError(t, err)
 	assert.Equal(t, len(pg.VarDecls), 2, "Expected 2 variable declarations")
@@ -65,7 +67,9 @@ func Test_TreeWalking_RemoveVarDecl(t *testing.T) {
 		return stmt, nil
 	}
 
-	tw := NewTreeWalker(callback)
+	tw := NewTreeWalker(TreeWalkerConfig{
+		CallbackFn: callback,
+	})
 	err := tw.WalkProgram(pg)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(pg.VarDecls), "Expected 1 variable declaration after removal")
@@ -126,7 +130,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -159,7 +165,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -192,7 +200,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -230,7 +240,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -264,7 +276,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -300,7 +314,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -331,7 +347,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -361,7 +379,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -393,7 +413,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -425,7 +447,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -460,7 +484,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 
@@ -493,7 +519,9 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 			return node, nil
 		}
 
-		tw := NewTreeWalker(callback)
+		tw := NewTreeWalker(TreeWalkerConfig{
+			CallbackFn: callback,
+		})
 		err := tw.WalkProgram(pg)
 		assert.NoError(t, err)
 

@@ -834,6 +834,59 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 			},
 		}, decl.Value)
 	})
+
+	t.Run("Implicit var from function call to struct", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		struct foo {
+			int x;
+		}
+
+		fn bar() foo {
+			return foo{x:1};
+		}
+
+		var a = bar();
+		`)
+		fnDef, err := Parse(lx)
+		assert.NoError(t, err)
+
+		fooType := &types.Struct{
+			Name: "foo",
+			Fields: []types.Field{
+				{Name: "x", Type: types.Int},
+			},
+		}
+
+		assert.EqualExportedValues(t, &Program{
+			Structs: []*types.Struct{
+				fooType,
+			},
+			VarDecls: []VarDecl{
+				{
+					Name:  "a",
+					Type:  fooType,
+					Value: Call{Name: "bar", Args: []Expression{}},
+				},
+			},
+			FnDefs: []FnDef{
+				{
+					Name:       "bar",
+					ReturnType: fooType,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{
+							Value: StructLiteral{
+								Type: fooType,
+								Fields: []FieldLiteral{
+									{Name: "x", Value: IntegerLiteral{Value: 1}},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, fnDef)
+	})
 }
 
 func Test_ReturnTypes(t *testing.T) {
@@ -2162,6 +2215,51 @@ func Test_StructDef(t *testing.T) {
 			},
 		}, prog)
 	})
+
+	// TODO
+	// t.Run("return with implicit struct literal", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	struct Foo {
+	// 		int x;
+	// 	}
+	// 	fn bar() Foo {
+	// 		return { x: 10 };
+	// 	}
+	// 	`)
+	// 	prog, err := Parse(lx)
+	// 	assert.NoError(t, err)
+
+	// 	fooType := &types.Struct{
+	// 		Name: "Foo",
+	// 		Fields: []types.Field{
+	// 			{Name: "x", Type: types.Int},
+	// 		},
+	// 	}
+
+	// 	assert.EqualExportedValues(t, &Program{
+	// 		Structs: []*types.Struct{
+	// 			fooType,
+	// 		},
+	// 		VarDecls: []VarDecl{},
+	// 		FnDefs: []FnDef{
+	// 			{
+	// 				Name:       "bar",
+	// 				Params:     []Parameter{},
+	// 				ReturnType: fooType,
+	// 				Body: []Statement{
+	// 					Return{
+	// 						Value: StructLiteral{
+	// 							Type: fooType,
+	// 							Fields: []FieldLiteral{
+	// 								{Name: "x", Value: IntegerLiteral{Value: 10}},
+	// 							},
+	// 						},
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	}, prog)
+	// })
 }
 
 func Test_StructFieldAccess(t *testing.T) {
