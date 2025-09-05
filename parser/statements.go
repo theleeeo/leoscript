@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"leoscript/token"
+	"leoscript/lexer"
 	"leoscript/types"
 )
 
@@ -10,26 +10,26 @@ func (p *Parser) ParseStatement() (Statement, error) {
 	tk := p.peek()
 
 	switch tk := tk.(type) {
-	case token.VarDecl:
+	case lexer.VarDecl:
 		return p.parseVarDecl()
-	case token.Identifier:
+	case lexer.Identifier:
 		switch p.peekNext().(type) {
-		case token.OpenParen:
+		case lexer.OpenParen:
 			return p.ParseExpr()
-		case token.Identifier:
+		case lexer.Identifier:
 			return p.parseVarDecl()
-		case token.Operator:
+		case lexer.Operator:
 			return p.parseAssignment()
 		default:
 			return nil, fmt.Errorf("unexpected token after identifier: %T", p.peek())
 		}
-	case token.Return:
+	case lexer.Return:
 		return p.parseReturn()
-	case token.If:
+	case lexer.If:
 		return p.parseIf()
-	case token.Else:
+	case lexer.Else:
 		return p.parseIf()
-	case token.While:
+	case lexer.While:
 		return p.parseWhile()
 	default:
 		return nil, fmt.Errorf("unexpected token type %T", tk)
@@ -40,7 +40,7 @@ func (p *Parser) parseReturn() (Statement, error) {
 	p.next() // Consume the return token
 
 	// An empty return statement
-	if _, ok := p.peek().(token.Semicolon); ok {
+	if _, ok := p.peek().(lexer.Semicolon); ok {
 		return Return{
 			Value: VoidLiteral{},
 		}, nil
@@ -51,7 +51,7 @@ func (p *Parser) parseReturn() (Statement, error) {
 		return nil, fmt.Errorf("parsing return expression: %w", err)
 	}
 
-	if err := p.expectCurrent(token.SemicolonType); err != nil {
+	if err := p.expectCurrent(lexer.SemicolonType); err != nil {
 		return nil, fmt.Errorf("expected semicolon after return expression")
 	}
 
@@ -61,13 +61,13 @@ func (p *Parser) parseReturn() (Statement, error) {
 }
 
 func (p *Parser) parseAssignment() (Statement, error) {
-	identifier := p.peek().(token.Identifier)
+	identifier := p.peek().(lexer.Identifier)
 
-	if err := p.expectNext(token.OperatorType); err != nil {
+	if err := p.expectNext(lexer.OperatorType); err != nil {
 		return nil, fmt.Errorf("expected assignment operator after identifier: %w", err)
 	}
 
-	if op := p.peek().(token.Operator).Op; op != "=" {
+	if op := p.peek().(lexer.Operator).Op; op != "=" {
 		return nil, fmt.Errorf("expected assignment operator, got %v", op)
 	}
 
@@ -79,7 +79,7 @@ func (p *Parser) parseAssignment() (Statement, error) {
 		return nil, fmt.Errorf("parsing right hand expression: %w", err)
 	}
 
-	if err := p.expectCurrent(token.SemicolonType); err != nil {
+	if err := p.expectCurrent(lexer.SemicolonType); err != nil {
 		return nil, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
 
@@ -91,7 +91,7 @@ func (p *Parser) parseAssignment() (Statement, error) {
 
 func (p *Parser) parseFnParams() ([]Parameter, error) {
 	// Check if the function has no parameters
-	if _, ok := p.next().(token.CloseParen); ok {
+	if _, ok := p.next().(lexer.CloseParen); ok {
 		return []Parameter{}, nil
 	}
 
@@ -99,7 +99,7 @@ func (p *Parser) parseFnParams() ([]Parameter, error) {
 	for {
 		var argType types.Type
 		switch tk := p.peek().(type) {
-		case token.Identifier:
+		case lexer.Identifier:
 			argType = unresolvedTypeIdentifier{Name: tk.Value}
 		default:
 			return nil, fmt.Errorf("expected type in parameter list, got %T", tk)
@@ -107,11 +107,11 @@ func (p *Parser) parseFnParams() ([]Parameter, error) {
 
 		p.next() // Consume the type
 
-		if err := p.expectCurrent(token.IdentifierType); err != nil {
+		if err := p.expectCurrent(lexer.IdentifierType); err != nil {
 			return nil, fmt.Errorf("expected identifier after type in parameter list: %w", err)
 		}
 
-		identifier := p.peek().(token.Identifier)
+		identifier := p.peek().(lexer.Identifier)
 
 		args = append(args, Parameter{
 			Name: identifier.Value,
@@ -121,12 +121,12 @@ func (p *Parser) parseFnParams() ([]Parameter, error) {
 		p.next() // Consume the identifier
 
 		// If we have hit the close parenthesis, we have parsed all parameters
-		if _, ok := p.peek().(token.CloseParen); ok {
+		if _, ok := p.peek().(lexer.CloseParen); ok {
 			break
 		}
 
 		// If there is another parameter, there should be a comma
-		if err := p.expectCurrent(token.CommaType); err != nil {
+		if err := p.expectCurrent(lexer.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after parameter in parameter list: %w", err)
 		}
 
@@ -142,30 +142,30 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 	var stub bool
 
 	switch tk := p.peek().(type) {
-	case token.Exported:
+	case lexer.Exported:
 		exported = true
 
-		if err := p.expectNext(token.FnDefType); err != nil {
+		if err := p.expectNext(lexer.FnDefType); err != nil {
 			return FnDef{}, fmt.Errorf("expected fn after exported: %w", err)
 		}
 
-	case token.StubDef:
+	case lexer.StubDef:
 		stub = true
 
 		// Stubs do not have an "fn" token
-	case token.FnDef:
+	case lexer.FnDef:
 		// Do nothing, we are already at the fn token
 	default:
 		panic(fmt.Sprintf("expected exported, stub or fn token, got %T", tk))
 	}
 
-	if err := p.expectNext(token.IdentifierType); err != nil {
+	if err := p.expectNext(lexer.IdentifierType); err != nil {
 		return FnDef{}, fmt.Errorf("expected identifier after fn: %w", err)
 	}
 
-	identifier := p.peek().(token.Identifier)
+	identifier := p.peek().(lexer.Identifier)
 
-	if err := p.expectNext(token.OpenParenType); err != nil {
+	if err := p.expectNext(lexer.OpenParenType); err != nil {
 		return FnDef{}, fmt.Errorf("expected open parenthesis after identifier: %w", err)
 	}
 
@@ -180,7 +180,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	// Check if the function has a return type
 	switch tk := p.peek().(type) {
-	case token.Identifier:
+	case lexer.Identifier:
 		returnType = unresolvedTypeIdentifier{Name: tk.Value}
 		p.next() // Consume the identifier token
 	default:
@@ -199,14 +199,14 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	// Stub functions do not have a body
 	if stub {
-		if err := p.expectCurrent(token.SemicolonType); err != nil {
+		if err := p.expectCurrent(lexer.SemicolonType); err != nil {
 			return FnDef{}, fmt.Errorf("expected semicolon after stub definition: %w", err)
 		}
 
 		return fnDef, nil
 	}
 
-	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(lexer.OpenBraceType); err != nil {
 		return FnDef{}, fmt.Errorf("expected open brace after parameters in function definition: %w", err)
 	}
 
@@ -234,7 +234,7 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 func (p *Parser) parseVarDecl() (VarDecl, error) {
 	var exported bool
-	if _, ok := p.peek().(token.Exported); ok {
+	if _, ok := p.peek().(lexer.Exported); ok {
 		exported = true
 		p.next() // Consume the exported token
 	}
@@ -242,24 +242,24 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	var varType types.Type
 
 	switch tk := p.peek().(type) {
-	case token.VarDecl:
+	case lexer.VarDecl:
 		varType = types.Unspecified
-	case token.Identifier:
+	case lexer.Identifier:
 		varType = unresolvedTypeIdentifier{Name: tk.Value}
 	default:
 		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
 	}
 
-	if err := p.expectNext(token.IdentifierType); err != nil {
+	if err := p.expectNext(lexer.IdentifierType); err != nil {
 		return VarDecl{}, fmt.Errorf("expected identifier after intdef: %w", err)
 	}
 
-	identifier := p.peek().(token.Identifier)
+	identifier := p.peek().(lexer.Identifier)
 
 	p.next() // Consume the identifier
 
 	var valExpr Expression
-	if op, ok := p.peek().(token.Operator); ok {
+	if op, ok := p.peek().(lexer.Operator); ok {
 		if op.Op != "=" {
 			return VarDecl{}, fmt.Errorf("expected assignment operator, got %v", op.Op)
 		}
@@ -274,7 +274,7 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		valExpr = expr
 	}
 
-	if err := p.expectCurrent(token.SemicolonType); err != nil {
+	if err := p.expectCurrent(lexer.SemicolonType); err != nil {
 		return VarDecl{}, fmt.Errorf("expected semicolon after identifier: %w", err)
 	}
 
@@ -310,7 +310,7 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("parsing if condition: %w", err)
 	}
 
-	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(lexer.OpenBraceType); err != nil {
 		return If{}, fmt.Errorf("expected open brace after if condition: %w", err)
 	}
 
@@ -319,7 +319,7 @@ func (p *Parser) parseIf() (If, error) {
 		return If{}, fmt.Errorf("parsing if block: %w", err)
 	}
 
-	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
 		return If{}, fmt.Errorf("expected close brace after if block: %w", err)
 	}
 
@@ -328,7 +328,7 @@ func (p *Parser) parseIf() (If, error) {
 		Then: thenBlock,
 	}
 
-	if _, ok := p.peekNext().(token.Else); ok {
+	if _, ok := p.peekNext().(lexer.Else); ok {
 		p.next() // Consume the close brace
 
 		elseBlock, err := p.parseElse()
@@ -345,8 +345,8 @@ func (p *Parser) parseElse() ([]Statement, error) {
 	p.next() // Consume the else token
 
 	// If the next token is an if, this is an else if statement
-	if _, ok := p.peek().(token.If); ok {
-		if err := p.expectCurrent(token.IfType); err != nil {
+	if _, ok := p.peek().(lexer.If); ok {
+		if err := p.expectCurrent(lexer.IfType); err != nil {
 			return nil, fmt.Errorf("expected if after else: %w", err)
 		}
 
@@ -360,7 +360,7 @@ func (p *Parser) parseElse() ([]Statement, error) {
 
 	// If the next token is an open brace, this is a simple else block
 
-	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(lexer.OpenBraceType); err != nil {
 		return nil, fmt.Errorf("expected open brace after else: %w", err)
 	}
 
@@ -369,7 +369,7 @@ func (p *Parser) parseElse() ([]Statement, error) {
 		return nil, fmt.Errorf("parsing else block: %w", err)
 	}
 
-	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
 		return nil, fmt.Errorf("expected close brace after else block: %w", err)
 	}
 
@@ -384,7 +384,7 @@ func (p *Parser) parseWhile() (While, error) {
 		return While{}, fmt.Errorf("parsing while condition: %w", err)
 	}
 
-	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(lexer.OpenBraceType); err != nil {
 		return While{}, fmt.Errorf("expected open brace after while condition: %w", err)
 	}
 
@@ -393,7 +393,7 @@ func (p *Parser) parseWhile() (While, error) {
 		return While{}, fmt.Errorf("parsing while body: %w", err)
 	}
 
-	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
 		return While{}, fmt.Errorf("expected close brace after while body: %w", err)
 	}
 

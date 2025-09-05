@@ -2,7 +2,6 @@ package parser
 
 import (
 	"leoscript/lexer"
-	"leoscript/token"
 	"leoscript/types"
 	"testing"
 
@@ -285,12 +284,12 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 			Left:     IntegerLiteral{Value: 1},
 			Right:    IntegerLiteral{Value: 2},
 			Op:       "+",
-			priority: token.PRIO_SUM,
+			priority: lexer.PRIO_SUM,
 		}
 
 		right := IntegerLiteral{Value: 3}
 
-		newExpr := left.PriorityMerge(token.Operator{Op: "+"}, right)
+		newExpr := left.PriorityMerge(lexer.Operator{Op: "+"}, right)
 
 		assert.EqualExportedValues(t, BinaryExpression{
 			Left:  left,
@@ -304,18 +303,18 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 			Left:     IntegerLiteral{Value: 1},
 			Right:    IntegerLiteral{Value: 2},
 			Op:       "*",
-			priority: token.PRIO_SUM,
+			priority: lexer.PRIO_SUM,
 		}
 
 		right := IntegerLiteral{Value: 3}
 
-		newExpr := left.PriorityMerge(token.Operator{Op: "-"}, right)
+		newExpr := left.PriorityMerge(lexer.Operator{Op: "-"}, right)
 
 		assert.EqualExportedValues(t, BinaryExpression{
 			Left:     left,
 			Right:    right,
 			Op:       "-",
-			priority: token.PRIO_SUM,
+			priority: lexer.PRIO_SUM,
 		}, newExpr)
 	})
 
@@ -324,12 +323,12 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 			Left:     IntegerLiteral{Value: 1},
 			Right:    IntegerLiteral{Value: 2},
 			Op:       "+",
-			priority: token.PRIO_SUM,
+			priority: lexer.PRIO_SUM,
 		}
 
 		right := IntegerLiteral{Value: 3}
 
-		newExpr := left.PriorityMerge(token.Operator{Op: "*"}, right)
+		newExpr := left.PriorityMerge(lexer.Operator{Op: "*"}, right)
 
 		assert.EqualExportedValues(t, BinaryExpression{
 			Left: IntegerLiteral{Value: 1},
@@ -351,17 +350,17 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 					Left:     BooleanLiteral{Value: true},
 					Right:    BooleanLiteral{Value: true},
 					Op:       "||",
-					priority: token.PRIO_OR,
+					priority: lexer.PRIO_OR,
 				},
 				Op:       "&&",
-				priority: token.PRIO_AND,
+				priority: lexer.PRIO_AND,
 			},
 			Op: "+",
 		}
 
 		right := IntegerLiteral{Value: 10}
 
-		newExpr := left.PriorityMerge(token.Operator{Op: "*"}, right)
+		newExpr := left.PriorityMerge(lexer.Operator{Op: "*"}, right)
 
 		assert.EqualExportedValues(t, BinaryExpression{
 			Left: IntegerLiteral{Value: 1},
@@ -375,10 +374,10 @@ func Test_Expr_PriorityMerge(t *testing.T) {
 						Op:    "*",
 					},
 					Op:       "||",
-					priority: token.PRIO_OR,
+					priority: lexer.PRIO_OR,
 				},
 				Op:       "&&",
-				priority: token.PRIO_AND,
+				priority: lexer.PRIO_AND,
 			},
 			Op: "+",
 		}, newExpr)

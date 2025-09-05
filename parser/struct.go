@@ -2,28 +2,28 @@ package parser
 
 import (
 	"fmt"
-	"leoscript/token"
+	"leoscript/lexer"
 	"leoscript/types"
 )
 
 func (p *Parser) parseStructDef() (types.Struct, error) {
-	if err := p.expectCurrent(token.StructDefType); err != nil {
+	if err := p.expectCurrent(lexer.StructDefType); err != nil {
 		return types.Struct{}, err
 	}
 
-	if err := p.expectNext(token.IdentifierType); err != nil {
+	if err := p.expectNext(lexer.IdentifierType); err != nil {
 		return types.Struct{}, fmt.Errorf("expected struct name, got %v", p.peek().Type())
 	}
 
-	name := p.peek().(token.Identifier).Value
+	name := p.peek().(lexer.Identifier).Value
 
-	if err := p.expectNext(token.OpenBraceType); err != nil {
+	if err := p.expectNext(lexer.OpenBraceType); err != nil {
 		return types.Struct{}, err
 	}
 	p.next() // Consume the '{' token
 
 	fields := []types.Field{}
-	for p.peek().Type() != token.CloseBraceType {
+	for p.peek().Type() != lexer.CloseBraceType {
 		field, err := p.parseField()
 		if err != nil {
 			return types.Struct{}, fmt.Errorf("parsing field: %w", err)
@@ -33,7 +33,7 @@ func (p *Parser) parseStructDef() (types.Struct, error) {
 		p.next() // Move on from this field
 	}
 
-	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
 		return types.Struct{}, err
 	}
 
@@ -41,19 +41,19 @@ func (p *Parser) parseStructDef() (types.Struct, error) {
 }
 
 func (p *Parser) parseField() (types.Field, error) {
-	if err := p.expectCurrent(token.IdentifierType); err != nil {
+	if err := p.expectCurrent(lexer.IdentifierType); err != nil {
 		return types.Field{}, err
 	}
 
-	fieldType := p.peek().(token.Identifier).Value
+	fieldType := p.peek().(lexer.Identifier).Value
 
-	if err := p.expectNext(token.IdentifierType); err != nil {
+	if err := p.expectNext(lexer.IdentifierType); err != nil {
 		return types.Field{}, fmt.Errorf("expected field name, got %v", p.peek())
 	}
 
-	name := p.peek().(token.Identifier).Value
+	name := p.peek().(lexer.Identifier).Value
 
-	if err := p.expectNext(token.SemicolonType); err != nil {
+	if err := p.expectNext(lexer.SemicolonType); err != nil {
 		return types.Field{}, err
 	}
 

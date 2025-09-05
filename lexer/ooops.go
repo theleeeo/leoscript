@@ -1,4 +1,4 @@
-package token
+package lexer
 
 // Use the same orders as in C: https://en.cppreference.com/w/c/language/operator_precedence
 

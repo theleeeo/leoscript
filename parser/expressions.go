@@ -3,7 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
-	"leoscript/token"
+	"leoscript/lexer"
 	"leoscript/types"
 )
 
@@ -17,10 +17,10 @@ func (p *Parser) ParseExpr() (Expression, error) {
 
 	for tk := p.next(); tk != nil; tk = p.next() {
 		switch tk := tk.(type) {
-		case token.Semicolon:
+		case lexer.Semicolon:
 			return root, nil
 
-		case token.OpenParen:
+		case lexer.OpenParen:
 			expr, err := p.handleSubgroup()
 			if err != nil {
 				return nil, err
@@ -28,10 +28,10 @@ func (p *Parser) ParseExpr() (Expression, error) {
 
 			root = expr
 
-		case token.CloseParen:
+		case lexer.CloseParen:
 			return root, nil
 
-		case token.Operator:
+		case lexer.Operator:
 			expr, err := p.parseBinaryExpr(root)
 			if err != nil {
 				return nil, err
@@ -39,13 +39,13 @@ func (p *Parser) ParseExpr() (Expression, error) {
 
 			root = expr
 
-		case token.OpenBrace:
+		case lexer.OpenBrace:
 			return root, nil
 
-		case token.CloseBrace: // Found in struct literals
+		case lexer.CloseBrace: // Found in struct literals
 			return root, nil
 
-		case token.Comma:
+		case lexer.Comma:
 			// Commas are used in function calls.
 			return root, nil
 
@@ -66,11 +66,11 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 
 	// If the expression is a binary expression, set the priority to the max so that it is never reordered
 	if binExpr, ok := expr.(BinaryExpression); ok {
-		binExpr.priority = token.PRIO_PAREN
+		binExpr.priority = lexer.PRIO_PAREN
 		expr = binExpr
 	}
 
-	if err := p.expectCurrent(token.CloseParenType); err != nil {
+	if err := p.expectCurrent(lexer.CloseParenType); err != nil {
 		return nil, fmt.Errorf("parsing expression: %w", err)
 	}
 
@@ -79,26 +79,26 @@ func (p *Parser) handleSubgroup() (Expression, error) {
 
 func (p *Parser) parsePrimaryExpression() (Expression, error) {
 	switch tk := p.peek().(type) {
-	case token.Integer:
+	case lexer.Integer:
 		return IntegerLiteral{Value: tk.Value}, nil
-	case token.Boolean:
+	case lexer.Boolean:
 		return BooleanLiteral{Value: tk.Value}, nil
-	case token.StringLiteral:
+	case lexer.StringLiteral:
 		return StringLiteral{Value: tk.Value}, nil
-	case token.Operator:
+	case lexer.Operator:
 		return p.parseUnaryExpr()
-	case token.OpenParen:
+	case lexer.OpenParen:
 		return p.handleSubgroup()
-	case token.Identifier:
+	case lexer.Identifier:
 		switch p.peekNext().(type) {
-		case token.OpenParen:
+		case lexer.OpenParen:
 			return p.parseFnCall()
-		case token.OpenBrace:
+		case lexer.OpenBrace:
 			return p.parseStructLiteral()
 		}
 
 		return p.parseVarIdentifier()
-	case token.OpenBrace:
+	case lexer.OpenBrace:
 		return p.parseStructLiteral()
 	}
 
@@ -106,15 +106,15 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 }
 
 func (p *Parser) parseVarIdentifier() (Expression, error) {
-	varIden := p.peek().(token.Identifier)
+	varIden := p.peek().(lexer.Identifier)
 
 	return VarIdentifier{Name: varIden.Value}, nil
 }
 
 func (p *Parser) parseFnCall() (Expression, error) {
-	identifier := p.peek().(token.Identifier)
+	identifier := p.peek().(lexer.Identifier)
 
-	if err := p.expectNext(token.OpenParenType); err != nil {
+	if err := p.expectNext(lexer.OpenParenType); err != nil {
 		return nil, fmt.Errorf("expected open parenthesis after function call: %w", err)
 	}
 
@@ -123,7 +123,7 @@ func (p *Parser) parseFnCall() (Expression, error) {
 		return nil, fmt.Errorf("parsing arguments: %w", err)
 	}
 
-	if err := p.expectCurrent(token.CloseParenType); err != nil {
+	if err := p.expectCurrent(lexer.CloseParenType); err != nil {
 		return nil, fmt.Errorf("expected close parenthesis after function call: %w", err)
 	}
 
@@ -134,14 +134,14 @@ func (p *Parser) parseFnCall() (Expression, error) {
 }
 
 func (p *Parser) parseArgs() ([]Expression, error) {
-	if err := p.expectCurrent(token.OpenParenType); err != nil {
+	if err := p.expectCurrent(lexer.OpenParenType); err != nil {
 		return nil, fmt.Errorf("expected open parenthesis in argument list: %w", err)
 	}
 
 	p.next() // Consume the open parenthesis
 
 	// If the next token is a close parenthesis, we have no arguments
-	if _, ok := p.peek().(token.CloseParen); ok {
+	if _, ok := p.peek().(lexer.CloseParen); ok {
 		return []Expression{}, nil
 	}
 
@@ -154,11 +154,11 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 
 		args = append(args, expr)
 
-		if _, ok := p.peek().(token.CloseParen); ok {
+		if _, ok := p.peek().(lexer.CloseParen); ok {
 			break
 		}
 
-		if err := p.expectCurrent(token.CommaType); err != nil {
+		if err := p.expectCurrent(lexer.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after argument in argument list: %w", err)
 		}
 
@@ -169,7 +169,7 @@ func (p *Parser) parseArgs() ([]Expression, error) {
 }
 
 func (p *Parser) parseUnaryExpr() (Expression, error) {
-	binTk := p.peek().(token.Operator)
+	binTk := p.peek().(lexer.Operator)
 
 	p.next() // consume the operator token
 
@@ -191,7 +191,7 @@ func (p *Parser) parseUnaryExpr() (Expression, error) {
 }
 
 func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
-	binTk := p.peek().(token.Operator)
+	binTk := p.peek().(lexer.Operator)
 
 	p.next() // consume the operator token
 
@@ -217,14 +217,14 @@ func (p *Parser) parseBinaryExpr(root Expression) (Expression, error) {
 func (p *Parser) parseStructLiteral() (Expression, error) {
 	structLit := StructLiteral{}
 
-	if ident, ok := p.peek().(token.Identifier); ok {
+	if ident, ok := p.peek().(lexer.Identifier); ok {
 		structLit.Type = unresolvedTypeIdentifier{Name: ident.Value}
 		p.next() // Consume the type identifier
 	} else {
 		structLit.Type = types.Unspecified
 	}
 
-	if err := p.expectCurrent(token.OpenBraceType); err != nil {
+	if err := p.expectCurrent(lexer.OpenBraceType); err != nil {
 		return nil, fmt.Errorf("expected open brace for struct literal: %w", err)
 	}
 
@@ -237,18 +237,18 @@ func (p *Parser) parseStructLiteral() (Expression, error) {
 		}
 		structLit.Fields = append(structLit.Fields, field)
 
-		if _, ok := p.peek().(token.CloseBrace); ok {
+		if _, ok := p.peek().(lexer.CloseBrace); ok {
 			break
 		}
 
-		if err := p.expectCurrent(token.CommaType); err != nil {
+		if err := p.expectCurrent(lexer.CommaType); err != nil {
 			return nil, fmt.Errorf("expected comma after struct field: %w", err)
 		}
 
 		p.next() // Consume the comma
 	}
 
-	if err := p.expectCurrent(token.CloseBraceType); err != nil {
+	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
 		return nil, fmt.Errorf("expected close brace for struct literal: %w", err)
 	}
 
@@ -258,13 +258,13 @@ func (p *Parser) parseStructLiteral() (Expression, error) {
 func (p *Parser) parseFieldLiteral() (FieldLiteral, error) {
 	fieldLit := FieldLiteral{}
 
-	if err := p.expectCurrent(token.IdentifierType); err != nil {
+	if err := p.expectCurrent(lexer.IdentifierType); err != nil {
 		return FieldLiteral{}, fmt.Errorf("expected field name: %w", err)
 	}
 
-	fieldLit.Name = p.peek().(token.Identifier).Value
+	fieldLit.Name = p.peek().(lexer.Identifier).Value
 
-	if err := p.expectNext(token.ColonType); err != nil {
+	if err := p.expectNext(lexer.ColonType); err != nil {
 		return FieldLiteral{}, fmt.Errorf("expected colon after field name: %w", err)
 	}
 

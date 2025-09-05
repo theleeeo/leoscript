@@ -2,31 +2,30 @@ package lexer
 
 import (
 	"fmt"
-	"leoscript/token"
 	"strings"
 )
 
-var keywords = map[string]token.Token{
+var keywords = map[string]Token{
 	// Literals
-	"true":  token.Boolean{Value: true},
-	"false": token.Boolean{Value: false},
+	"true":  Boolean{Value: true},
+	"false": Boolean{Value: false},
 
-	"var":    token.VarDecl{},
-	"fn":     token.FnDef{},
-	"return": token.Return{},
-	"if":     token.If{},
-	"else":   token.Else{},
-	"while":  token.While{},
-	"stub":   token.StubDef{},
-	"export": token.Exported{},
-	"struct": token.StructDef{},
+	"var":    VarDecl{},
+	"fn":     FnDef{},
+	"return": Return{},
+	"if":     If{},
+	"else":   Else{},
+	"while":  While{},
+	"stub":   StubDef{},
+	"export": Exported{},
+	"struct": StructDef{},
 }
 
 type lexer struct {
 	input string
 	pos   int
 
-	tokens []token.Token
+	tokens []Token
 }
 
 func (lx *lexer) next() byte {
@@ -51,11 +50,11 @@ func (lx *lexer) peek() byte {
 	return lx.input[lx.pos]
 }
 
-func (lx *lexer) pushToken(tk token.Token) {
+func (lx *lexer) pushToken(tk Token) {
 	lx.tokens = append(lx.tokens, tk)
 }
 
-func MustTokenize(input string) []token.Token {
+func MustTokenize(input string) []Token {
 	tokens, err := Tokenize(input)
 	if err != nil {
 		panic(err)
@@ -64,13 +63,13 @@ func MustTokenize(input string) []token.Token {
 	return tokens
 }
 
-func Tokenize(input string) ([]token.Token, error) {
+func Tokenize(input string) ([]Token, error) {
 	lx := lexer{input: input}
 
 	for tk := lx.peek(); tk != 0; tk = lx.next() {
 		if isNumeric(tk) {
 			value := lx.parseInteger()
-			lx.pushToken(token.Integer{Value: value})
+			lx.pushToken(Integer{Value: value})
 			continue
 		}
 
@@ -101,7 +100,7 @@ func Tokenize(input string) ([]token.Token, error) {
 			}
 
 			if v.Len() > 0 {
-				lx.pushToken(token.Identifier{Value: v.String()})
+				lx.pushToken(Identifier{Value: v.String()})
 			}
 
 			continue
@@ -136,66 +135,66 @@ func Tokenize(input string) ([]token.Token, error) {
 				}
 			default:
 				// The next character did not match a comment pattern.
-				// Put the next token back and push the operator token.
+				// Put the next token back and push the operator
 				lx.putBack()
-				lx.pushToken(token.Operator{Op: "/"})
+				lx.pushToken(Operator{Op: "/"})
 			}
 		case '+', '-', '*':
-			lx.pushToken(token.Operator{Op: string(tk)})
+			lx.pushToken(Operator{Op: string(tk)})
 		case '(':
-			lx.pushToken(token.OpenParen{})
+			lx.pushToken(OpenParen{})
 		case ')':
-			lx.pushToken(token.CloseParen{})
+			lx.pushToken(CloseParen{})
 		case '{':
-			lx.pushToken(token.OpenBrace{})
+			lx.pushToken(OpenBrace{})
 		case '}':
-			lx.pushToken(token.CloseBrace{})
+			lx.pushToken(CloseBrace{})
 		case ';':
-			lx.pushToken(token.Semicolon{})
+			lx.pushToken(Semicolon{})
 		case ',':
-			lx.pushToken(token.Comma{})
+			lx.pushToken(Comma{})
 		case '&':
 			if lx.next() == '&' {
-				lx.pushToken(token.Operator{Op: "&&"})
+				lx.pushToken(Operator{Op: "&&"})
 			} else {
 				return nil, fmt.Errorf("invalid character: %c", tk)
 			}
 		case '|':
 			if lx.next() == '|' {
-				lx.pushToken(token.Operator{Op: "||"})
+				lx.pushToken(Operator{Op: "||"})
 			} else {
 				return nil, fmt.Errorf("invalid character: %c", tk)
 			}
 
 		case '!':
 			if lx.next() == '=' {
-				lx.pushToken(token.Operator{Op: "!="})
+				lx.pushToken(Operator{Op: "!="})
 			} else {
 				lx.putBack()
-				lx.pushToken(token.Operator{Op: "!"})
+				lx.pushToken(Operator{Op: "!"})
 			}
 
 		case '>':
 			if lx.next() == '=' {
-				lx.pushToken(token.Operator{Op: ">="})
+				lx.pushToken(Operator{Op: ">="})
 			} else {
 				lx.putBack()
-				lx.pushToken(token.Operator{Op: ">"})
+				lx.pushToken(Operator{Op: ">"})
 			}
 		case '<':
 			if lx.next() == '=' {
-				lx.pushToken(token.Operator{Op: "<="})
+				lx.pushToken(Operator{Op: "<="})
 			} else {
 				lx.putBack()
-				lx.pushToken(token.Operator{Op: "<"})
+				lx.pushToken(Operator{Op: "<"})
 			}
 
 		case '=':
 			if lx.next() == '=' {
-				lx.pushToken(token.Operator{Op: "=="})
+				lx.pushToken(Operator{Op: "=="})
 			} else {
 				lx.putBack()
-				lx.pushToken(token.Operator{Op: "="})
+				lx.pushToken(Operator{Op: "="})
 			}
 		case '"':
 			str, err := lx.parseString()
@@ -203,9 +202,9 @@ func Tokenize(input string) ([]token.Token, error) {
 				return nil, err
 			}
 
-			lx.pushToken(token.StringLiteral{Value: str})
+			lx.pushToken(StringLiteral{Value: str})
 		case ':':
-			lx.pushToken(token.Colon{})
+			lx.pushToken(Colon{})
 		default:
 			return nil, fmt.Errorf("invalid character: %c", tk)
 		}

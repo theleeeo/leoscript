@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"leoscript/token"
+	"leoscript/lexer"
 	"leoscript/types"
 	"strconv"
 	"strings"
@@ -48,7 +48,7 @@ type BinaryExpression struct {
 	Left     Expression
 	Right    Expression
 	Op       string
-	priority token.Priority
+	priority lexer.Priority
 }
 
 // Note: Will not support other number types than int with the current setup.
@@ -74,7 +74,7 @@ func (e BinaryExpression) ReturnType() types.Type {
 
 // PriorityMerge will merge the current binary expression with a new expression based on the priorities of the operators
 // A new expression tree will be returned with the order of operations handled correctly.
-func (root BinaryExpression) PriorityMerge(binTk token.Operator, newExpr Expression) Expression {
+func (root BinaryExpression) PriorityMerge(binTk lexer.Operator, newExpr Expression) Expression {
 	priority := binTk.Priority()
 
 	// If the new priority is lower, it should be higher in the expression tree to be evaluated later.

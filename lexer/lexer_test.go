@@ -2,7 +2,6 @@ package lexer_test
 
 import (
 	"leoscript/lexer"
-	"leoscript/token"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,44 +10,44 @@ import (
 func Test_MathExpression(t *testing.T) {
 	t.Run("Single digit", func(t *testing.T) {
 		lx := lexer.MustTokenize("1")
-		assert.Equal(t, []token.Token{
-			token.Integer{Value: 1},
+		assert.Equal(t, []lexer.Token{
+			lexer.Integer{Value: 1},
 		}, lx)
 	})
 
 	t.Run("Single number", func(t *testing.T) {
 		lx := lexer.MustTokenize("12345")
-		assert.Equal(t, []token.Token{
-			token.Integer{Value: 12345},
+		assert.Equal(t, []lexer.Token{
+			lexer.Integer{Value: 12345},
 		}, lx)
 	})
 
 	t.Run("Binary ops with whitespace", func(t *testing.T) {
 		lx := lexer.MustTokenize("1+ 2- 3 *4/ 5")
-		assert.Equal(t, []token.Token{
-			token.Integer{Value: 1},
-			token.Operator{Op: "+"},
-			token.Integer{Value: 2},
-			token.Operator{Op: "-"},
-			token.Integer{Value: 3},
-			token.Operator{Op: "*"},
-			token.Integer{Value: 4},
-			token.Operator{Op: "/"},
-			token.Integer{Value: 5},
+		assert.Equal(t, []lexer.Token{
+			lexer.Integer{Value: 1},
+			lexer.Operator{Op: "+"},
+			lexer.Integer{Value: 2},
+			lexer.Operator{Op: "-"},
+			lexer.Integer{Value: 3},
+			lexer.Operator{Op: "*"},
+			lexer.Integer{Value: 4},
+			lexer.Operator{Op: "/"},
+			lexer.Integer{Value: 5},
 		}, lx)
 	})
 
 	t.Run("Multiple digit numbers", func(t *testing.T) {
 		lx := lexer.MustTokenize("123+456789-987 7898 / 898989")
-		assert.Equal(t, []token.Token{
-			token.Integer{Value: 123},
-			token.Operator{Op: "+"},
-			token.Integer{Value: 456789},
-			token.Operator{Op: "-"},
-			token.Integer{Value: 987},
-			token.Integer{Value: 7898},
-			token.Operator{Op: "/"},
-			token.Integer{Value: 898989},
+		assert.Equal(t, []lexer.Token{
+			lexer.Integer{Value: 123},
+			lexer.Operator{Op: "+"},
+			lexer.Integer{Value: 456789},
+			lexer.Operator{Op: "-"},
+			lexer.Integer{Value: 987},
+			lexer.Integer{Value: 7898},
+			lexer.Operator{Op: "/"},
+			lexer.Integer{Value: 898989},
 		}, lx)
 	})
 
@@ -59,17 +58,17 @@ func Test_MathExpression(t *testing.T) {
 
 	t.Run("Parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("((1+2)*3);")
-		assert.Equal(t, []token.Token{
-			token.OpenParen{},
-			token.OpenParen{},
-			token.Integer{Value: 1},
-			token.Operator{Op: "+"},
-			token.Integer{Value: 2},
-			token.CloseParen{},
-			token.Operator{Op: "*"},
-			token.Integer{Value: 3},
-			token.CloseParen{},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.OpenParen{},
+			lexer.OpenParen{},
+			lexer.Integer{Value: 1},
+			lexer.Operator{Op: "+"},
+			lexer.Integer{Value: 2},
+			lexer.CloseParen{},
+			lexer.Operator{Op: "*"},
+			lexer.Integer{Value: 3},
+			lexer.CloseParen{},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
@@ -78,37 +77,37 @@ func Test_MathExpression(t *testing.T) {
 func Test_Identifiers(t *testing.T) {
 	t.Run("Identifiers", func(t *testing.T) {
 		lx := lexer.MustTokenize("foo + bar-baz")
-		assert.Equal(t, []token.Token{
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "+"},
-			token.Identifier{Value: "bar"},
-			token.Operator{Op: "-"},
-			token.Identifier{Value: "baz"},
+		assert.Equal(t, []lexer.Token{
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "+"},
+			lexer.Identifier{Value: "bar"},
+			lexer.Operator{Op: "-"},
+			lexer.Identifier{Value: "baz"},
 		}, lx)
 	})
 
 	t.Run("Reserved keywords", func(t *testing.T) {
 		lx := lexer.MustTokenize("true false")
-		assert.Equal(t, []token.Token{
-			token.Boolean{Value: true},
-			token.Boolean{Value: false},
+		assert.Equal(t, []lexer.Token{
+			lexer.Boolean{Value: true},
+			lexer.Boolean{Value: false},
 		}, lx)
 	})
 
 	t.Run("Combined keywords, fine", func(t *testing.T) {
 		lx := lexer.MustTokenize("truefalse")
-		assert.Equal(t, []token.Token{
-			token.Identifier{Value: "truefalse"},
+		assert.Equal(t, []lexer.Token{
+			lexer.Identifier{Value: "truefalse"},
 		}, lx)
 	})
 
 	t.Run("Mixed identifiers and keywords", func(t *testing.T) {
 		lx := lexer.MustTokenize("true foo false bar")
-		assert.Equal(t, []token.Token{
-			token.Boolean{Value: true},
-			token.Identifier{Value: "foo"},
-			token.Boolean{Value: false},
-			token.Identifier{Value: "bar"},
+		assert.Equal(t, []lexer.Token{
+			lexer.Boolean{Value: true},
+			lexer.Identifier{Value: "foo"},
+			lexer.Boolean{Value: false},
+			lexer.Identifier{Value: "bar"},
 		}, lx)
 	})
 }
@@ -116,36 +115,36 @@ func Test_Identifiers(t *testing.T) {
 func Test_LogicalExpressions(t *testing.T) {
 	t.Run("Logical operators", func(t *testing.T) {
 		lx := lexer.MustTokenize("true && false || true")
-		assert.Equal(t, []token.Token{
-			token.Boolean{Value: true},
-			token.Operator{Op: "&&"},
-			token.Boolean{Value: false},
-			token.Operator{Op: "||"},
-			token.Boolean{Value: true},
+		assert.Equal(t, []lexer.Token{
+			lexer.Boolean{Value: true},
+			lexer.Operator{Op: "&&"},
+			lexer.Boolean{Value: false},
+			lexer.Operator{Op: "||"},
+			lexer.Boolean{Value: true},
 		}, lx)
 	})
 
 	t.Run("Parentheses", func(t *testing.T) {
 		lx := lexer.MustTokenize("(true && false) || true")
-		assert.Equal(t, []token.Token{
-			token.OpenParen{},
-			token.Boolean{Value: true},
-			token.Operator{Op: "&&"},
-			token.Boolean{Value: false},
-			token.CloseParen{},
-			token.Operator{Op: "||"},
-			token.Boolean{Value: true},
+		assert.Equal(t, []lexer.Token{
+			lexer.OpenParen{},
+			lexer.Boolean{Value: true},
+			lexer.Operator{Op: "&&"},
+			lexer.Boolean{Value: false},
+			lexer.CloseParen{},
+			lexer.Operator{Op: "||"},
+			lexer.Boolean{Value: true},
 		}, lx)
 	})
 
 	t.Run("With identifiers", func(t *testing.T) {
 		lx := lexer.MustTokenize("true && bar || baz")
-		assert.Equal(t, []token.Token{
-			token.Boolean{Value: true},
-			token.Operator{Op: "&&"},
-			token.Identifier{Value: "bar"},
-			token.Operator{Op: "||"},
-			token.Identifier{Value: "baz"},
+		assert.Equal(t, []lexer.Token{
+			lexer.Boolean{Value: true},
+			lexer.Operator{Op: "&&"},
+			lexer.Identifier{Value: "bar"},
+			lexer.Operator{Op: "||"},
+			lexer.Identifier{Value: "baz"},
 		}, lx)
 	})
 
@@ -156,20 +155,20 @@ func Test_LogicalExpressions(t *testing.T) {
 
 	t.Run("Comparison operators", func(t *testing.T) {
 		lx := lexer.MustTokenize("1 < 2 > 3 <= 4 >= 5 == 6 != 7")
-		assert.Equal(t, []token.Token{
-			token.Integer{Value: 1},
-			token.Operator{Op: "<"},
-			token.Integer{Value: 2},
-			token.Operator{Op: ">"},
-			token.Integer{Value: 3},
-			token.Operator{Op: "<="},
-			token.Integer{Value: 4},
-			token.Operator{Op: ">="},
-			token.Integer{Value: 5},
-			token.Operator{Op: "=="},
-			token.Integer{Value: 6},
-			token.Operator{Op: "!="},
-			token.Integer{Value: 7},
+		assert.Equal(t, []lexer.Token{
+			lexer.Integer{Value: 1},
+			lexer.Operator{Op: "<"},
+			lexer.Integer{Value: 2},
+			lexer.Operator{Op: ">"},
+			lexer.Integer{Value: 3},
+			lexer.Operator{Op: "<="},
+			lexer.Integer{Value: 4},
+			lexer.Operator{Op: ">="},
+			lexer.Integer{Value: 5},
+			lexer.Operator{Op: "=="},
+			lexer.Integer{Value: 6},
+			lexer.Operator{Op: "!="},
+			lexer.Integer{Value: 7},
 		}, lx)
 	})
 }
@@ -177,60 +176,60 @@ func Test_LogicalExpressions(t *testing.T) {
 func Test_VariableDeclaration(t *testing.T) {
 	t.Run("Variable declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("var foo = 123;")
-		assert.Equal(t, []token.Token{
-			token.VarDecl{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 123},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 123},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
 	t.Run("Variable declaration with expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("var foo = 1 + 2 * 3;")
-		assert.Equal(t, []token.Token{
-			token.VarDecl{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 1},
-			token.Operator{Op: "+"},
-			token.Integer{Value: 2},
-			token.Operator{Op: "*"},
-			token.Integer{Value: 3},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 1},
+			lexer.Operator{Op: "+"},
+			lexer.Integer{Value: 2},
+			lexer.Operator{Op: "*"},
+			lexer.Integer{Value: 3},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
 	t.Run("Integer variable declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int foo = 123;")
-		assert.Equal(t, []token.Token{
-			token.Identifier{Value: "int"},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 123},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.Identifier{Value: "int"},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 123},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
 	t.Run("Boolean variable declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("bool foo = true;")
-		assert.Equal(t, []token.Token{
-			token.Identifier{Value: "bool"},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Boolean{Value: true},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.Identifier{Value: "bool"},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Boolean{Value: true},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
 	// t.Run("String variable declaration", func(t *testing.T) {
 	// err := lexer.MustTokenize("string foo = \"bar\";"
-	// 	assert.Equal(t, []token.Token{
-	// 		token.StringDecl{},
-	// 		token.Identifier{Value: "foo"},
-	// 		token.Operator{Op: "="},
-	// 		token.String{Value: "bar"},
-	// 		token.Semicolon{},
+	// 	assert.Equal(t, []lexer.Token{
+	// 		lexer.StringDecl{},
+	// 		lexer.Identifier{Value: "foo"},
+	// 		lexer.Operator{Op: "="},
+	// 		lexer.String{Value: "bar"},
+	// 		lexer.Semicolon{},
 	// 	}, lx)
 	// })
 }
@@ -238,13 +237,13 @@ func Test_VariableDeclaration(t *testing.T) {
 func Test_FunctionDefinition(t *testing.T) {
 	t.Run("Function definition", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() {}")
-		assert.Equal(t, []token.Token{
-			token.FnDef{},
-			token.Identifier{Value: "foo"},
-			token.OpenParen{},
-			token.CloseParen{},
-			token.OpenBrace{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.FnDef{},
+			lexer.Identifier{Value: "foo"},
+			lexer.OpenParen{},
+			lexer.CloseParen{},
+			lexer.OpenBrace{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -269,13 +268,13 @@ func Test_FunctionDefinition(t *testing.T) {
 func Test_ControlFlow(t *testing.T) {
 	t.Run("If block, empty body", func(t *testing.T) {
 		lx := lexer.MustTokenize("if a==b {}")
-		assert.Equal(t, []token.Token{
-			token.If{},
-			token.Identifier{Value: "a"},
-			token.Operator{Op: "=="},
-			token.Identifier{Value: "b"},
-			token.OpenBrace{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.If{},
+			lexer.Identifier{Value: "a"},
+			lexer.Operator{Op: "=="},
+			lexer.Identifier{Value: "b"},
+			lexer.OpenBrace{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -285,17 +284,17 @@ func Test_ControlFlow(t *testing.T) {
 			foo = 10;
 		}
 		`)
-		assert.Equal(t, []token.Token{
-			token.If{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: ">="},
-			token.Identifier{Value: "bar"},
-			token.OpenBrace{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 10},
-			token.Semicolon{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.If{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: ">="},
+			lexer.Identifier{Value: "bar"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 10},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -307,24 +306,24 @@ func Test_ControlFlow(t *testing.T) {
 			bar = 20;
 		}
 		`)
-		assert.Equal(t, []token.Token{
-			token.If{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: ">="},
-			token.Identifier{Value: "bar"},
-			token.OpenBrace{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 10},
-			token.Semicolon{},
-			token.CloseBrace{},
-			token.Else{},
-			token.OpenBrace{},
-			token.Identifier{Value: "bar"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 20},
-			token.Semicolon{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.If{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: ">="},
+			lexer.Identifier{Value: "bar"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 10},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
+			lexer.Else{},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "bar"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 20},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -338,35 +337,35 @@ func Test_ControlFlow(t *testing.T) {
 			baz = 30;
 		}
 		`)
-		assert.Equal(t, []token.Token{
-			token.If{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: ">="},
-			token.Identifier{Value: "bar"},
-			token.OpenBrace{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 10},
-			token.Semicolon{},
-			token.CloseBrace{},
-			token.Else{},
-			token.If{},
-			token.Identifier{Value: "bar"},
-			token.Operator{Op: "<"},
-			token.Identifier{Value: "baz"},
-			token.OpenBrace{},
-			token.Identifier{Value: "bar"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 20},
-			token.Semicolon{},
-			token.CloseBrace{},
-			token.Else{},
-			token.OpenBrace{},
-			token.Identifier{Value: "baz"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 30},
-			token.Semicolon{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.If{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: ">="},
+			lexer.Identifier{Value: "bar"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 10},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
+			lexer.Else{},
+			lexer.If{},
+			lexer.Identifier{Value: "bar"},
+			lexer.Operator{Op: "<"},
+			lexer.Identifier{Value: "baz"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "bar"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 20},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
+			lexer.Else{},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "baz"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 30},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -376,19 +375,19 @@ func Test_ControlFlow(t *testing.T) {
 			foo = foo + 1;
 		}
 		`)
-		assert.Equal(t, []token.Token{
-			token.While{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "<"},
-			token.Identifier{Value: "bar"},
-			token.OpenBrace{},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "="},
-			token.Identifier{Value: "foo"},
-			token.Operator{Op: "+"},
-			token.Integer{Value: 1},
-			token.Semicolon{},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.While{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "<"},
+			lexer.Identifier{Value: "bar"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "="},
+			lexer.Identifier{Value: "foo"},
+			lexer.Operator{Op: "+"},
+			lexer.Integer{Value: 1},
+			lexer.Semicolon{},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 }
@@ -399,12 +398,12 @@ func Test_Comments(t *testing.T) {
 		// This is a comment
 		var x = 10;
 		`)
-		assert.Equal(t, []token.Token{
-			token.VarDecl{},
-			token.Identifier{Value: "x"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 10},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "x"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 10},
+			lexer.Semicolon{},
 		}, lx)
 	})
 
@@ -416,12 +415,12 @@ func Test_Comments(t *testing.T) {
 		*/
 		var y = 20;
 		`)
-		assert.Equal(t, []token.Token{
-			token.VarDecl{},
-			token.Identifier{Value: "y"},
-			token.Operator{Op: "="},
-			token.Integer{Value: 20},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "y"},
+			lexer.Operator{Op: "="},
+			lexer.Integer{Value: 20},
+			lexer.Semicolon{},
 		}, lx)
 	})
 }
@@ -429,15 +428,15 @@ func Test_Comments(t *testing.T) {
 func Test_StringLiterals(t *testing.T) {
 	t.Run("Basic string literal", func(t *testing.T) {
 		lx := lexer.MustTokenize(`"hello world"`)
-		assert.Equal(t, []token.Token{
-			token.StringLiteral{Value: "hello world"},
+		assert.Equal(t, []lexer.Token{
+			lexer.StringLiteral{Value: "hello world"},
 		}, lx)
 	})
 
 	t.Run("String literal with escaped quotes", func(t *testing.T) {
 		lx := lexer.MustTokenize(`"hello \"world\" "`)
-		assert.Equal(t, []token.Token{
-			token.StringLiteral{Value: "hello \"world\" "},
+		assert.Equal(t, []lexer.Token{
+			lexer.StringLiteral{Value: "hello \"world\" "},
 		}, lx)
 	})
 
@@ -449,8 +448,8 @@ func Test_StringLiterals(t *testing.T) {
 
 	t.Run("String with escape sequences", func(t *testing.T) {
 		lx := lexer.MustTokenize(`"\\hello\nworld\t\\"`)
-		assert.Equal(t, []token.Token{
-			token.StringLiteral{Value: "\\hello\nworld\t\\"},
+		assert.Equal(t, []lexer.Token{
+			lexer.StringLiteral{Value: "\\hello\nworld\t\\"},
 		}, lx)
 	})
 }
@@ -463,18 +462,18 @@ func Test_Structs(t *testing.T) {
 			y: int
 		}
 		`)
-		assert.Equal(t, []token.Token{
-			token.StructDef{},
-			token.Identifier{Value: "Point"},
-			token.OpenBrace{},
-			token.Identifier{Value: "x"},
-			token.Colon{},
-			token.Identifier{Value: "int"},
-			token.Comma{},
-			token.Identifier{Value: "y"},
-			token.Colon{},
-			token.Identifier{Value: "int"},
-			token.CloseBrace{},
+		assert.Equal(t, []lexer.Token{
+			lexer.StructDef{},
+			lexer.Identifier{Value: "Point"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "x"},
+			lexer.Colon{},
+			lexer.Identifier{Value: "int"},
+			lexer.Comma{},
+			lexer.Identifier{Value: "y"},
+			lexer.Colon{},
+			lexer.Identifier{Value: "int"},
+			lexer.CloseBrace{},
 		}, lx)
 	})
 
@@ -484,31 +483,31 @@ func Test_Structs(t *testing.T) {
 		var x = p.x;
 		var y = p.y;
 		`)
-		assert.Equal(t, []token.Token{
-			token.VarDecl{},
-			token.Identifier{Value: "p"},
-			token.Operator{Op: "="},
-			token.Identifier{Value: "Point"},
-			token.OpenBrace{},
-			token.Identifier{Value: "x"},
-			token.Colon{},
-			token.Integer{Value: 10},
-			token.Comma{},
-			token.Identifier{Value: "y"},
-			token.Colon{},
-			token.Integer{Value: 20},
-			token.CloseBrace{},
-			token.Semicolon{},
-			token.VarDecl{},
-			token.Identifier{Value: "x"},
-			token.Operator{Op: "="},
-			token.Identifier{Value: "p.x"},
-			token.Semicolon{},
-			token.VarDecl{},
-			token.Identifier{Value: "y"},
-			token.Operator{Op: "="},
-			token.Identifier{Value: "p.y"},
-			token.Semicolon{},
+		assert.Equal(t, []lexer.Token{
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "p"},
+			lexer.Operator{Op: "="},
+			lexer.Identifier{Value: "Point"},
+			lexer.OpenBrace{},
+			lexer.Identifier{Value: "x"},
+			lexer.Colon{},
+			lexer.Integer{Value: 10},
+			lexer.Comma{},
+			lexer.Identifier{Value: "y"},
+			lexer.Colon{},
+			lexer.Integer{Value: 20},
+			lexer.CloseBrace{},
+			lexer.Semicolon{},
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "x"},
+			lexer.Operator{Op: "="},
+			lexer.Identifier{Value: "p.x"},
+			lexer.Semicolon{},
+			lexer.VarDecl{},
+			lexer.Identifier{Value: "y"},
+			lexer.Operator{Op: "="},
+			lexer.Identifier{Value: "p.y"},
+			lexer.Semicolon{},
 		}, lx)
 	})
 }

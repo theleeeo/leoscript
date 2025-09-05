@@ -2,11 +2,11 @@ package parser
 
 import (
 	"fmt"
-	"leoscript/token"
+	"leoscript/lexer"
 	"leoscript/types"
 )
 
-func MustParse(tokens []token.Token) *Program {
+func MustParse(tokens []lexer.Token) *Program {
 	program, err := Parse(tokens)
 	if err != nil {
 		panic(err)
@@ -15,7 +15,7 @@ func MustParse(tokens []token.Token) *Program {
 	return program
 }
 
-func Parse(tokens []token.Token) (*Program, error) {
+func Parse(tokens []lexer.Token) (*Program, error) {
 	p := NewParser(tokens)
 
 	program, err := p.Parse()
@@ -26,7 +26,7 @@ func Parse(tokens []token.Token) (*Program, error) {
 	return program, nil
 }
 
-func NewParser(tokens []token.Token) *Parser {
+func NewParser(tokens []lexer.Token) *Parser {
 	return &Parser{
 		tokens:  tokens,
 		current: 0,
@@ -35,26 +35,26 @@ func NewParser(tokens []token.Token) *Parser {
 }
 
 type Parser struct {
-	tokens  []token.Token
+	tokens  []lexer.Token
 	current int
 
 	program *Program
 }
 
 // next will consume the current token and return the next one
-func (p *Parser) next() token.Token {
+func (p *Parser) next() lexer.Token {
 	p.current++
 	// fmt.Println("consumed: ", p.tokens[p.current-1].Type(), "new: ", p.peek().Type())
 
 	if p.current >= len(p.tokens) {
-		return token.EOF{}
+		return lexer.EOF{}
 	}
 
 	return p.tokens[p.current]
 }
 
 // expectNext will consume the token and return an error if the next one is not of the expected type
-func (p *Parser) expectNext(tk token.TokenType) error {
+func (p *Parser) expectNext(tk lexer.TokenType) error {
 	if tk != p.next().Type() {
 		return fmt.Errorf("expected token type %v, got %v", tk, p.peek().Type())
 	}
@@ -63,7 +63,7 @@ func (p *Parser) expectNext(tk token.TokenType) error {
 }
 
 // expectConsume will return an error if the current token is not of the expected type
-func (p *Parser) expectCurrent(tk token.TokenType) error {
+func (p *Parser) expectCurrent(tk lexer.TokenType) error {
 	if tk != p.peek().Type() {
 		return fmt.Errorf("expected token type %v, got %v", tk, p.peek().Type())
 	}
@@ -72,17 +72,17 @@ func (p *Parser) expectCurrent(tk token.TokenType) error {
 }
 
 // peek will return the current token without consuming it
-func (p *Parser) peek() token.Token {
+func (p *Parser) peek() lexer.Token {
 	if p.current >= len(p.tokens) {
-		return token.EOF{}
+		return lexer.EOF{}
 	}
 
 	return p.tokens[p.current]
 }
 
-func (p *Parser) peekNext() token.Token {
+func (p *Parser) peekNext() lexer.Token {
 	if p.current+1 >= len(p.tokens) {
-		return token.EOF{}
+		return lexer.EOF{}
 	}
 
 	return p.tokens[p.current+1]
@@ -104,9 +104,9 @@ type Program struct {
 }
 
 func (p *Parser) Parse() (*Program, error) {
-	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
+	for tk := p.peek(); tk.Type() != lexer.EOFType; tk = p.next() {
 		switch tk.(type) {
-		case token.VarDecl, token.Identifier:
+		case lexer.VarDecl, lexer.Identifier:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return nil, fmt.Errorf("parsing variable declaration: %w", err)
@@ -114,7 +114,7 @@ func (p *Parser) Parse() (*Program, error) {
 
 			p.program.VarDecls = append(p.program.VarDecls, varDecl)
 
-		case token.FnDef:
+		case lexer.FnDef:
 			fnDef, err := p.parseFnDef()
 			if err != nil {
 				return nil, fmt.Errorf("parsing function definition: %w", err)
@@ -122,7 +122,7 @@ func (p *Parser) Parse() (*Program, error) {
 
 			p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
-		case token.StubDef:
+		case lexer.StubDef:
 			stub, err := p.parseFnDef()
 			if err != nil {
 				return nil, fmt.Errorf("parsing stub definition: %w", err)
@@ -130,9 +130,9 @@ func (p *Parser) Parse() (*Program, error) {
 
 			p.program.StubDefs = append(p.program.StubDefs, stub)
 
-		case token.Exported:
+		case lexer.Exported:
 			switch p.peekNext().(type) {
-			case token.FnDef:
+			case lexer.FnDef:
 				fnDef, err := p.parseFnDef()
 				if err != nil {
 					return nil, fmt.Errorf("parsing function definition: %w", err)
@@ -140,7 +140,7 @@ func (p *Parser) Parse() (*Program, error) {
 
 				p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
-			case token.VarDecl, token.Identifier:
+			case lexer.VarDecl, lexer.Identifier:
 				varDecl, err := p.parseVarDecl()
 				if err != nil {
 					return nil, fmt.Errorf("parsing variable declaration: %w", err)
@@ -152,7 +152,7 @@ func (p *Parser) Parse() (*Program, error) {
 				return nil, fmt.Errorf("expected function or variable declaration after exported, got %T", p.peekNext())
 			}
 
-		case token.StructDef:
+		case lexer.StructDef:
 			structDef, err := p.parseStructDef()
 			if err != nil {
 				return nil, fmt.Errorf("parsing struct definition: %w", err)
@@ -191,7 +191,7 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 
 	stmts := []Statement{}
 
-	for tk := p.peek(); tk.Type() != token.CloseBraceType; tk = p.next() {
+	for tk := p.peek(); tk.Type() != lexer.CloseBraceType; tk = p.next() {
 		stmt, err := p.ParseStatement()
 		if err != nil {
 			return nil, fmt.Errorf("parsing statement: %w", err)
@@ -202,7 +202,7 @@ func (p *Parser) parseBlock() ([]Statement, error) {
 		case If, While:
 			// Do nothing, no semicolon expected
 		default:
-			if err := p.expectCurrent(token.SemicolonType); err != nil {
+			if err := p.expectCurrent(lexer.SemicolonType); err != nil {
 				return nil, err
 			}
 		}
