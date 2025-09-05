@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"leoscript/types"
 	"slices"
 )
 
@@ -18,7 +19,15 @@ var (
 	// In some cases however, you want the children to have been walked first.
 	// By returning this error, the TreeWalker will walk the children before calling the callback again.
 	ErrReturnLater = errors.New("walk children first") // Ugly hack or whatever but darn it, it makes the api simpler.
+
+	universeScope = NewScope(nil) // The universe scope contains all built-in functions and types. It is the root of all scopes.
 )
+
+func init() {
+	universeScope.RegisterType("int", types.Int)
+	universeScope.RegisterType("bool", types.Bool)
+	universeScope.RegisterType("string", types.String)
+}
 
 type WalkingContext struct {
 	Scope *Scope
@@ -64,7 +73,7 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 		}
 	}()
 
-	globalScope := NewScope(nil)
+	globalScope := NewScope(universeScope)
 
 	// Setup the global scope with the global variable declarations and function definitions.
 	for _, structDef := range program.Structs {
@@ -123,6 +132,25 @@ func (tw *TreeWalker) WalkProgram(program *Program) (err error) {
 			continue
 		}
 		program.FnDefs[i] = resp.(FnDef)
+
+		i++
+	}
+
+	i = 0
+	for i < len(program.StubDefs) {
+		globalScope.deregisterFn(program.StubDefs[i].Name)
+
+		resp := tw.walkStatement(program.StubDefs[i], WalkingContext{
+			Scope:      globalScope,
+			ParentFn:   nil, // No parent function in the global scope
+			ParentNode: nil, // TODO: What do? There is no parent node but like... Is this fine?
+		})
+		if resp == nil {
+			// If the callback returns nil, we remove the function definition.
+			program.StubDefs = slices.Delete(program.StubDefs, i, i+1)
+			continue
+		}
+		program.StubDefs[i] = resp.(FnDef)
 
 		i++
 	}
@@ -276,6 +304,15 @@ func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expre
 	case UnaryExpression:
 		rv.Expression = tw.walkExpression(rv.Expression, wctx)
 		expr = rv
+	// case StructLiteral: // TODO
+	// 	for i := range rv.Fields {
+	// 		retExpr := tw.walkExpression(rv.Fields[i], wctx)
+	// 		if _, ok := retExpr.(FieldLiteral); !ok {
+	// 			panic(fmt.Errorf("non-field literal returned when walking struct field: %T", retExpr))
+	// 		}
+	// 		rv.Fields[i] = retExpr.(FieldLiteral)
+	// 	}
+	// 	expr = rv
 	case IntegerLiteral,
 		BooleanLiteral,
 		VoidLiteral,

@@ -8,16 +8,16 @@ import (
 func typeResolvingPass(program *Program) (err error) {
 	// BeforeWalk resolves function return types that are unresolved at the start of the walk.
 	// This is needed because the ReturnType might be used to infer implicit variables and they are walked before the actual functions by the treewalker.
-	beforeWalk := func(pg *Program, globalScope *Scope) error {
+	beforeWalk := func(pg *Program, globalScope *Scope) error { // TODO: This can be implemented as its own pass...
 		for i := range pg.FnDefs {
 			if pg.FnDefs[i].ReturnType.Kind() != types.KindInvalid {
 				continue
 			}
 
-			if _, ok := pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier); ok {
-				resolvedType, ok := globalScope.ResolveType(pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier).Name)
+			if ti, ok := pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := globalScope.ResolveType(ti.Name)
 				if !ok {
-					return fmt.Errorf("unknown type: %s", pg.FnDefs[i].ReturnType.(unresolvedTypeIdentifier).Name)
+					return fmt.Errorf("unknown type: %s", ti.Name)
 				}
 				// Set the function definition's return type to the resolved type.
 				pg.FnDefs[i].ReturnType = resolvedType
@@ -27,6 +27,42 @@ func typeResolvingPass(program *Program) (err error) {
 				globalScope.RegisterFn(pg.FnDefs[i])
 			}
 		}
+
+		for i := range pg.StubDefs {
+			if pg.StubDefs[i].ReturnType.Kind() != types.KindInvalid {
+				continue
+			}
+
+			if ti, ok := pg.StubDefs[i].ReturnType.(unresolvedTypeIdentifier); ok {
+				resolvedType, ok := globalScope.ResolveType(ti.Name)
+				if !ok {
+					return fmt.Errorf("unknown type: %s", ti.Name)
+				}
+				// Set the function definition's return type to the resolved type.
+				pg.StubDefs[i].ReturnType = resolvedType
+
+				// Update the function in the scope.
+				globalScope.deregisterFn(pg.StubDefs[i].Name)
+				globalScope.RegisterFn(pg.StubDefs[i])
+			}
+		}
+
+		for i := range pg.Structs {
+			for j := range pg.Structs[i].Fields {
+				if pg.Structs[i].Fields[j].Type.Kind() != types.KindInvalid {
+					continue
+				}
+
+				if ti, ok := pg.Structs[i].Fields[j].Type.(unresolvedTypeIdentifier); ok {
+					resolvedType, ok := globalScope.ResolveType(ti.Name)
+					if !ok {
+						return fmt.Errorf("unknown type: %s", ti.Name)
+					}
+					pg.Structs[i].Fields[j].Type = resolvedType
+				}
+			}
+		}
+
 		return nil
 	}
 

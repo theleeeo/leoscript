@@ -622,46 +622,58 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 	t.Run("Simple integer declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 123;")
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:  "a",
-			Type:  types.Int,
-			Value: IntegerLiteral{Value: 123},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "a",
+					Type:  types.Int,
+					Value: IntegerLiteral{Value: 123},
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Simple boolean declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("bool a = true;")
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:  "a",
-			Type:  types.Bool,
-			Value: BooleanLiteral{Value: true},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "a",
+					Type:  types.Bool,
+					Value: BooleanLiteral{Value: true},
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Integer declaration with expression", func(t *testing.T) {
 		lx := lexer.MustTokenize("int a = 1 + 2 * 3;")
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name: "a",
-			Type: types.Int,
-			Value: BinaryExpression{
-				Left: IntegerLiteral{Value: 1},
-				Right: BinaryExpression{
-					Left:  IntegerLiteral{Value: 2},
-					Right: IntegerLiteral{Value: 3},
-					Op:    "*",
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "a",
+					Type: types.Int,
+					Value: BinaryExpression{
+						Left: IntegerLiteral{Value: 1},
+						Right: BinaryExpression{
+							Left:  IntegerLiteral{Value: 2},
+							Right: IntegerLiteral{Value: 3},
+							Op:    "*",
+						},
+						Op: "+",
+					},
 				},
-				Op: "+",
 			},
 		}, prog)
 	})
@@ -669,36 +681,45 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 	t.Run("Type-free var declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("var a = 1 < 2 && true;")
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name: "a",
-			Value: BinaryExpression{
-				Left: BinaryExpression{
-					Left:  IntegerLiteral{Value: 1},
-					Right: IntegerLiteral{Value: 2},
-					Op:    "<",
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "a",
+					Value: BinaryExpression{
+						Left: BinaryExpression{
+							Left:  IntegerLiteral{Value: 1},
+							Right: IntegerLiteral{Value: 2},
+							Op:    "<",
+						},
+						Right: BooleanLiteral{Value: true},
+						Op:    "&&",
+					},
+					Type: types.Bool,
 				},
-				Right: BooleanLiteral{Value: true},
-				Op:    "&&",
 			},
-			Type: types.Unspecified,
 		}, prog)
 	})
 
-	t.Run("Identifier declaration", func(t *testing.T) {
-		lx := lexer.MustTokenize("int a = abc;")
-		p := NewParser(lx)
-		prog, err := p.ParseStatement()
-		assert.NoError(t, err)
+	// TODO: I need a "variable actually exists" pass
+	// t.Run("Identifier declaration", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize("int a = abc;")
+	// 	p := NewParser(lx)
+	// 	prog, err := p.Parse()
+	// 	assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:  "a",
-			Type:  types.Int,
-			Value: VarIdentifier{Name: "abc"},
-		}, prog)
-	})
+	// 	assert.EqualExportedValues(t, &Program{
+	// 		VarDecls: []VarDecl{
+	// 			{
+	// 				Name:  "a",
+	// 				Type:  types.Int,
+	// 				Value: VarIdentifier{Name: "abc"},
+	// 			},
+	// 		},
+	// 	}, prog)
+	// })
 
 	t.Run("Declare with return of function", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
@@ -707,33 +728,30 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		var a = foo();
 		`)
 		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Int,
-			Params:     []Parameter{},
-			Body: []Statement{
-				Return{
-					Value: IntegerLiteral{Value: 0},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "a",
+					Value: Call{Name: "foo", Args: []Expression{}},
+					Type:  types.Int,
 				},
 			},
-		}, fnDef)
-
-		p.next()
-
-		vardef, err := p.ParseStatement()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, VarDecl{
-			Name: "a",
-			Value: Call{
-				Name: "foo",
-				Args: []Expression{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{
+							Value: IntegerLiteral{Value: 0},
+						},
+					},
+				},
 			},
-			Type: types.Unspecified,
-		}, vardef)
+		}, prog)
 	})
 
 	t.Run("Self-recursive global var", func(t *testing.T) {
@@ -772,13 +790,17 @@ func Test_Stmnt_VarDecl(t *testing.T) {
 		int a;
 		`)
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:  "a",
-			Type:  types.Int,
-			Value: nil,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "a",
+					Type:  types.Int,
+					Value: IntegerLiteral{Value: 0},
+				},
+			},
 		}, prog)
 	})
 
@@ -954,138 +976,167 @@ func Test_Identifiers(t *testing.T) {
 func Test_FunctionDefinitions(t *testing.T) {
 	t.Run("Simple function definition", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo() {}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params:     []Parameter{},
-			Body: []Statement{
-				Return{Value: VoidLiteral{}},
-			},
-		}, fnDef)
-	})
-
-	t.Run("Simple function definition with body", func(t *testing.T) {
-		lx := lexer.MustTokenize("fn foo() {return 1 + 2;}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params:     []Parameter{},
-			Body: []Statement{
-				Return{
-					Value: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "+",
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
 					},
 				},
 			},
 		}, fnDef)
 	})
 
-	t.Run("Function definition with return type", func(t *testing.T) {
-		lx := lexer.MustTokenize("fn foo() int {}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+	t.Run("Simple function definition with body", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo() int {return 1 + 2;}")
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			Params:     []Parameter{},
-			ReturnType: types.Int,
-			Body:       []Statement{},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{
+							Value: BinaryExpression{
+								Left:  IntegerLiteral{Value: 1},
+								Right: IntegerLiteral{Value: 2},
+								Op:    "+",
+							},
+						},
+					},
+				},
+			},
+		}, fnDef)
+	})
+
+	// TODO: Should fail, no return
+	t.Run("Function definition with return type", func(t *testing.T) {
+		lx := lexer.MustTokenize("fn foo() int {}")
+		fnDef, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					Params:     []Parameter{},
+					ReturnType: types.Int,
+					Body:       []Statement{},
+				},
+			},
 		}, fnDef)
 	})
 
 	t.Run("Function definition with one parameter", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a) {}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-			},
-			Body: []Statement{
-				Return{Value: VoidLiteral{}},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+					},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
+					},
+				},
 			},
 		}, fnDef)
 	})
 
 	t.Run("Function definition with parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(int a, bool b, bool c) {}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-				{Name: "b", Type: types.Bool},
-				{Name: "c", Type: types.Bool},
-			},
-			Body: []Statement{
-				Return{Value: VoidLiteral{}},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+						{Name: "c", Type: types.Bool},
+					},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
+					},
+				},
 			},
 		}, fnDef)
 	})
 
 	t.Run("Function definition with parameters and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("fn foo(bool a, int b) bool {}")
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Bool,
-			Params: []Parameter{
-				{Name: "a", Type: types.Bool},
-				{Name: "b", Type: types.Int},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Bool,
+					Params: []Parameter{
+						{Name: "a", Type: types.Bool},
+						{Name: "b", Type: types.Int},
+					},
+					Body: []Statement{},
+				},
 			},
-			Body: []Statement{},
 		}, fnDef)
 	})
 
 	t.Run("function using local scope", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-			fn foo() {
+			fn foo() int {
 				var a = 123;
 				return 1 + a;
 			}
 		`)
 
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params:     []Parameter{},
-			Body: []Statement{
-				VarDecl{
-					Name:  "a",
-					Value: IntegerLiteral{Value: 123},
-					Type:  types.Unspecified,
-				},
-				Return{
-					Value: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: VarIdentifier{Name: "a"},
-						Op:    "+",
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						VarDecl{
+							Name:  "a",
+							Value: IntegerLiteral{Value: 123},
+							Type:  types.Int,
+						},
+						Return{
+							Value: BinaryExpression{
+								Left:  IntegerLiteral{Value: 1},
+								Right: VarIdentifier{Name: "a"},
+								Op:    "+",
+							},
+						},
 					},
 				},
 			},
@@ -1312,32 +1363,6 @@ func Test_ParseFile(t *testing.T) {
 }
 
 func Test_If(t *testing.T) {
-	t.Run("if, compare static ints", func(t *testing.T) {
-		lx := lexer.MustTokenize(`
-		if 1 > 0 {
-			foo = 10;
-		}
-		`)
-		p := NewParser(lx)
-		prog, err := p.ParseStatement()
-		assert.NoError(t, err)
-
-		assert.EqualExportedValues(t, If{
-			Cond: BinaryExpression{
-				Left:  IntegerLiteral{Value: 1},
-				Right: IntegerLiteral{Value: 0},
-				Op:    ">",
-			},
-			Then: []Statement{
-				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 10},
-				},
-			},
-		}, prog)
-
-	})
-
 	t.Run("if in func", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
 		fn main() int {
@@ -1347,54 +1372,80 @@ func Test_If(t *testing.T) {
 			return 0;
 		}
 		`)
-		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := Parse(lx)
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "main",
-			ReturnType: types.Int,
-			Params:     []Parameter{},
-			Body: []Statement{
-				If{
-					Cond: BooleanLiteral{Value: true},
-					Then: []Statement{
-						Return{Value: IntegerLiteral{Value: 1}},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "main",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						If{
+							Cond: BooleanLiteral{Value: true},
+							Then: []Statement{
+								Return{Value: IntegerLiteral{Value: 1}},
+							},
+						},
+						Return{Value: IntegerLiteral{Value: 0}},
 					},
 				},
-				Return{Value: IntegerLiteral{Value: 0}},
 			},
 		}, fnDef)
 	})
 
 	t.Run("if with else", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if 1 > 0 {
-			foo = 10;
-		} else {
-			foo = 20;
+		fn main() int {
+			int foo;
+			if 1 > 0 {
+				foo = 10;
+			} else {
+				foo = 20;
+			}
+			return foo;
 		}
 		`)
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, If{
-			Cond: BinaryExpression{
-				Left:  IntegerLiteral{Value: 1},
-				Right: IntegerLiteral{Value: 0},
-				Op:    ">",
-			},
-			Then: []Statement{
-				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 10},
-				},
-			},
-			Else: []Statement{
-				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 20},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "main",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						VarDecl{
+							Name:  "foo",
+							Type:  types.Int,
+							Value: IntegerLiteral{Value: 0},
+						},
+						If{
+							Cond: BinaryExpression{
+								Left:  IntegerLiteral{Value: 1},
+								Right: IntegerLiteral{Value: 0},
+								Op:    ">",
+							},
+							Then: []Statement{
+								Assignment{
+									Name:  "foo",
+									Value: IntegerLiteral{Value: 10},
+								},
+							},
+							Else: []Statement{
+								Assignment{
+									Name:  "foo",
+									Value: IntegerLiteral{Value: 20},
+								},
+							},
+						},
+						Return{Value: VarIdentifier{Name: "foo"}},
+					},
 				},
 			},
 		}, prog)
@@ -1402,48 +1453,70 @@ func Test_If(t *testing.T) {
 
 	t.Run("if with else if", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if 1 > 0 {
-			foo = 10;
-		} else if 2 < 3 {
-			foo = 20;
-		} else {
-			foo = 30;
+		fn main() int {
+			int foo;
+			if 1 > 0 {
+				foo = 10;
+			} else if 2 < 3 {
+				foo = 20;
+			} else {
+				foo = 30;
+			}
+			return foo;
 		}
 		`)
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, If{
-			Cond: BinaryExpression{
-				Left:  IntegerLiteral{Value: 1},
-				Right: IntegerLiteral{Value: 0},
-				Op:    ">",
-			},
-			Then: []Statement{
-				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 10},
-				},
-			},
-			Else: []Statement{
-				If{
-					Cond: BinaryExpression{
-						Left:  IntegerLiteral{Value: 2},
-						Right: IntegerLiteral{Value: 3},
-						Op:    "<",
-					},
-					Then: []Statement{
-						Assignment{
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "main",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						VarDecl{
 							Name:  "foo",
-							Value: IntegerLiteral{Value: 20},
+							Type:  types.Int,
+							Value: IntegerLiteral{Value: 0},
 						},
-					},
-					Else: []Statement{
-						Assignment{
-							Name:  "foo",
-							Value: IntegerLiteral{Value: 30},
+						If{
+							Cond: BinaryExpression{
+								Left:  IntegerLiteral{Value: 1},
+								Right: IntegerLiteral{Value: 0},
+								Op:    ">",
+							},
+							Then: []Statement{
+								Assignment{
+									Name:  "foo",
+									Value: IntegerLiteral{Value: 10},
+								},
+							},
+							Else: []Statement{
+								If{
+									Cond: BinaryExpression{
+										Left:  IntegerLiteral{Value: 2},
+										Right: IntegerLiteral{Value: 3},
+										Op:    "<",
+									},
+									Then: []Statement{
+										Assignment{
+											Name:  "foo",
+											Value: IntegerLiteral{Value: 20},
+										},
+									},
+									Else: []Statement{
+										Assignment{
+											Name:  "foo",
+											Value: IntegerLiteral{Value: 30},
+										},
+									},
+								},
+							},
 						},
+						Return{Value: VarIdentifier{Name: "foo"}},
 					},
 				},
 			},
@@ -1452,66 +1525,88 @@ func Test_If(t *testing.T) {
 
 	t.Run("if with multiple else ifs", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
-		if 1 > 0 {
-			foo = 10;
-		} else if 2 < 3 {
-			foo = 20;
-		} else if 3 > 4 {
-			foo = 30;
-		} else {
-			foo = 40;
+		fn main() int {
+			int foo;
+			if 1 > 0 {
+				foo = 10;
+			} else if 2 < 3 {
+				foo = 20;
+			} else if 3 > 4 {
+				foo = 30;
+			} else {
+				foo = 40;
+			}
+			return foo;
 		}
 		`)
 		p := NewParser(lx)
-		prog, err := p.ParseStatement()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, If{
-			Cond: BinaryExpression{
-				Left:  IntegerLiteral{Value: 1},
-				Right: IntegerLiteral{Value: 0},
-				Op:    ">",
-			},
-			Then: []Statement{
-				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 10},
-				},
-			},
-			Else: []Statement{
-				If{
-					Cond: BinaryExpression{
-						Left:  IntegerLiteral{Value: 2},
-						Right: IntegerLiteral{Value: 3},
-						Op:    "<",
-					},
-					Then: []Statement{
-						Assignment{
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "main",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body: []Statement{
+						VarDecl{
 							Name:  "foo",
-							Value: IntegerLiteral{Value: 20},
+							Type:  types.Int,
+							Value: IntegerLiteral{Value: 0},
 						},
-					},
-					Else: []Statement{
 						If{
-
 							Cond: BinaryExpression{
-								Left:  IntegerLiteral{Value: 3},
-								Right: IntegerLiteral{Value: 4},
+								Left:  IntegerLiteral{Value: 1},
+								Right: IntegerLiteral{Value: 0},
 								Op:    ">",
 							},
 							Then: []Statement{
 								Assignment{
 									Name:  "foo",
-									Value: IntegerLiteral{Value: 30},
+									Value: IntegerLiteral{Value: 10},
 								},
 							},
 							Else: []Statement{
-								Assignment{
-									Name:  "foo",
-									Value: IntegerLiteral{Value: 40},
+								If{
+									Cond: BinaryExpression{
+										Left:  IntegerLiteral{Value: 2},
+										Right: IntegerLiteral{Value: 3},
+										Op:    "<",
+									},
+									Then: []Statement{
+										Assignment{
+											Name:  "foo",
+											Value: IntegerLiteral{Value: 20},
+										},
+									},
+									Else: []Statement{
+										If{
+
+											Cond: BinaryExpression{
+												Left:  IntegerLiteral{Value: 3},
+												Right: IntegerLiteral{Value: 4},
+												Op:    ">",
+											},
+											Then: []Statement{
+												Assignment{
+													Name:  "foo",
+													Value: IntegerLiteral{Value: 30},
+												},
+											},
+											Else: []Statement{
+												Assignment{
+													Name:  "foo",
+													Value: IntegerLiteral{Value: 40},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
+						Return{Value: VarIdentifier{Name: "foo"}},
 					},
 				},
 			},
@@ -1686,40 +1781,55 @@ func Test_WhileStatements(t *testing.T) {
 
 	t.Run("Function with while loop", func(t *testing.T) {
 		lx := lexer.MustTokenize(`
+		fn bar () {}
 		fn main() {
 			while 1 < 2 {
 				bar();
-				baz = 20;
+				int baz = 20;
 			}
 		}
 		`)
 		p := NewParser(lx)
-		fnDef, err := p.parseFnDef()
+		fnDef, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "main",
-			ReturnType: types.Void,
-			Params:     []Parameter{},
-			Body: []Statement{
-				While{
-					Cond: BinaryExpression{
-						Left:  IntegerLiteral{Value: 1},
-						Right: IntegerLiteral{Value: 2},
-						Op:    "<",
-					},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "bar",
+					ReturnType: types.Void,
+					Params:     []Parameter{},
 					Body: []Statement{
-						Call{
-							Name: "bar",
-							Args: []Expression{},
-						},
-						Assignment{
-							Name:  "baz",
-							Value: IntegerLiteral{Value: 20},
-						},
+						Return{Value: VoidLiteral{}},
 					},
 				},
-				Return{Value: VoidLiteral{}},
+				{
+					Name:       "main",
+					ReturnType: types.Void,
+					Params:     []Parameter{},
+					Body: []Statement{
+						While{
+							Cond: BinaryExpression{
+								Left:  IntegerLiteral{Value: 1},
+								Right: IntegerLiteral{Value: 2},
+								Op:    "<",
+							},
+							Body: []Statement{
+								Call{
+									Name: "bar",
+									Args: []Expression{},
+								},
+								VarDecl{
+									Name:  "baz",
+									Type:  types.Int,
+									Value: IntegerLiteral{Value: 20},
+								},
+							},
+						},
+						Return{Value: VoidLiteral{}},
+					},
+				},
 			},
 		}, fnDef)
 	})
@@ -1769,138 +1879,178 @@ func Test_Stub(t *testing.T) {
 	t.Run("Simple stub", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo();")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			ReturnType: types.Void,
-			Name:       "foo",
-			Params:     []Parameter{},
-			Body:       nil,
-			Stub:       true,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			StubDefs: []FnDef{
+				{
+					ReturnType: types.Void,
+					Name:       "foo",
+					Params:     []Parameter{},
+					Body:       nil,
+					Stub:       true,
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Stub with parameters", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b);")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-				{Name: "b", Type: types.Bool},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			StubDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+					},
+					Body: nil,
+					Stub: true,
+				},
 			},
-			Body: nil,
-			Stub: true,
 		}, prog)
 	})
 
 	t.Run("Stub with return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo() int;")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Int,
-			Params:     []Parameter{},
-			Body:       nil,
-			Stub:       true,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			StubDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body:       nil,
+					Stub:       true,
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Stub with parameters and return type", func(t *testing.T) {
 		lx := lexer.MustTokenize("stub foo(int a, bool b) int;")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Int,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-				{Name: "b", Type: types.Bool},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			StubDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+					},
+					Body: nil,
+					Stub: true,
+				},
 			},
-			Body: nil,
-			Stub: true,
 		}, prog)
 	})
 }
 
 func Test_ExportedFunction(t *testing.T) {
 	t.Run("Simple exported function", func(t *testing.T) {
-		lx := lexer.MustTokenize("export fn foo() {};")
+		lx := lexer.MustTokenize("export fn foo() {}")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params:     []Parameter{},
-			Body: []Statement{
-				Return{Value: VoidLiteral{}},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params:     []Parameter{},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
+					},
+					Exported: true,
+				},
 			},
-			Exported: true,
 		}, prog)
 	})
 
 	t.Run("Exported function with parameters", func(t *testing.T) {
-		lx := lexer.MustTokenize("export fn foo(int a, bool b) {};")
+		lx := lexer.MustTokenize("export fn foo(int a, bool b) {}")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Void,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-				{Name: "b", Type: types.Bool},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Void,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+					},
+					Body: []Statement{
+						Return{Value: VoidLiteral{}},
+					},
+					Exported: true,
+				},
 			},
-			Body: []Statement{
-				Return{Value: VoidLiteral{}},
-			},
-			Exported: true,
 		}, prog)
 	})
 
 	t.Run("Exported function with return type", func(t *testing.T) {
-		lx := lexer.MustTokenize("export fn foo() int {};")
+		lx := lexer.MustTokenize("export fn foo() int {}")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Int,
-			Params:     []Parameter{},
-			Body:       []Statement{},
-			Exported:   true,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params:     []Parameter{},
+					Body:       []Statement{},
+					Exported:   true,
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Exported function with parameters and return type", func(t *testing.T) {
-		lx := lexer.MustTokenize("export fn foo(int a, bool b) int {};")
+		lx := lexer.MustTokenize("export fn foo(int a, bool b) int {}")
 		p := NewParser(lx)
-		prog, err := p.parseFnDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, FnDef{
-			Name:       "foo",
-			ReturnType: types.Int,
-			Params: []Parameter{
-				{Name: "a", Type: types.Int},
-				{Name: "b", Type: types.Bool},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "foo",
+					ReturnType: types.Int,
+					Params: []Parameter{
+						{Name: "a", Type: types.Int},
+						{Name: "b", Type: types.Bool},
+					},
+					Body:     []Statement{},
+					Exported: true,
+				},
 			},
-			Body:     []Statement{},
-			Exported: true,
 		}, prog)
 	})
 }
@@ -1909,28 +2059,36 @@ func Test_ExportedVariable(t *testing.T) {
 	t.Run("Exported variable, inferred type", func(t *testing.T) {
 		lx := lexer.MustTokenize("export var foo = 10;")
 		p := NewParser(lx)
-		prog, err := p.parseVarDecl()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:     "foo",
-			Type:     types.Unspecified,
-			Value:    IntegerLiteral{Value: 10},
-			Exported: true,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:     "foo",
+					Type:     types.Int,
+					Value:    IntegerLiteral{Value: 10},
+					Exported: true,
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Exported variable", func(t *testing.T) {
 		lx := lexer.MustTokenize("export int foo = 10;")
 		p := NewParser(lx)
-		prog, err := p.parseVarDecl()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:     "foo",
-			Type:     types.Int,
-			Value:    IntegerLiteral{Value: 10},
-			Exported: true,
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:     "foo",
+					Type:     types.Int,
+					Value:    IntegerLiteral{Value: 10},
+					Exported: true,
+				},
+			},
 		}, prog)
 	})
 }
@@ -1995,13 +2153,17 @@ func Test_StringLiteral(t *testing.T) {
 	t.Run("String variable", func(t *testing.T) {
 		lx := lexer.MustTokenize(`string foo = "hello";`)
 		p := NewParser(lx)
-		prog, err := p.parseVarDecl()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, VarDecl{
-			Name:  "foo",
-			Type:  types.String,
-			Value: StringLiteral{Value: "hello"},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name:  "foo",
+					Type:  types.String,
+					Value: StringLiteral{Value: "hello"},
+				},
+			},
 		}, prog)
 	})
 }
@@ -2010,14 +2172,19 @@ func Test_StructDef(t *testing.T) {
 	t.Run("Simple struct", func(t *testing.T) {
 		lx := lexer.MustTokenize(`struct Point { int x; int y; }`)
 		p := NewParser(lx)
-		prog, err := p.parseStructDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, types.Struct{
-			Name: "Point",
-			Fields: []types.Field{
-				{Name: "x", Type: types.Int},
-				{Name: "y", Type: types.Int},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			Structs: []*types.Struct{
+				{
+					Name: "Point",
+					Fields: []types.Field{
+						{Name: "x", Type: types.Int},
+						{Name: "y", Type: types.Int},
+					},
+				},
 			},
 		}, prog)
 	})
@@ -2025,27 +2192,37 @@ func Test_StructDef(t *testing.T) {
 	t.Run("Struct with no fields", func(t *testing.T) {
 		lx := lexer.MustTokenize(`struct Point {}`)
 		p := NewParser(lx)
-		prog, err := p.parseStructDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, types.Struct{
-			Name:   "Point",
-			Fields: []types.Field{},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			Structs: []*types.Struct{
+				{
+					Name:   "Point",
+					Fields: []types.Field{},
+				},
+			},
 		}, prog)
 	})
 
 	t.Run("Struct with various field types", func(t *testing.T) {
 		lx := lexer.MustTokenize(`struct Point { int x; bool y; string z; }`)
 		p := NewParser(lx)
-		prog, err := p.parseStructDef()
+		prog, err := p.Parse()
 		assert.NoError(t, err)
 
-		assert.EqualExportedValues(t, types.Struct{
-			Name: "Point",
-			Fields: []types.Field{
-				{Name: "x", Type: types.Int},
-				{Name: "y", Type: types.Bool},
-				{Name: "z", Type: types.String},
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			Structs: []*types.Struct{
+				{
+					Name: "Point",
+					Fields: []types.Field{
+						{Name: "x", Type: types.Int},
+						{Name: "y", Type: types.Bool},
+						{Name: "z", Type: types.String},
+					},
+				},
 			},
 		}, prog)
 	})

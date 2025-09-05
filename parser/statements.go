@@ -10,7 +10,7 @@ func (p *Parser) ParseStatement() (Statement, error) {
 	tk := p.peek()
 
 	switch tk := tk.(type) {
-	case token.VarDecl, token.Type:
+	case token.VarDecl:
 		return p.parseVarDecl()
 	case token.Identifier:
 		switch p.peekNext().(type) {
@@ -99,8 +99,6 @@ func (p *Parser) parseFnParams() ([]Parameter, error) {
 	for {
 		var argType types.Type
 		switch tk := p.peek().(type) {
-		case token.Type:
-			argType = tk.Kind
 		case token.Identifier:
 			argType = unresolvedTypeIdentifier{Name: tk.Value}
 		default:
@@ -182,9 +180,6 @@ func (p *Parser) parseFnDef() (FnDef, error) {
 
 	// Check if the function has a return type
 	switch tk := p.peek().(type) {
-	case token.Type:
-		returnType = tk.Kind
-		p.next() // Consume the type token
 	case token.Identifier:
 		returnType = unresolvedTypeIdentifier{Name: tk.Value}
 		p.next() // Consume the identifier token
@@ -247,8 +242,6 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 	var varType types.Type
 
 	switch tk := p.peek().(type) {
-	case token.Type:
-		varType = tk.Kind
 	case token.VarDecl:
 		varType = types.Unspecified
 	case token.Identifier:

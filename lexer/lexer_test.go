@@ -3,7 +3,6 @@ package lexer_test
 import (
 	"leoscript/lexer"
 	"leoscript/token"
-	"leoscript/types"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -205,7 +204,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	t.Run("Integer variable declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("int foo = 123;")
 		assert.Equal(t, []token.Token{
-			token.Type{Kind: types.Int},
+			token.Identifier{Value: "int"},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Integer{Value: 123},
@@ -216,7 +215,7 @@ func Test_VariableDeclaration(t *testing.T) {
 	t.Run("Boolean variable declaration", func(t *testing.T) {
 		lx := lexer.MustTokenize("bool foo = true;")
 		assert.Equal(t, []token.Token{
-			token.Type{Kind: types.Bool},
+			token.Identifier{Value: "bool"},
 			token.Identifier{Value: "foo"},
 			token.Operator{Op: "="},
 			token.Boolean{Value: true},
@@ -470,11 +469,11 @@ func Test_Structs(t *testing.T) {
 			token.OpenBrace{},
 			token.Identifier{Value: "x"},
 			token.Colon{},
-			token.Type{Kind: types.Int},
+			token.Identifier{Value: "int"},
 			token.Comma{},
 			token.Identifier{Value: "y"},
 			token.Colon{},
-			token.Type{Kind: types.Int},
+			token.Identifier{Value: "int"},
 			token.CloseBrace{},
 		}, lx)
 	})

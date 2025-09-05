@@ -3,7 +3,6 @@ package lexer
 import (
 	"fmt"
 	"leoscript/token"
-	"leoscript/types"
 	"strings"
 )
 
@@ -11,11 +10,6 @@ var keywords = map[string]token.Token{
 	// Literals
 	"true":  token.Boolean{Value: true},
 	"false": token.Boolean{Value: false},
-
-	// Types
-	"int":    token.Type{Kind: types.Int},
-	"bool":   token.Type{Kind: types.Bool},
-	"string": token.Type{Kind: types.String},
 
 	"var":    token.VarDecl{},
 	"fn":     token.FnDef{},

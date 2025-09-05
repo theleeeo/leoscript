@@ -41,11 +41,11 @@ func (p *Parser) parseStructDef() (types.Struct, error) {
 }
 
 func (p *Parser) parseField() (types.Field, error) {
-	if err := p.expectCurrent(token.TypeType); err != nil {
+	if err := p.expectCurrent(token.IdentifierType); err != nil {
 		return types.Field{}, err
 	}
 
-	fieldType := p.peek().(token.Type).Kind
+	fieldType := p.peek().(token.Identifier).Value
 
 	if err := p.expectNext(token.IdentifierType); err != nil {
 		return types.Field{}, fmt.Errorf("expected field name, got %v", p.peek())
@@ -57,5 +57,5 @@ func (p *Parser) parseField() (types.Field, error) {
 		return types.Field{}, err
 	}
 
-	return types.Field{Name: name, Type: fieldType}, nil
+	return types.Field{Name: name, Type: unresolvedTypeIdentifier{Name: fieldType}}, nil
 }

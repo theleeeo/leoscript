@@ -2,7 +2,6 @@ package token
 
 import (
 	"fmt"
-	"leoscript/types"
 )
 
 type Token interface {
@@ -29,7 +28,6 @@ const (
 	CloseBraceType
 
 	VarDeclType
-	TypeType // lol
 	SemicolonType
 	IdentifierType
 	OperatorType
@@ -168,15 +166,6 @@ type Return struct{}
 func (Return) Type() TokenType { return ReturnType }
 func (Return) String() string {
 	return "{return}"
-}
-
-type Type struct {
-	Kind types.Type // TODO: Rename this one Kind is implemented?
-}
-
-func (Type) Type() TokenType { return TypeType }
-func (t Type) String() string {
-	return fmt.Sprintf("{type:%s}", t.Kind)
 }
 
 type Comma struct{}

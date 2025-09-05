@@ -177,11 +177,6 @@ type StructLiteral struct {
 	Fields []FieldLiteral
 }
 
-type FieldLiteral struct {
-	Name  string
-	Value Expression
-}
-
 func (s StructLiteral) ReturnType() types.Type {
 	return s.Type
 }
@@ -192,4 +187,17 @@ func (s StructLiteral) String() string {
 		fields = append(fields, fmt.Sprintf("%s: %s", field.Name, field.Value.String()))
 	}
 	return fmt.Sprintf("struct %v { %s }", s.Type, strings.Join(fields, ", "))
+}
+
+type FieldLiteral struct {
+	Name  string
+	Value Expression
+}
+
+func (f FieldLiteral) ReturnType() types.Type {
+	return f.Value.ReturnType()
+}
+
+func (f FieldLiteral) String() string {
+	return fmt.Sprintf("%s: %s", f.Name, f.Value.String())
 }

@@ -106,7 +106,7 @@ type Program struct {
 func (p *Parser) Parse() (*Program, error) {
 	for tk := p.peek(); tk.Type() != token.EOFType; tk = p.next() {
 		switch tk.(type) {
-		case token.Type, token.VarDecl, token.Identifier:
+		case token.VarDecl, token.Identifier:
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return nil, fmt.Errorf("parsing variable declaration: %w", err)
@@ -140,7 +140,7 @@ func (p *Parser) Parse() (*Program, error) {
 
 				p.program.FnDefs = append(p.program.FnDefs, fnDef)
 
-			case token.Type, token.VarDecl, token.Identifier:
+			case token.VarDecl, token.Identifier:
 				varDecl, err := p.parseVarDecl()
 				if err != nil {
 					return nil, fmt.Errorf("parsing variable declaration: %w", err)

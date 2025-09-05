@@ -17,25 +17,24 @@ func _() {
 	_ = x[OpenBraceType-6]
 	_ = x[CloseBraceType-7]
 	_ = x[VarDeclType-8]
-	_ = x[TypeType-9]
-	_ = x[SemicolonType-10]
-	_ = x[IdentifierType-11]
-	_ = x[OperatorType-12]
-	_ = x[FnDefType-13]
-	_ = x[ReturnType-14]
-	_ = x[CommaType-15]
-	_ = x[StubDefType-16]
-	_ = x[ExportedType-17]
-	_ = x[StructDefType-18]
-	_ = x[ColonType-19]
-	_ = x[IfType-20]
-	_ = x[ElseType-21]
-	_ = x[WhileType-22]
+	_ = x[SemicolonType-9]
+	_ = x[IdentifierType-10]
+	_ = x[OperatorType-11]
+	_ = x[FnDefType-12]
+	_ = x[ReturnType-13]
+	_ = x[CommaType-14]
+	_ = x[StubDefType-15]
+	_ = x[ExportedType-16]
+	_ = x[StructDefType-17]
+	_ = x[ColonType-18]
+	_ = x[IfType-19]
+	_ = x[ElseType-20]
+	_ = x[WhileType-21]
 }
 
-const _TokenType_name = "EOFTypeIntegerTypeBooleanTypeStringLiteralTypeOpenParenTypeCloseParenTypeOpenBraceTypeCloseBraceTypeVarDeclTypeTypeTypeSemicolonTypeIdentifierTypeOperatorTypeFnDefTypeReturnTypeCommaTypeStubDefTypeExportedTypeStructDefTypeColonTypeIfTypeElseTypeWhileType"
+const _TokenType_name = "EOFTypeIntegerTypeBooleanTypeStringLiteralTypeOpenParenTypeCloseParenTypeOpenBraceTypeCloseBraceTypeVarDeclTypeSemicolonTypeIdentifierTypeOperatorTypeFnDefTypeReturnTypeCommaTypeStubDefTypeExportedTypeStructDefTypeColonTypeIfTypeElseTypeWhileType"
 
-var _TokenType_index = [...]uint8{0, 7, 18, 29, 46, 59, 73, 86, 100, 111, 119, 132, 146, 158, 167, 177, 186, 197, 209, 222, 231, 237, 245, 254}
+var _TokenType_index = [...]uint8{0, 7, 18, 29, 46, 59, 73, 86, 100, 111, 124, 138, 150, 159, 169, 178, 189, 201, 214, 223, 229, 237, 246}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {
