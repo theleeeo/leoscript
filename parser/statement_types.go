@@ -41,8 +41,8 @@ type Parameter struct {
 }
 
 type Assignment struct {
-	Name  string
-	Value Expression
+	Target Assignable
+	Value  Expression
 }
 
 type If struct {
@@ -54,4 +54,8 @@ type If struct {
 type While struct {
 	Cond Expression
 	Body []Statement
+}
+
+type Assignable interface {
+	isAssignable()
 }

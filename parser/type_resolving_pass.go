@@ -67,72 +67,85 @@ func typeResolvingPass(program *Program) (err error) {
 	}
 
 	callback := func(wctx WalkingContext, node Statement) (Statement, error) {
-		switch expr := node.(type) {
+		switch n := node.(type) {
 		case Call:
-			resFn, ok := wctx.Scope.ResolveFn(expr.Name)
+			resFn, ok := wctx.Scope.ResolveFn(n.Name)
 			if !ok {
-				panic(fmt.Sprint("unknown function:", expr.Name))
+				panic(fmt.Sprint("unknown function:", n.Name))
 			}
 
-			expr.returnType = resFn.ReturnType
+			n.returnType = resFn.ReturnType
 
-			return expr, nil
+			return n, nil
 		case VarIdentifier:
-			vt, ok := wctx.Scope.ResolveVarType(expr.Name)
+			vt, ok := wctx.Scope.ResolveVarType(n.Name)
 			if !ok {
-				panic(fmt.Sprint("unknown variable:", expr.Name))
+				panic(fmt.Sprint("unknown variable:", n.Name))
 			}
 
-			expr.returnType = vt
+			n.returnType = vt
 
-			return expr, nil
+			return n, nil
 		case VarDecl:
 			// Already fine
-			if expr.Type.Kind() != types.KindInvalid {
-				return expr, nil
+			if n.Type.Kind() != types.KindInvalid {
+				return n, nil
 			}
 
-			if t, ok := expr.Type.(unresolvedTypeIdentifier); ok {
+			// TODO: Handle array types
+
+			if t, ok := n.Type.(unresolvedTypeIdentifier); ok {
 				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
 				if !ok {
 					panic(fmt.Sprint("unknown type:", t.Name))
 				}
-				expr.Type = resolvedType
+				n.Type = resolvedType
 
-				return expr, nil
+				return n, nil
+			}
+
+			if t, ok := n.Type.(types.Array); ok {
+				resolvedType, ok := wctx.Scope.ResolveType(t.ElementType.(unresolvedTypeIdentifier).Name)
+				if !ok {
+					panic(fmt.Sprint("unknown type:", t.ElementType.(unresolvedTypeIdentifier).Name))
+				}
+				t.ElementType = resolvedType
+				n.Type = t
+
+				return n, nil
 			}
 
 			//
 			// Must resolve the type from the value
 			//
 
-			if expr.Value == nil {
+			if n.Value == nil {
 				panic("cannot infer type on an uninitialized variable")
 			}
 
 			// Child is a variable identifier whose type is not yet resolved
-			if expr.Value.ReturnType() == types.Unspecified {
+			if n.Value.ReturnType() == types.Unspecified {
 				return nil, ErrReturnLater
 			}
 
 			// Child has a type identifier that is not yet resolved
-			if _, ok := expr.Value.ReturnType().(unresolvedTypeIdentifier); ok {
+			if _, ok := n.Value.ReturnType().(unresolvedTypeIdentifier); ok {
 				return nil, ErrReturnLater
 			}
 
 			// If the type is unspecified, we need to resolve it from the value.
-			expr.Type = expr.Value.ReturnType()
+			n.Type = n.Value.ReturnType()
 
-			return expr, nil
+			return n, nil
 		case StructLiteral:
-			if t, ok := expr.Type.(unresolvedTypeIdentifier); ok {
+			if t, ok := n.Type.(unresolvedTypeIdentifier); ok {
 				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
 				if !ok {
 					panic(fmt.Sprint("unknown type:", t.Name))
 				}
-				expr.Type = resolvedType
+				n.Type = resolvedType
 
-				return expr, nil
+				return n, nil
 			}
 
 			switch pn := wctx.ParentNode.(type) {
@@ -142,45 +155,101 @@ func typeResolvingPass(program *Program) (err error) {
 					panic("cannot use an implicit struct literal without an explicitly typed variable")
 				}
 
-				expr.Type = pn.Type
+				n.Type = pn.Type
 			case Assignment:
-				vt, ok := wctx.Scope.ResolveVarType(pn.Name)
-				if !ok {
-					panic(fmt.Sprint("unknown variable:", pn.Name))
+				switch pn.Target.(type) {
+				case VariableTarget:
+					vt, ok := wctx.Scope.ResolveVarType(string(pn.Target.(VariableTarget)))
+					if !ok {
+						panic(fmt.Sprint("unknown variable:", pn.Target.(VariableTarget)))
+					}
+					n.Type = vt
+				case IndexTarget:
+					// Handle array index assignments
+					vt, ok := wctx.Scope.ResolveVarType(pn.Target.(IndexTarget).VariableName)
+					if !ok {
+						panic(fmt.Sprint("unknown array:", pn.Target.(IndexTarget).VariableName))
+					}
+					at := vt.(types.Array)
+					n.Type = at.ElementType
 				}
-				expr.Type = vt
 			case Call:
 				resFn, ok := wctx.Scope.ResolveFn(pn.Name)
 				if !ok {
 					panic(fmt.Sprint("unknown function:", pn.Name))
 				}
-				expr.Type = resFn.ReturnType
+				n.Type = resFn.ReturnType
 			}
 
-			return expr, nil
+			return n, nil
 		case FnDef:
-			if t, ok := expr.ReturnType.(unresolvedTypeIdentifier); ok {
+			if t, ok := n.ReturnType.(unresolvedTypeIdentifier); ok {
 				resolvedType, ok := wctx.Scope.ResolveType(t.Name)
 				if !ok {
 					panic(fmt.Sprint("unknown type:", t.Name))
 				}
-				expr.ReturnType = resolvedType
+				n.ReturnType = resolvedType
 
-				return expr, nil
+				return n, nil
 			}
 		case Parameter:
-			if expr.Type.Kind() != types.KindInvalid {
-				return expr, nil
+			if n.Type.Kind() != types.KindInvalid {
+				return n, nil
 			}
 
-			t := expr.Type.(unresolvedTypeIdentifier)
+			t := n.Type.(unresolvedTypeIdentifier)
 			resolvedType, ok := wctx.Scope.ResolveType(t.Name)
 			if !ok {
 				panic(fmt.Sprint("unknown type:", t.Name))
 			}
-			expr.Type = resolvedType
+			n.Type = resolvedType
 
-			return expr, nil
+			return n, nil
+		case ArrayLiteral:
+			if n.ElementType.Kind() != types.KindInvalid {
+				return n, nil
+			}
+
+			switch pn := wctx.ParentNode.(type) {
+			case Assignment:
+				switch pn.Target.(type) {
+				case VariableTarget:
+					vt, ok := wctx.Scope.ResolveVarType(string(pn.Target.(VariableTarget)))
+					if !ok {
+						panic(fmt.Sprint("unknown variable:", pn.Target.(VariableTarget)))
+					}
+					n.ElementType = vt
+				case IndexTarget:
+					// Handle array index assignments
+					vt, ok := wctx.Scope.ResolveVarType(string(pn.Target.(IndexTarget).VariableName))
+					if !ok {
+						panic(fmt.Sprint("unknown array:", pn.Target.(IndexTarget).VariableName))
+					}
+					at := vt.(types.Array)
+					n.ElementType = at.ElementType
+				}
+			case VarDecl:
+				if pn.Type != types.Unspecified {
+					n.ElementType = pn.Type
+				}
+			}
+
+			// Still not resolved, try to infer the type from the elements
+			if n.ElementType.Kind() == types.KindInvalid {
+				if len(n.Elements) == 0 {
+					return nil, fmt.Errorf("cannot infer type of empty array literal")
+				}
+
+				// Only use the first element for simplicity and to make the behaviour clear.
+				firstElem := n.Elements[0]
+				if firstElem.ReturnType() == types.Unspecified {
+					return nil, ErrReturnLater
+				}
+
+				n.ElementType = firstElem.ReturnType()
+			}
+
+			return n, nil
 		}
 		return node, nil
 	}

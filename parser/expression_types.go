@@ -201,3 +201,37 @@ func (f FieldLiteral) ReturnType() types.Type {
 func (f FieldLiteral) String() string {
 	return fmt.Sprintf("%s: %s", f.Name, f.Value.String())
 }
+
+type ArrayLiteral struct {
+	ElementType types.Type
+	Elements    []Expression
+}
+
+func (a ArrayLiteral) ReturnType() types.Type {
+	if a.ElementType == types.Unspecified {
+		return types.Unspecified
+	}
+
+	return types.Array{ElementType: a.ElementType}
+}
+
+func (a ArrayLiteral) String() string {
+	var elements []string
+	for _, elem := range a.Elements {
+		elements = append(elements, elem.String())
+	}
+	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
+}
+
+type ArrayIndex struct {
+	ArrayVar string
+	Index    Expression
+}
+
+func (a ArrayIndex) String() string {
+	return fmt.Sprintf("%s[%s]", a.ArrayVar, a.Index.String())
+}
+
+func (a ArrayIndex) ReturnType() types.Type {
+	return types.Array{ElementType: a.Index.ReturnType()}
+}

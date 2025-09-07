@@ -186,6 +186,13 @@ func (tw *TreeWalker) walkStatement(stmt Statement, wctx WalkingContext) Stateme
 		stmt = rv
 	case Assignment:
 		wctx.ParentNode = rv
+
+		// TODO: Verify and validate
+		if it, ok := rv.Target.(IndexTarget); ok {
+			it.Index = tw.walkExpression(it.Index, wctx)
+			rv.Target = it
+		}
+
 		rv.Value = tw.walkExpression(rv.Value, wctx)
 		stmt = rv
 	case Call:
@@ -304,6 +311,9 @@ func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expre
 	case UnaryExpression:
 		rv.Expression = tw.walkExpression(rv.Expression, wctx)
 		expr = rv
+	case ArrayIndex:
+		rv.Index = tw.walkExpression(rv.Index, wctx)
+		expr = rv
 	// case StructLiteral: // TODO
 	// 	for i := range rv.Fields {
 	// 		retExpr := tw.walkExpression(rv.Fields[i], wctx)
@@ -318,7 +328,8 @@ func (tw *TreeWalker) walkExpression(expr Expression, wctx WalkingContext) Expre
 		VoidLiteral,
 		VarIdentifier,
 		StringLiteral,
-		StructLiteral:
+		StructLiteral, // TODO: Walk?
+		ArrayLiteral:  // TODO: Walk?
 		// Nothing to walk
 	default:
 		panic(fmt.Errorf("unhandled expression type: %T", rv))

@@ -159,7 +159,7 @@ func (intr *Interpreter) evaluateStatement(stmt parser.Statement) runtimeVal {
 		}
 	case parser.Assignment:
 		val := intr.evaluateExpression(s.Value)
-		if err := intr.activeScope.SetVar(s.Name, val); err != nil {
+		if err := intr.activeScope.SetVar(string(s.Target.(parser.VariableTarget)), val); err != nil {
 			panic(fmt.Sprintf("assignment error: %v", err))
 		}
 	case parser.Call:

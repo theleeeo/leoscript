@@ -410,7 +410,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		bytes = append(bytes, val...)
 
 		// Find the variable to assign to
-		v, isGlobal := sc.getVariable(stmt.Name)
+		v, isGlobal := sc.getVariable(string(stmt.Target.(parser.VariableTarget)))
 
 		var storeOp byte
 		if isGlobal {

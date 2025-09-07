@@ -106,7 +106,7 @@ type Program struct {
 func (p *Parser) Parse() (*Program, error) {
 	for tk := p.peek(); tk.Type() != lexer.EOFType; tk = p.next() {
 		switch tk.(type) {
-		case lexer.VarDecl, lexer.Identifier:
+		case lexer.VarDecl, lexer.Identifier, lexer.OpenBracket: // Implicit vars, types, arrays
 			varDecl, err := p.parseVarDecl()
 			if err != nil {
 				return nil, fmt.Errorf("parsing variable declaration: %w", err)

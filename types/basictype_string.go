@@ -8,11 +8,11 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[Unspecified-0]
-	_ = x[Void-1]
-	_ = x[Bool-2]
-	_ = x[Int-3]
-	_ = x[String-4]
+	_ = x[Unspecified-1]
+	_ = x[Void-2]
+	_ = x[Bool-3]
+	_ = x[Int-4]
+	_ = x[String-5]
 }
 
 const _BasicType_name = "UnspecifiedVoidBoolIntString"
@@ -20,8 +20,9 @@ const _BasicType_name = "UnspecifiedVoidBoolIntString"
 var _BasicType_index = [...]uint8{0, 11, 15, 19, 22, 28}
 
 func (i BasicType) String() string {
+	i -= 1
 	if i < 0 || i >= BasicType(len(_BasicType_index)-1) {
-		return "BasicType(" + strconv.FormatInt(int64(i), 10) + ")"
+		return "BasicType(" + strconv.FormatInt(int64(i+1), 10) + ")"
 	}
 	return _BasicType_name[_BasicType_index[i]:_BasicType_index[i+1]]
 }

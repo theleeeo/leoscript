@@ -13,6 +13,7 @@ const (
 	KindInt
 	KindString
 	KindStruct
+	KindArray
 )
 
 type Type interface {
@@ -24,7 +25,7 @@ type Type interface {
 type BasicType int
 
 const (
-	Unspecified BasicType = iota // TODO: Maybe remove in favor of a more explicit "unresolvedIdentifier". Like how it is for unresolved type identifier but for vars/calls
+	Unspecified BasicType = iota + 1 // TODO: Maybe remove in favor of a more explicit "implicitVariable". Like how it is for unresolved type identifier but for vars/calls. It is however used for two things, implicit var and not-resolved-yet.
 
 	// No type. Used for void functions
 	Void
@@ -86,4 +87,20 @@ func (s *Struct) Size() uint64 {
 
 func (s *Struct) Kind() Kind {
 	return KindStruct
+}
+
+type Array struct {
+	ElementType Type
+}
+
+func (a Array) Size() uint64 {
+	return 8 // TODO: Implement proper array size calculation
+}
+
+func (a Array) Kind() Kind {
+	if a.ElementType.Kind() == KindInvalid {
+		return KindInvalid
+	}
+
+	return KindArray
 }

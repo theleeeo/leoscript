@@ -13,11 +13,12 @@ func _() {
 	_ = x[KindInt-2]
 	_ = x[KindString-3]
 	_ = x[KindStruct-4]
+	_ = x[KindArray-5]
 }
 
-const _Kind_name = "KindInvalidKindBoolKindIntKindStringKindStruct"
+const _Kind_name = "KindInvalidKindBoolKindIntKindStringKindStructKindArray"
 
-var _Kind_index = [...]uint8{0, 11, 19, 26, 36, 46}
+var _Kind_index = [...]uint8{0, 11, 19, 26, 36, 46, 55}
 
 func (i Kind) String() string {
 	if i < 0 || i >= Kind(len(_Kind_index)-1) {

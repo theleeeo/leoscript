@@ -149,6 +149,10 @@ func Tokenize(input string) ([]Token, error) {
 			lx.pushToken(OpenBrace{})
 		case '}':
 			lx.pushToken(CloseBrace{})
+		case '[':
+			lx.pushToken(OpenBracket{})
+		case ']':
+			lx.pushToken(CloseBracket{})
 		case ';':
 			lx.pushToken(Semicolon{})
 		case ',':

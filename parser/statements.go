@@ -18,10 +18,10 @@ func (p *Parser) ParseStatement() (Statement, error) {
 			return p.ParseExpr()
 		case lexer.Identifier:
 			return p.parseVarDecl()
-		case lexer.Operator:
+		case lexer.Operator, lexer.OpenBracket:
 			return p.parseAssignment()
 		default:
-			return nil, fmt.Errorf("unexpected token after identifier: %T", p.peek())
+			return nil, fmt.Errorf("unexpected token after identifier: %T", p.peekNext())
 		}
 	case lexer.Return:
 		return p.parseReturn()
@@ -61,9 +61,34 @@ func (p *Parser) parseReturn() (Statement, error) {
 }
 
 func (p *Parser) parseAssignment() (Statement, error) {
+	var target Assignable
+
 	identifier := p.peek().(lexer.Identifier)
 
-	if err := p.expectNext(lexer.OperatorType); err != nil {
+	switch p.next().(type) {
+	case lexer.Operator:
+		target = VariableTarget(identifier.Value)
+	case lexer.OpenBracket:
+		p.next() // Consume the opening bracket
+
+		expr, err := p.ParseExpr()
+		if err != nil {
+			return nil, fmt.Errorf("parsing index expression: %w", err)
+		}
+
+		target = IndexTarget{
+			VariableName: identifier.Value,
+			Index:        expr,
+		}
+
+		if err := p.expectCurrent(lexer.CloseBracketType); err != nil {
+			return nil, fmt.Errorf("expected closing bracket after index expression: %w", err)
+		}
+
+		p.next() // Consume the closing bracket
+	}
+
+	if err := p.expectCurrent(lexer.OperatorType); err != nil {
 		return nil, fmt.Errorf("expected assignment operator after identifier: %w", err)
 	}
 
@@ -84,10 +109,21 @@ func (p *Parser) parseAssignment() (Statement, error) {
 	}
 
 	return Assignment{
-		Name:  identifier.Value,
-		Value: expr,
+		Target: target,
+		Value:  expr,
 	}, nil
 }
+
+type VariableTarget string
+
+func (v VariableTarget) isAssignable() {}
+
+type IndexTarget struct {
+	VariableName string
+	Index        Expression
+}
+
+func (i IndexTarget) isAssignable() {}
 
 func (p *Parser) parseFnParams() ([]Parameter, error) {
 	// Check if the function has no parameters
@@ -239,19 +275,41 @@ func (p *Parser) parseVarDecl() (VarDecl, error) {
 		p.next() // Consume the exported token
 	}
 
+	var arrayType bool
+	if _, ok := p.peek().(lexer.OpenBracket); ok {
+		arrayType = true
+
+		if err := p.expectNext(lexer.CloseBracketType); err != nil {
+			return VarDecl{}, err
+		}
+
+		p.next() // Consume the close bracket
+	}
+
 	var varType types.Type
 
+	// TODO: Break this out into: If VarDecl -> unresolved, else p.parseType()
 	switch tk := p.peek().(type) {
 	case lexer.VarDecl:
+		if arrayType {
+			return VarDecl{}, fmt.Errorf("an array declaration can not be of an implicit type")
+		}
+
 		varType = types.Unspecified
 	case lexer.Identifier:
-		varType = unresolvedTypeIdentifier{Name: tk.Value}
+		if arrayType {
+			varType = types.Array{ElementType: unresolvedTypeIdentifier{Name: tk.Value}}
+		} else {
+			varType = unresolvedTypeIdentifier{Name: tk.Value}
+		}
 	default:
 		panic(fmt.Sprintf("expected type or vardecl token, got %T", tk))
 	}
 
-	if err := p.expectNext(lexer.IdentifierType); err != nil {
-		return VarDecl{}, fmt.Errorf("expected identifier after intdef: %w", err)
+	p.next() // Consume the type or vardecl token
+
+	if err := p.expectCurrent(lexer.IdentifierType); err != nil {
+		return VarDecl{}, fmt.Errorf("expected identifier after variable declaration: %w", err)
 	}
 
 	identifier := p.peek().(lexer.Identifier)

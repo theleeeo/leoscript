@@ -25,6 +25,12 @@ func defaultValue(t types.Type) Expression {
 			}
 		}
 		return sl
+	case types.KindArray:
+		at := t.(types.Array)
+		return ArrayLiteral{
+			ElementType: at.ElementType,
+			Elements:    []Expression{},
+		}
 	default:
 		panic("unsupported type: " + t.Kind().String())
 	}

@@ -1432,14 +1432,14 @@ func Test_If(t *testing.T) {
 							},
 							Then: []Statement{
 								Assignment{
-									Name:  "foo",
-									Value: IntegerLiteral{Value: 10},
+									Target: VariableTarget("foo"),
+									Value:  IntegerLiteral{Value: 10},
 								},
 							},
 							Else: []Statement{
 								Assignment{
-									Name:  "foo",
-									Value: IntegerLiteral{Value: 20},
+									Target: VariableTarget("foo"),
+									Value:  IntegerLiteral{Value: 20},
 								},
 							},
 						},
@@ -1489,8 +1489,8 @@ func Test_If(t *testing.T) {
 							},
 							Then: []Statement{
 								Assignment{
-									Name:  "foo",
-									Value: IntegerLiteral{Value: 10},
+									Target: VariableTarget("foo"),
+									Value:  IntegerLiteral{Value: 10},
 								},
 							},
 							Else: []Statement{
@@ -1502,14 +1502,14 @@ func Test_If(t *testing.T) {
 									},
 									Then: []Statement{
 										Assignment{
-											Name:  "foo",
-											Value: IntegerLiteral{Value: 20},
+											Target: VariableTarget("foo"),
+											Value:  IntegerLiteral{Value: 20},
 										},
 									},
 									Else: []Statement{
 										Assignment{
-											Name:  "foo",
-											Value: IntegerLiteral{Value: 30},
+											Target: VariableTarget("foo"),
+											Value:  IntegerLiteral{Value: 30},
 										},
 									},
 								},
@@ -1563,8 +1563,8 @@ func Test_If(t *testing.T) {
 							},
 							Then: []Statement{
 								Assignment{
-									Name:  "foo",
-									Value: IntegerLiteral{Value: 10},
+									Target: VariableTarget("foo"),
+									Value:  IntegerLiteral{Value: 10},
 								},
 							},
 							Else: []Statement{
@@ -1576,8 +1576,8 @@ func Test_If(t *testing.T) {
 									},
 									Then: []Statement{
 										Assignment{
-											Name:  "foo",
-											Value: IntegerLiteral{Value: 20},
+											Target: VariableTarget("foo"),
+											Value:  IntegerLiteral{Value: 20},
 										},
 									},
 									Else: []Statement{
@@ -1590,14 +1590,14 @@ func Test_If(t *testing.T) {
 											},
 											Then: []Statement{
 												Assignment{
-													Name:  "foo",
-													Value: IntegerLiteral{Value: 30},
+													Target: VariableTarget("foo"),
+													Value:  IntegerLiteral{Value: 30},
 												},
 											},
 											Else: []Statement{
 												Assignment{
-													Name:  "foo",
-													Value: IntegerLiteral{Value: 40},
+													Target: VariableTarget("foo"),
+													Value:  IntegerLiteral{Value: 40},
 												},
 											},
 										},
@@ -1643,22 +1643,22 @@ func Test_If(t *testing.T) {
 					},
 					Then: []Statement{
 						Assignment{
-							Name:  "foo",
-							Value: IntegerLiteral{Value: 10},
+							Target: VariableTarget("foo"),
+							Value:  IntegerLiteral{Value: 10},
 						},
 					},
 					Else: []Statement{
 						Assignment{
-							Name:  "foo",
-							Value: IntegerLiteral{Value: 20},
+							Target: VariableTarget("foo"),
+							Value:  IntegerLiteral{Value: 20},
 						},
 					},
 				},
 			},
 			Else: []Statement{
 				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 30},
+					Target: VariableTarget("foo"),
+					Value:  IntegerLiteral{Value: 30},
 				},
 			},
 		}, prog)
@@ -1741,8 +1741,8 @@ func Test_WhileStatements(t *testing.T) {
 			Cond: BooleanLiteral{Value: true},
 			Body: []Statement{
 				Assignment{
-					Name:  "foo",
-					Value: IntegerLiteral{Value: 10},
+					Target: VariableTarget("foo"),
+					Value:  IntegerLiteral{Value: 10},
 				},
 			},
 		}, prog)
@@ -1771,8 +1771,8 @@ func Test_WhileStatements(t *testing.T) {
 					Args: []Expression{},
 				},
 				Assignment{
-					Name:  "baz",
-					Value: IntegerLiteral{Value: 20},
+					Target: VariableTarget("baz"),
+					Value:  IntegerLiteral{Value: 20},
 				},
 			},
 		}, prog)
@@ -1858,14 +1858,14 @@ func Test_WhileStatements(t *testing.T) {
 					Cond: BooleanLiteral{Value: true},
 					Then: []Statement{
 						Assignment{
-							Name:  "foo",
-							Value: IntegerLiteral{Value: 10},
+							Target: VariableTarget("foo"),
+							Value:  IntegerLiteral{Value: 10},
 						},
 					},
 					Else: []Statement{
 						Assignment{
-							Name:  "foo",
-							Value: IntegerLiteral{Value: 20},
+							Target: VariableTarget("foo"),
+							Value:  IntegerLiteral{Value: 20},
 						},
 					},
 				},
@@ -2518,12 +2518,169 @@ func Test_StructFieldAccess(t *testing.T) {
 							},
 						},
 						Assignment{
-							Name:  "p.x",
-							Value: IntegerLiteral{Value: 5},
+							Target: VariableTarget("p.x"),
+							Value:  IntegerLiteral{Value: 5},
 						},
 						Return{
 							Value: VarIdentifier{Name: "p.x"},
 						},
+					},
+				},
+			},
+		}, prog)
+	})
+}
+
+func Test_Arrays(t *testing.T) {
+	t.Run("array variable", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		[]int arr;
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "arr",
+					Type: types.Array{
+						ElementType: types.Int,
+					},
+					Value: ArrayLiteral{
+						ElementType: types.Int,
+						Elements:    []Expression{},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("array literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = [1, 2, 3];
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "a",
+					Type: types.Array{
+						ElementType: types.Int,
+					},
+					Value: ArrayLiteral{
+						ElementType: types.Int,
+						Elements: []Expression{
+							IntegerLiteral{Value: 1},
+							IntegerLiteral{Value: 2},
+							IntegerLiteral{Value: 3},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("bool array", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var b = [true, false];
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "b",
+					Type: types.Array{
+						ElementType: types.Bool,
+					},
+					Value: ArrayLiteral{
+						ElementType: types.Bool,
+						Elements: []Expression{
+							BooleanLiteral{Value: true},
+							BooleanLiteral{Value: false},
+						},
+					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("retrieve index", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = [1, 2, 3];
+		var b = a[0];
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "a",
+					Type: types.Array{
+						ElementType: types.Int,
+					},
+					Value: ArrayLiteral{
+						ElementType: types.Int,
+						Elements: []Expression{
+							IntegerLiteral{Value: 1},
+							IntegerLiteral{Value: 2},
+							IntegerLiteral{Value: 3},
+						},
+					},
+				},
+				{
+					Name:  "b",
+					Type:  types.Array{ElementType: types.Int},
+					Value: ArrayIndex{ArrayVar: "a", Index: IntegerLiteral{Value: 0}},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("assign to index", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn test() {
+			var a = [1, 2, 3];
+			a[0] = 4;
+		}
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{},
+			FnDefs: []FnDef{
+				{
+					Name:       "test",
+					Params:     []Parameter{},
+					ReturnType: types.Void,
+					Body: []Statement{
+						VarDecl{
+							Name: "a",
+							Type: types.Array{
+								ElementType: types.Int,
+							},
+							Value: ArrayLiteral{
+								ElementType: types.Int,
+								Elements: []Expression{
+									IntegerLiteral{Value: 1},
+									IntegerLiteral{Value: 2},
+									IntegerLiteral{Value: 3},
+								},
+							},
+						},
+						Assignment{
+							Target: IndexTarget{
+								VariableName: "a",
+								Index:        IntegerLiteral{Value: 0},
+							},
+							Value: IntegerLiteral{Value: 4},
+						},
+						Return{Value: VoidLiteral{}},
 					},
 				},
 			},

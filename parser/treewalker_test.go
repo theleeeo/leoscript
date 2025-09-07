@@ -19,7 +19,7 @@ func Test_TreeWalking(t *testing.T) {
 			{Name: "bar", Params: []Parameter{{Name: "a", Type: types.Int}}, Body: []Statement{
 				VarDecl{Name: "result", Value: IntegerLiteral{Value: 0}},
 				Assignment{
-					Name: "result",
+					Target: VariableTarget("result"),
 					Value: Call{
 						Name: "foo",
 						Args: []Expression{IntegerLiteral{Value: 10}},
@@ -374,7 +374,7 @@ func Test_TreeWalking_AllNodesVisited(t *testing.T) {
 		callback := func(wctx WalkingContext, node Statement) (Statement, error) {
 			switch n := node.(type) {
 			case Assignment:
-				visitedNodes = append(visitedNodes, n.Name)
+				visitedNodes = append(visitedNodes, string(n.Target.(VariableTarget)))
 			}
 			return node, nil
 		}

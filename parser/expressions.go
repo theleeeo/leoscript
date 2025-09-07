@@ -45,6 +45,9 @@ func (p *Parser) ParseExpr() (Expression, error) {
 		case lexer.CloseBrace: // Found in struct literals
 			return root, nil
 
+		case lexer.CloseBracket: // Found in array literals
+			return root, nil
+
 		case lexer.Comma:
 			// Commas are used in function calls.
 			return root, nil
@@ -95,17 +98,20 @@ func (p *Parser) parsePrimaryExpression() (Expression, error) {
 			return p.parseFnCall()
 		case lexer.OpenBrace:
 			return p.parseStructLiteral()
+		case lexer.OpenBracket:
+			return p.parseArrayIndex()
 		}
-
 		return p.parseVarIdentifier()
 	case lexer.OpenBrace:
 		return p.parseStructLiteral()
+	case lexer.OpenBracket:
+		return p.parseArrayLiteral()
 	}
 
 	return nil, fmt.Errorf("unexpected token in primary expression: T=%T V=%v", p.peek(), p.peek())
 }
 
-func (p *Parser) parseVarIdentifier() (Expression, error) {
+func (p *Parser) parseVarIdentifier() (VarIdentifier, error) {
 	varIden := p.peek().(lexer.Identifier)
 
 	return VarIdentifier{Name: varIden.Value}, nil
@@ -248,10 +254,6 @@ func (p *Parser) parseStructLiteral() (Expression, error) {
 		p.next() // Consume the comma
 	}
 
-	if err := p.expectCurrent(lexer.CloseBraceType); err != nil {
-		return nil, fmt.Errorf("expected close brace for struct literal: %w", err)
-	}
-
 	return structLit, nil
 }
 
@@ -277,4 +279,64 @@ func (p *Parser) parseFieldLiteral() (FieldLiteral, error) {
 	fieldLit.Value = value
 
 	return fieldLit, nil
+}
+
+func (p *Parser) parseArrayLiteral() (Expression, error) {
+	if err := p.expectCurrent(lexer.OpenBracketType); err != nil {
+		return nil, fmt.Errorf("expected open bracket for array literal: %w", err)
+	}
+
+	p.next() // Consume the open bracket
+
+	arrayLit := ArrayLiteral{
+		ElementType: types.Unspecified,
+	}
+	for {
+		element, err := p.ParseExpr()
+		if err != nil {
+			return nil, fmt.Errorf("parsing array element: %w", err)
+		}
+		arrayLit.Elements = append(arrayLit.Elements, element)
+
+		if _, ok := p.peek().(lexer.CloseBracket); ok {
+			break
+		}
+
+		if err := p.expectCurrent(lexer.CommaType); err != nil {
+			return nil, fmt.Errorf("expected comma after array element: %w", err)
+		}
+
+		p.next() // Consume the comma
+	}
+
+	return arrayLit, nil
+}
+
+func (p *Parser) parseArrayIndex() (Expression, error) {
+	ident, ok := p.peek().(lexer.Identifier)
+	if !ok {
+		return nil, fmt.Errorf("expected identifier for array index")
+	}
+
+	p.next() // Consume the identifier
+
+	if err := p.expectCurrent(lexer.OpenBracketType); err != nil {
+		return nil, fmt.Errorf("expected open bracket for array index: %w", err)
+	}
+
+	p.next() // Consume the open bracket
+
+	index, err := p.ParseExpr()
+	if err != nil {
+		return nil, fmt.Errorf("parsing array index: %w", err)
+	}
+
+	if err := p.expectCurrent(lexer.CloseBracketType); err != nil {
+		return nil, fmt.Errorf("expected close bracket for array index: %w", err)
+	}
+
+	return ArrayIndex{
+		ArrayVar: ident.Value,
+		Index:    index,
+	}, nil
 }

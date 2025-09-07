@@ -37,9 +37,18 @@ func typeValidationPass(program *Program) (err error) {
 					panic(fmt.Sprintf("type mismatch: expected Bool, got %s", n.Cond.ReturnType()))
 				}
 			case Assignment:
-				vt, _ := wctx.Scope.ResolveVarType(n.Name)
-				if n.Value.ReturnType() != vt {
-					panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", vt, n.Value.ReturnType()))
+				switch n.Target.(type) {
+				case VariableTarget:
+					vt, _ := wctx.Scope.ResolveVarType(string(n.Target.(VariableTarget)))
+					if n.Value.ReturnType() != vt {
+						panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", vt, n.Value.ReturnType()))
+					}
+				case IndexTarget:
+					vt, _ := wctx.Scope.ResolveVarType(n.Target.(IndexTarget).VariableName)
+					at := vt.(types.Array)
+					if n.Value.ReturnType() != at.ElementType {
+						panic(fmt.Sprintf("type mismatch in assignment: expected %s, got %s", at.ElementType, n.Value.ReturnType()))
+					}
 				}
 			case UnaryExpression:
 				switch n.Op {
@@ -78,6 +87,12 @@ func typeValidationPass(program *Program) (err error) {
 					}
 				default:
 					panic(fmt.Sprintf("unsupported binary operator: %s", n.Op))
+				}
+			case ArrayLiteral:
+				for i, elem := range n.Elements {
+					if n.ElementType != elem.ReturnType() {
+						panic(fmt.Sprintf("type mismatch in array literal: element %d is %s, expected %s", i, elem.ReturnType(), n.ElementType))
+					}
 				}
 			}
 			return node, nil

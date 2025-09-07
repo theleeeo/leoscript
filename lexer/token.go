@@ -26,6 +26,8 @@ const (
 	CloseParenType
 	OpenBraceType
 	CloseBraceType
+	OpenBracketType
+	CloseBracketType
 
 	VarDeclType
 	SemicolonType
@@ -231,4 +233,18 @@ type Colon struct{}
 func (Colon) Type() TokenType { return ColonType }
 func (Colon) String() string {
 	return "{:}"
+}
+
+type OpenBracket struct{}
+
+func (OpenBracket) Type() TokenType { return OpenBracketType }
+func (OpenBracket) String() string {
+	return "{[}"
+}
+
+type CloseBracket struct{}
+
+func (CloseBracket) Type() TokenType { return CloseBracketType }
+func (CloseBracket) String() string {
+	return "{]}"
 }
