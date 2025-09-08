@@ -155,7 +155,7 @@ func Test_StackVariables(t *testing.T) {
 			LOAD_GLOBAL 0
 			PUSH 20
 			ADD
-			STORE_GLOBAL 8
+			STORE_GLOBAL 1
 			RETURN
 			`,
 		)
@@ -175,9 +175,9 @@ func Test_Function(t *testing.T) {
 			`
 			RETURN
 			STORE 0
-			STORE 8
+			STORE 1
 			LOAD 0
-			LOAD 8
+			LOAD 1
 			ADD
 			RETURN
 			`,
@@ -237,9 +237,9 @@ func Test_Function(t *testing.T) {
 			`
 			RETURN
 			STORE 0
-			STORE 8
+			STORE 1
 			LOAD 0
-			LOAD 8
+			LOAD 1
 			ADD
 			RETURN
 			PUSH 5
@@ -484,7 +484,7 @@ func Test_Struct(t *testing.T) {
 			PUSH 0
 			PUSH 0
 			STORE_GLOBAL 0
-			STORE_GLOBAL 8
+			STORE_GLOBAL 1
 			RETURN
 			`,
 		)
@@ -511,11 +511,11 @@ func Test_Struct(t *testing.T) {
 			PUSH 0
 			PUSH 0
 			STORE 0
-			STORE 8
+			STORE 1
 			PUSH 5
 			STORE 0
 			PUSH 10
-			STORE 8
+			STORE 1
 			RETURN
 		`,
 		)
@@ -537,7 +537,7 @@ func Test_Struct(t *testing.T) {
 			PUSH 5
 			PUSH 10
 			STORE_GLOBAL 0
-			STORE_GLOBAL 8
+			STORE_GLOBAL 1
 			RETURN
 			`,
 		)
@@ -564,8 +564,8 @@ func Test_Struct(t *testing.T) {
 			PUSH 10
 			PUSH 15
 			STORE 0
-			STORE 8
-			STORE 16
+			STORE 1
+			STORE 2
 			RETURN
 			`,
 		)
@@ -593,17 +593,17 @@ func Test_Struct(t *testing.T) {
 			`
 			RETURN
 			STORE 0
-			STORE 8
+			STORE 1
 			LOAD 0
-			LOAD 8
+			LOAD 1
 			ADD
 			RETURN
 			PUSH 5
 			PUSH 10
 			STORE 0
-			STORE 8
+			STORE 1
 			LOAD 0
-			LOAD 8
+			LOAD 1
 			CALL 1
 			RETURN
 			`,
@@ -630,11 +630,11 @@ func Test_Struct(t *testing.T) {
 			PUSH 0
 			PUSH 0
 			STORE 0
-			STORE 8
+			STORE 1
 			PUSH 5
 			PUSH 10
 			STORE 0
-			STORE 8
+			STORE 1
 			RETURN
 			`,
 		)

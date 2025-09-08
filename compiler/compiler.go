@@ -164,7 +164,7 @@ func (sc *scopeContext) allocateVariable(name string, size uint64, virtualVariab
 		}
 		storeInstructions = binary.BigEndian.AppendUint64(storeInstructions, sc.currentStackOffset)
 
-		sc.currentStackOffset += 8
+		sc.currentStackOffset += 1
 	}
 
 	return storeInstructions
@@ -358,7 +358,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 
 		for n := range v.size / 8 {
 			bytes = append(bytes, loadOp)
-			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n*8)
+			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
 		}
 
 	case parser.Return:
@@ -421,7 +421,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 
 		for n := range v.size / 8 {
 			bytes = append(bytes, storeOp)
-			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n*8)
+			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
 		}
 
 	default:

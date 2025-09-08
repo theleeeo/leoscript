@@ -11,7 +11,7 @@ import (
 
 type VM struct {
 	cStack        []uint64
-	variableStack []byte
+	variableStack []uint64
 	callStack     []stackFrame
 
 	metadata *compiler.Metadata // Metadata for the program, if available
@@ -42,7 +42,7 @@ func NewVM(program []byte) (*VM, error) {
 		program:       exe.Code(),
 		pc:            0,
 		cStack:        make([]uint64, 0),
-		variableStack: make([]byte, 0),
+		variableStack: make([]uint64, 0),
 		stubs:         make([]*externalFunction, len(exe.Metadata().Stubs())),
 	}
 
@@ -54,7 +54,7 @@ func Evaluate(program []byte) (int, error) {
 		program:       program,
 		pc:            0,
 		cStack:        make([]uint64, 0),
-		variableStack: make([]byte, 0),
+		variableStack: make([]uint64, 0),
 	}
 
 	r, err := vm.run()
@@ -87,19 +87,19 @@ func (vm *VM) storeVariable(varOffset uint64, value uint64) {
 	// If the variable is supposed to be stored at the end of the variable stack,
 	// we need to ensure that the variable stack is large enough
 	if int(varOffset) == len(vm.variableStack) {
-		vm.variableStack = binary.BigEndian.AppendUint64(vm.variableStack, value)
+		vm.variableStack = append(vm.variableStack, value)
 		return
 	}
 	// Store the value in the variable stack
-	binary.BigEndian.PutUint64(vm.variableStack[varOffset:varOffset+8], value)
+	vm.variableStack[varOffset] = value
 }
 
 func (vm *VM) loadVariable(varOffset uint64) uint64 {
-	if int(varOffset+8) > len(vm.variableStack) {
+	if int(varOffset+1) > len(vm.variableStack) {
 		panic(fmt.Sprintf("range %d-%d is out of bounds for variable stack of length %d", varOffset, varOffset+8, len(vm.variableStack))) // Should not be able to happen
 	}
 
-	return binary.BigEndian.Uint64(vm.variableStack[varOffset : varOffset+8])
+	return vm.variableStack[varOffset]
 }
 
 func (vm *VM) Init() error {
@@ -305,7 +305,7 @@ func (vm *VM) run() (uint64, error) {
 	}
 }
 
-func (vm *VM) VariableStack() []byte {
+func (vm *VM) VariableStack() []uint64 {
 	return vm.variableStack
 }
 

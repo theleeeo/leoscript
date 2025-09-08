@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	"encoding/binary"
 	"fmt"
 	"leoscript/compiler"
 	"leoscript/lexer"
@@ -67,8 +66,8 @@ func Test_VM_Variables(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))
-		assert.Equal(t, uint64(30), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))
+		assert.Equal(t, uint64(10), vm.VariableStack()[0])
+		assert.Equal(t, uint64(30), vm.VariableStack()[1])
 	})
 }
 
@@ -367,7 +366,7 @@ func Test_VM_Functions(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(5), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // a should be 5
+		assert.Equal(t, uint64(5), vm.VariableStack()[0]) // a should be 5
 	})
 
 	t.Run("Function referencing global variables", func(t *testing.T) {
@@ -386,8 +385,8 @@ func Test_VM_Functions(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should be 10
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should also be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // x should be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[1]) // a should also be 10
 	})
 
 	t.Run("local variable shadowing global variable", func(t *testing.T) {
@@ -407,8 +406,8 @@ func Test_VM_Functions(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // x should still be 10
-		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // a should be 20 (from shadowX)
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // x should still be 10
+		assert.Equal(t, uint64(20), vm.VariableStack()[1]) // a should be 20 (from shadowX)
 	})
 
 	t.Run("Function shadows global variable, restored later", func(t *testing.T) {
@@ -429,9 +428,9 @@ func Test_VM_Functions(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))   // Global x should still be 10
-		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[8:16]))  // a should be 20 (from shadowX)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[16:24])) // b should be 10 (global x)
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // Global x should still be 10
+		assert.Equal(t, uint64(20), vm.VariableStack()[1]) // a should be 20 (from shadowX)
+		assert.Equal(t, uint64(10), vm.VariableStack()[2]) // b should be 10 (global x)
 	})
 }
 
@@ -458,7 +457,7 @@ func Test_Fibonacci(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(55), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 55 (fib(10))
+		assert.Equal(t, uint64(55), vm.VariableStack()[0]) // result should be 55 (fib(10))
 	})
 }
 
@@ -478,7 +477,7 @@ func Test_Assignment(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // result should be 10
 	})
 
 	t.Run("conditional assignment", func(t *testing.T) {
@@ -500,7 +499,7 @@ func Test_Assignment(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // result should be 10
 	})
 
 	t.Run("assignment in and after if", func(t *testing.T) {
@@ -521,7 +520,7 @@ func Test_Assignment(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(20), binary.BigEndian.Uint64(vm.VariableStack()[0:8])) // result should be 10
+		assert.Equal(t, uint64(20), vm.VariableStack()[0]) // result should be 20
 	})
 
 	t.Run("reassign global variable", func(t *testing.T) {
@@ -541,8 +540,8 @@ func Test_Assignment(t *testing.T) {
 		assert.NoError(t, err)
 		err = vm.Init()
 		assert.NoError(t, err)
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[0:8]))  // a should be 10
-		assert.Equal(t, uint64(10), binary.BigEndian.Uint64(vm.VariableStack()[8:16])) // b should also be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[0]) // a should be 10
+		assert.Equal(t, uint64(10), vm.VariableStack()[1]) // b should also be 10
 	})
 }
 
