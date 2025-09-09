@@ -2725,4 +2725,276 @@ func Test_Arrays(t *testing.T) {
 			},
 		}, prog)
 	})
+
 }
+
+// func Test_ComplexArrays(t *testing.T) {
+// 	t.Run("array of structs, implicit var, typed literal,", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		struct Foo {
+// 			int x;
+// 		}
+// 		var f = [Foo{ x: 1 }, Foo{ x: 2 }];
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		fooType := &types.Struct{
+// 			Name: "Foo",
+// 			Fields: []types.Field{
+// 				{Name: "x", Type: types.Int},
+// 			},
+// 		}
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			Structs: []*types.Struct{
+// 				fooType,
+// 			},
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "f",
+// 					Type: types.Array{
+// 						ElementType: fooType,
+// 					},
+// 					Value: ArrayLiteral{
+// 						ElementType: fooType,
+// 						Elements: []Expression{
+// 							StructLiteral{
+// 								Type: fooType,
+// 								Fields: []FieldLiteral{
+// 									{Name: "x", Value: IntegerLiteral{Value: 1}},
+// 								},
+// 							},
+// 							StructLiteral{
+// 								Type: fooType,
+// 								Fields: []FieldLiteral{
+// 									{Name: "x", Value: IntegerLiteral{Value: 2}},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+
+// 	t.Run("array of structs, typed var, implicit literal,", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		struct Foo {
+// 			int x;
+// 		}
+// 		[]Foo f = [{ x: 1 }, { x: 2 }];
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		fooType := &types.Struct{
+// 			Name: "Foo",
+// 			Fields: []types.Field{
+// 				{Name: "x", Type: types.Int},
+// 			},
+// 		}
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			Structs: []*types.Struct{
+// 				fooType,
+// 			},
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "f",
+// 					Type: types.Array{
+// 						ElementType: fooType,
+// 					},
+// 					Value: ArrayLiteral{
+// 						ElementType: fooType,
+// 						Elements: []Expression{
+// 							StructLiteral{
+// 								Type: fooType,
+// 								Fields: []FieldLiteral{
+// 									{Name: "x", Value: IntegerLiteral{Value: 1}},
+// 								},
+// 							},
+// 							StructLiteral{
+// 								Type: fooType,
+// 								Fields: []FieldLiteral{
+// 									{Name: "x", Value: IntegerLiteral{Value: 2}},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+
+// 	t.Run("array in struct", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		struct Foo {
+// 			[]int arr;
+// 		}
+// 		var f = Foo{ arr: [1, 2, 3] };
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		fooType := &types.Struct{
+// 			Name: "Foo",
+// 			Fields: []types.Field{
+// 				{Name: "arr", Type: types.Array{ElementType: types.Int}},
+// 			},
+// 		}
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			Structs: []*types.Struct{
+// 				fooType,
+// 			},
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "f",
+// 					Type: fooType,
+// 					Value: StructLiteral{
+// 						Type: fooType,
+// 						Fields: []FieldLiteral{
+// 							{
+// 								Name: "arr",
+// 								Value: ArrayLiteral{
+// 									ElementType: types.Int,
+// 									Elements: []Expression{
+// 										IntegerLiteral{Value: 1},
+// 										IntegerLiteral{Value: 2},
+// 										IntegerLiteral{Value: 3},
+// 									},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+
+// 	t.Run("array of arrays", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		var a = [[1, 2], [3, 4]];
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "a",
+// 					Type: types.Array{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 					},
+// 					Value: ArrayLiteral{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 						Elements: []Expression{
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 1},
+// 									IntegerLiteral{Value: 2},
+// 								},
+// 							},
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 3},
+// 									IntegerLiteral{Value: 4},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+// 	t.Run("explicitly typed array of arrays", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		[][]int a = [[1, 2], [3, 4]];
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "a",
+// 					Type: types.Array{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 					},
+// 					Value: ArrayLiteral{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 						Elements: []Expression{
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 1},
+// 									IntegerLiteral{Value: 2},
+// 								},
+// 							},
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 3},
+// 									IntegerLiteral{Value: 4},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+
+// 	t.Run("implicit array of arrays", func(t *testing.T) {
+// 		lx := lexer.MustTokenize(`
+// 		var a = [[1, 2], [3, 4]];
+// 		`)
+// 		prog, err := Parse(lx)
+// 		assert.NoError(t, err)
+
+// 		assert.EqualExportedValues(t, &Program{
+// 			VarDecls: []VarDecl{
+// 				{
+// 					Name: "a",
+// 					Type: types.Array{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 					},
+// 					Value: ArrayLiteral{
+// 						ElementType: types.Array{
+// 							ElementType: types.Int,
+// 						},
+// 						Elements: []Expression{
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 1},
+// 									IntegerLiteral{Value: 2},
+// 								},
+// 							},
+// 							ArrayLiteral{
+// 								ElementType: types.Int,
+// 								Elements: []Expression{
+// 									IntegerLiteral{Value: 3},
+// 									IntegerLiteral{Value: 4},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}, prog)
+// 	})
+// }

@@ -926,3 +926,86 @@ func Test_Struct(t *testing.T) {
 		assert.Equal(t, 5, result)
 	})
 }
+
+func Test_Array(t *testing.T) {
+	t.Run("array variable and element assignment", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		export fn main() int {
+			var arr = [1, 2, 3, 4, 5];
+			arr[0] = 10;
+			return arr[0] + arr[1];
+		}
+		`)
+		pg := parser.MustParse(lx)
+		exe := compiler.Compile(pg)
+		vm, err := runtime.NewVM(exe.Marshal())
+		assert.NoError(t, err)
+
+		err = vm.Init()
+		assert.NoError(t, err)
+
+		result, err := vm.Invoke("main")
+		assert.NoError(t, err)
+		assert.Equal(t, 12, result) // Should return 10 + 2
+	})
+
+	// t.Run("array out of bounds access", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	export fn main() int {
+	// 		int[] arr = [1, 2, 3, 4, 5];
+	// 		return arr[10];
+	// 	}
+	// 	`)
+	// 	pg := parser.MustParse(lx)
+	// 	exe := compiler.Compile(pg)
+	// 	vm, err := runtime.NewVM(exe.Marshal())
+	// 	assert.NoError(t, err)
+
+	// 	err = vm.Init()
+	// 	assert.NoError(t, err)
+
+	// 	_, err = vm.Invoke("main")
+	// 	assert.ErrorContains(t, err, "array index out of bounds")
+	// })
+
+	// t.Run("array length", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	export fn main() int {
+	// 		int[] arr = [1, 2, 3, 4, 5];
+	// 		return arr.length;
+	// 	}
+	// 	`)
+	// 	pg := parser.MustParse(lx)
+	// 	exe := compiler.Compile(pg)
+	// 	vm, err := runtime.NewVM(exe.Marshal())
+	// 	assert.NoError(t, err)
+
+	// 	err = vm.Init()
+	// 	assert.NoError(t, err)
+
+	// 	result, err := vm.Invoke("main")
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 5, result) // Should return length 5
+	// })
+
+	// t.Run("multi-dimensional array", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	export fn main() int {
+	// 		var arr = [[1, 2, 3], [4, 5, 6]];
+	// 		arr[0][1] = 10;
+	// 		return arr[0][1] + arr[1][2];
+	// 	}
+	// 	`)
+	// 	pg := parser.MustParse(lx)
+	// 	exe := compiler.Compile(pg)
+	// 	vm, err := runtime.NewVM(exe.Marshal())
+	// 	assert.NoError(t, err)
+
+	// 	err = vm.Init()
+	// 	assert.NoError(t, err)
+
+	// 	result, err := vm.Invoke("main")
+	// 	assert.NoError(t, err)
+	// 	assert.Equal(t, 16, result) // Should return 10 + 6
+	// })
+}

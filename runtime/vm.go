@@ -12,6 +12,7 @@ import (
 type VM struct {
 	cStack        []uint64
 	variableStack []uint64
+	heap          []byte
 	callStack     []stackFrame
 
 	metadata *compiler.Metadata // Metadata for the program, if available
@@ -44,6 +45,7 @@ func NewVM(program []byte) (*VM, error) {
 		cStack:        make([]uint64, 0),
 		variableStack: make([]uint64, 0),
 		stubs:         make([]*externalFunction, len(exe.Metadata().Stubs())),
+		heap:          make([]byte, 0),
 	}
 
 	return vm, nil
@@ -55,6 +57,7 @@ func Evaluate(program []byte) (int, error) {
 		pc:            0,
 		cStack:        make([]uint64, 0),
 		variableStack: make([]uint64, 0),
+		heap:          make([]byte, 0),
 	}
 
 	r, err := vm.run()
@@ -71,6 +74,7 @@ func (vm *VM) Reset() {
 	clear(vm.cStack)
 	clear(vm.variableStack)
 	clear(vm.callStack)
+	clear(vm.heap)
 	vm.pc = 0
 
 	_, err := vm.invokeRaw(0) // Initialize the VM by invoking the _init function
@@ -81,7 +85,7 @@ func (vm *VM) Reset() {
 
 func (vm *VM) storeVariable(varOffset uint64, value uint64) {
 	if int(varOffset) > len(vm.variableStack) {
-		panic(fmt.Sprintf("Variable offset %d is out of bounds for variable stack of length %d", varOffset, len(vm.variableStack))) // Should not be able to happen
+		vm.panic(fmt.Sprintf("Variable offset %d is out of bounds for variable stack of length %d", varOffset, len(vm.variableStack))) // Should not be able to happen
 	}
 
 	// If the variable is supposed to be stored at the end of the variable stack,
@@ -96,7 +100,7 @@ func (vm *VM) storeVariable(varOffset uint64, value uint64) {
 
 func (vm *VM) loadVariable(varOffset uint64) uint64 {
 	if int(varOffset+1) > len(vm.variableStack) {
-		panic(fmt.Sprintf("range %d-%d is out of bounds for variable stack of length %d", varOffset, varOffset+8, len(vm.variableStack))) // Should not be able to happen
+		vm.panic(fmt.Sprintf("range %d-%d is out of bounds for variable stack of length %d", varOffset, varOffset+8, len(vm.variableStack))) // Should not be able to happen
 	}
 
 	return vm.variableStack[varOffset]
@@ -293,6 +297,39 @@ func (vm *VM) run() (uint64, error) {
 			if stubFunc.md.ReturnType != types.Void {
 				vm.cStack = append(vm.cStack, retVal) // Push the return value onto the stack
 			}
+		case compiler.OpAlloc:
+			size := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8 // Move past the alloc instruction
+
+			addr := vm.heapAlloc(size)
+			vm.cStack = append(vm.cStack, addr)
+		case compiler.OpStoreHeap:
+			count := binary.BigEndian.Uint64(vm.program[vm.pc+1 : vm.pc+1+8])
+			vm.pc += 8
+
+			addr := vm.pop()
+			if addr >= uint64(len(vm.heap)) {
+				vm.panic(fmt.Sprintf("invalid heap store at address %d", addr)) // Should not be able to happen
+			}
+
+			if addr+count > uint64(len(vm.heap)) {
+				vm.panic(fmt.Sprintf("heap store of %d bytes exceeds allocated size of %d bytes at address %d", count, len(vm.heap), addr)) // Should not be able to happen
+			}
+
+			for i := range count {
+				value := byte(vm.pop())
+				vm.heap[addr+i] = value
+			}
+
+			vm.cStack = append(vm.cStack, addr) // Push the address back onto the stack
+		case compiler.OpLoadHeap:
+			addr := vm.pop()
+			if addr >= uint64(len(vm.heap)) {
+				vm.panic(fmt.Sprintf("invalid heap load at address %d", addr)) // Should not be able to happen
+			}
+
+			value := uint64(vm.heap[addr])
+			vm.cStack = append(vm.cStack, value)
 		default:
 			return 0, fmt.Errorf("unknown opcode %d", op)
 		}
@@ -304,6 +341,23 @@ func (vm *VM) run() (uint64, error) {
 		}
 	}
 }
+
+func (vm *VM) heapAlloc(size uint64) uint64 {
+	// TODO: Handle it like an adult...
+	// Very naive heap allocation, just appending to a slice.
+	// This will be forever growing and never reusing memory.
+	addr := uint64(len(vm.heap))
+	vm.heap = append(vm.heap, make([]byte, size)...)
+	return addr
+}
+
+// func (vm *VM) heapFree(addr uint64) {
+// 	if addr >= uint64(len(vm.heap)) {
+// 		vm.panic(fmt.Sprintf("invalid heap free at address %d", addr)) // Should not be able to happen
+// 	}
+
+// 	vm.heap = append(vm.heap[:addr], vm.heap[addr+1:]...) // Free the memory
+// }
 
 func (vm *VM) VariableStack() []uint64 {
 	return vm.variableStack
@@ -382,6 +436,10 @@ func (vm *VM) Invoke(name string, args ...any) (any, error) {
 	default:
 		return nil, fmt.Errorf("unsupported return type: %s", fn.ReturnType)
 	}
+}
+
+func (vm *VM) panic(msg string) {
+	panic(fmt.Sprintf("VM panic at pc %d: %s", vm.pc, msg))
 }
 
 func (vm *VM) RegisterStub(name string, fn any) {
