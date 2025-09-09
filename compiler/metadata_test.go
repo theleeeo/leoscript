@@ -96,7 +96,7 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		assert.Equal(t, "b", md.variables[1].Name)
 		assert.Equal(t, types.Bool, md.variables[1].VarType)
-		assert.Equal(t, uint64(8), md.variables[1].Offset)
+		assert.Equal(t, uint64(1), md.variables[1].Offset)
 
 		md2 := new(Metadata)
 		md2.Unmarshal(md.Marshal())
@@ -107,7 +107,7 @@ func Test_Metadata_Marshaling(t *testing.T) {
 
 		assert.Equal(t, "b", md.variables[1].Name)
 		assert.Equal(t, types.Bool, md.variables[1].VarType)
-		assert.Equal(t, uint64(8), md.variables[1].Offset)
+		assert.Equal(t, uint64(1), md.variables[1].Offset)
 	})
 
 	t.Run("metadata with functions and variables", func(t *testing.T) {

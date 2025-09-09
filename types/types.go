@@ -40,11 +40,11 @@ func (b BasicType) Size() uint64 {
 	case Void:
 		return 0
 	case Bool:
-		return 8
+		return 1
 	case Int:
-		return 8
+		return 1
 	case String:
-		return 16
+		return 2
 	}
 
 	panic("unhandled basic type: " + strconv.Itoa(int(b)))
@@ -94,7 +94,7 @@ type Array struct {
 }
 
 func (a Array) Size() uint64 {
-	return 8 // TODO: Implement proper array size calculation
+	return 2
 }
 
 func (a Array) Kind() Kind {

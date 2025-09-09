@@ -334,9 +334,6 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 			panic("unsupported binary operator: " + stmt.Op)
 		}
 	case parser.VarDecl:
-		if stmt.Type.Size()%8 != 0 {
-			panic("variable size must be a multiple of 8")
-		}
 		// The code required to compute the value of the variable.
 		val := c.compileStatement(stmt.Value, sc, 0)
 
@@ -356,7 +353,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 			loadOp = OpLoad
 		}
 
-		for n := range v.size / 8 {
+		for n := range v.size {
 			bytes = append(bytes, loadOp)
 			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
 		}
@@ -419,7 +416,7 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 			storeOp = OpStore
 		}
 
-		for n := range v.size / 8 {
+		for n := range v.size {
 			bytes = append(bytes, storeOp)
 			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
 		}
