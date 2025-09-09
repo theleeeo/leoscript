@@ -684,12 +684,12 @@ func Test_Array(t *testing.T) {
 			compiler.Compile(pg).Code(),
 			`
 			RETURN
+			PUSH 3
 			PUSH 1
 			PUSH 2
 			PUSH 3
 			ALLOC 3
 			STORE_HEAP 3
-			PUSH 3
 			STORE 0
 			STORE 1
 			RETURN
@@ -709,11 +709,11 @@ func Test_Array(t *testing.T) {
 			compiler.Compile(pg).Code(),
 			`
 			RETURN
+			PUSH 2
 			PUSH 1
 			PUSH 2
 			ALLOC 2
 			STORE_HEAP 2
-			PUSH 2
 			STORE 0
 			STORE 1
 			LOAD 0
@@ -738,12 +738,12 @@ func Test_Array(t *testing.T) {
 			compiler.Compile(pg).Code(),
 			`
 			RETURN
+			PUSH 3
 			PUSH 1
 			PUSH 2
 			PUSH 3
 			ALLOC 3
 			STORE_HEAP 3
-			PUSH 3
 			STORE 0
 			STORE 1
 			PUSH 4
@@ -768,20 +768,20 @@ func Test_Array(t *testing.T) {
 			compiler.Compile(pg).Code(),
 			`
 			RETURN
+			PUSH 3
 			PUSH 1
 			PUSH 2
 			PUSH 3
 			ALLOC 3
 			STORE_HEAP 3
-			PUSH 3
 			STORE 0
 			STORE 1
+			PUSH 3
 			PUSH 4
 			PUSH 5
 			PUSH 6
 			ALLOC 3
 			STORE_HEAP 3
-			PUSH 3
 			STORE 0
 			STORE 1
 			RETURN

@@ -473,13 +473,17 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		}
 
 	case parser.ArrayLiteral:
+		arrayLen := uint64(len(stmt.Elements))
+
+		// Put the length on the stack
+		bytes = append(bytes, OpPush)
+		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
+
 		// Put all of the individual elements on the stack
 		for _, elem := range stmt.Elements {
 			elemBytes := c.compileStatement(elem, sc, 0)
 			bytes = append(bytes, elemBytes...)
 		}
-
-		arrayLen := uint64(len(stmt.Elements))
 
 		bytes = append(bytes, OpAlloc)
 		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
@@ -487,9 +491,6 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		bytes = append(bytes, OpStoreHeap)
 		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
 
-		// Put the length on the stack
-		bytes = append(bytes, OpPush)
-		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
 	case parser.ArrayIndex:
 		v, isGlobal := sc.getVariable(stmt.ArrayVar)
 		var loadOp byte
