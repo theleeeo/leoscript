@@ -480,8 +480,11 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
 
 		// Put all of the individual elements on the stack
-		for _, elem := range stmt.Elements {
-			elemBytes := c.compileStatement(elem, sc, 0)
+		// They need to be pushed in reverse order since the stack is LIFO
+		// and we want the first element to be at the lowest address.
+		// So we compile the last element first.
+		for i := len(stmt.Elements) - 1; i >= 0; i-- {
+			elemBytes := c.compileStatement(stmt.Elements[i], sc, 0)
 			bytes = append(bytes, elemBytes...)
 		}
 
