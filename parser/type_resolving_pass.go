@@ -218,7 +218,8 @@ func typeResolvingPass(program *Program) (err error) {
 					if !ok {
 						panic(fmt.Sprint("unknown variable:", pn.Target.(VariableTarget)))
 					}
-					n.ElementType = vt
+					at := vt.(types.Array)
+					n.ElementType = at.ElementType
 				case IndexTarget:
 					// Handle array index assignments
 					vt, ok := wctx.Scope.ResolveVarType(string(pn.Target.(IndexTarget).VariableName))
@@ -248,6 +249,14 @@ func typeResolvingPass(program *Program) (err error) {
 
 				n.ElementType = firstElem.ReturnType()
 			}
+
+			return n, nil
+		case ArrayIndex:
+			resolvedType, ok := wctx.Scope.ResolveVarType(n.ArrayVar)
+			if !ok {
+				panic(fmt.Sprint("unknown variable:", n.ArrayVar))
+			}
+			n.ElementType = resolvedType.(types.Array).ElementType
 
 			return n, nil
 		}

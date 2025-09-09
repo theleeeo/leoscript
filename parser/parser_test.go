@@ -2633,9 +2633,13 @@ func Test_Arrays(t *testing.T) {
 					},
 				},
 				{
-					Name:  "b",
-					Type:  types.Array{ElementType: types.Int},
-					Value: ArrayIndex{ArrayVar: "a", Index: IntegerLiteral{Value: 0}},
+					Name: "b",
+					Type: types.Int,
+					Value: ArrayIndex{
+						ElementType: types.Int,
+						ArrayVar:    "a",
+						Index:       IntegerLiteral{Value: 0},
+					},
 				},
 			},
 		}, prog)
@@ -2682,6 +2686,41 @@ func Test_Arrays(t *testing.T) {
 						},
 						Return{Value: VoidLiteral{}},
 					},
+				},
+			},
+		}, prog)
+	})
+
+	t.Run("implicit var from array element", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		var a = [1, 2];
+		var b = a[0];
+		`)
+		prog, err := Parse(lx)
+		assert.NoError(t, err)
+
+		assert.EqualExportedValues(t, &Program{
+			VarDecls: []VarDecl{
+				{
+					Name: "a",
+					Type: types.Array{
+						ElementType: types.Int,
+					},
+					Value: ArrayLiteral{
+						ElementType: types.Int,
+						Elements: []Expression{
+							IntegerLiteral{Value: 1},
+							IntegerLiteral{Value: 2},
+						},
+					},
+				},
+				{
+					Name: "b",
+					Type: types.Int,
+					Value: ArrayIndex{
+						ElementType: types.Int,
+						ArrayVar:    "a",
+						Index:       IntegerLiteral{Value: 0}},
 				},
 			},
 		}, prog)

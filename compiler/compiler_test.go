@@ -639,4 +639,181 @@ func Test_Struct(t *testing.T) {
 			`,
 		)
 	})
+
+	// TODO: NumbersInIdentifiers
+	// t.Run("assign struct var to another var", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	struct Point {
+	// 		int x;
+	// 		int y;
+	// 	}
+
+	// 	fn main() {
+	// 		Point p1 = {x:5, y:10};
+	// 		Point p2 = p1;
+	// 	}
+	// 	`)
+	// 	pg := parser.MustParse(lx)
+	// 	equalProgram(t,
+	// 		compiler.Compile(pg).Code(),
+	// 		`
+	// 		RETURN
+	// 		PUSH 5
+	// 		PUSH 10
+	// 		STORE 0
+	// 		STORE 1
+	// 		LOAD 0
+	// 		LOAD 1
+	// 		STORE 2
+	// 		STORE 3
+	// 		RETURN
+	// 		`,
+	// 	)
+	// })
+}
+
+func Test_Array(t *testing.T) {
+	t.Run("array literal", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() {
+			var a = [1, 2, 3];
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 1
+			PUSH 2
+			PUSH 3
+			ALLOC 3
+			STORE_HEAP 3
+			PUSH 3
+			STORE 0
+			STORE 1
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("get from array index", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() {
+			var a = [1, 2];
+			var b = a[1];
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 1
+			PUSH 2
+			ALLOC 2
+			STORE_HEAP 2
+			PUSH 2
+			STORE 0
+			STORE 1
+			LOAD 0
+			PUSH 1
+			ADD
+			LOAD_HEAP
+			STORE 2
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("assign to array index", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() {
+			var a = [1, 2, 3];
+			a[1] = 4;
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 1
+			PUSH 2
+			PUSH 3
+			ALLOC 3
+			STORE_HEAP 3
+			PUSH 3
+			STORE 0
+			STORE 1
+			PUSH 4
+			LOAD 0
+			PUSH 1
+			ADD
+			STORE_HEAP 1
+			RETURN
+			`,
+		)
+	})
+
+	t.Run("reassign entire array", func(t *testing.T) {
+		lx := lexer.MustTokenize(`
+		fn main() {
+			var a = [1, 2, 3];
+			a = [4, 5, 6];
+		}
+		`)
+		pg := parser.MustParse(lx)
+		equalProgram(t,
+			compiler.Compile(pg).Code(),
+			`
+			RETURN
+			PUSH 1
+			PUSH 2
+			PUSH 3
+			ALLOC 3
+			STORE_HEAP 3
+			PUSH 3
+			STORE 0
+			STORE 1
+			PUSH 4
+			PUSH 5
+			PUSH 6
+			ALLOC 3
+			STORE_HEAP 3
+			PUSH 3
+			STORE 0
+			STORE 1
+			RETURN
+			`,
+		)
+	})
+
+	// t.Run("array length", func(t *testing.T) {
+	// 	lx := lexer.MustTokenize(`
+	// 	fn main() {
+	// 		var a = [1, 2, 3];
+	// 		var b = a.len;
+	// 	}
+	// 	`)
+	// 	pg := parser.MustParse(lx)
+	// 	equalProgram(t,
+	// 		compiler.Compile(pg).Code(),
+	// 		`
+	// 		RETURN
+	// 		PUSH 3
+	// 		STORE 0
+	// 		PUSH 1
+	// 		PUSH 2
+	// 		PUSH 3
+	// 		ALLOC 3
+	// 		STORE 1
+	// 		LOAD 1
+	// 		STORE_HEAP 3
+	// 		LOAD 0
+	// 		STORE 1
+	// 		RETURN
+	// 		`,
+	// 	)
+	// })
 }

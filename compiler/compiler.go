@@ -53,6 +53,15 @@ const (
 	// Store the value at location p1 counted from the absolute base of the variable stack
 	OpStoreGlobal
 	OpInvokeStub
+	// (1)
+	// Allocate space for p1 items on the heap
+	OpAlloc
+	// (1)
+	// Starting from the heap address currently at the top of the c-stack, store the next p1 elements.
+	// The address will not be popped from the c-stack.s
+	OpStoreHeap
+	// Load a value from the heap using the address at the top of the c-stack
+	OpLoadHeap
 )
 
 func Compile(p *parser.Program) *Executable {
@@ -181,6 +190,13 @@ func (sc *scopeContext) allocateForType(name string, t types.Type) []byte {
 			bytes = append(bytes, sc.allocateForType(fmt.Sprintf("%s.%s", name, field.Name), field.Type)...)
 		}
 		return bytes
+	case types.Array:
+		var bytes []byte
+		storeBytes := sc.allocateVariable(name, t.Size(), false)
+		bytes = append(bytes, storeBytes...)
+
+		lenBytes := sc.allocateVariable(name+".len", 8, false)
+		return append(bytes, lenBytes...)
 	default:
 		return sc.allocateVariable(name, t.Size(), false)
 	}
@@ -406,21 +422,95 @@ func (c *compiler) compileStatement(stmt parser.Statement, sc *scopeContext, pen
 		val := c.compileStatement(stmt.Value, sc, 0)
 		bytes = append(bytes, val...)
 
-		// Find the variable to assign to
-		v, isGlobal := sc.getVariable(string(stmt.Target.(parser.VariableTarget)))
+		switch vt := stmt.Target.(type) {
+		case parser.VariableTarget:
+			// Find the variable to assign to
+			v, isGlobal := sc.getVariable(string(vt))
 
-		var storeOp byte
+			var storeOp byte
+			if isGlobal {
+				storeOp = OpStoreGlobal
+			} else {
+				storeOp = OpStore
+			}
+
+			for n := range v.size {
+				bytes = append(bytes, storeOp)
+				bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
+			}
+
+		case parser.IndexTarget:
+			// Find the variable to assign to
+			v, isGlobal := sc.getVariable(vt.VariableName)
+			var loadOp byte
+			if isGlobal {
+				loadOp = OpLoadGlobal
+			} else {
+				loadOp = OpLoad
+			}
+
+			// Load the address of the array on the heap
+			bytes = append(bytes, loadOp)
+			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
+
+			// Compile the array index expression
+			index := c.compileStatement(vt.Index, sc, 0)
+			bytes = append(bytes, index...)
+
+			bytes = append(bytes, OpAdd) // Add the index to the base address
+
+			for n := range stmt.Value.ReturnType().Size() {
+				bytes = append(bytes, OpStoreHeap)
+				bytes = binary.BigEndian.AppendUint64(bytes, 1)
+				if n < stmt.Value.ReturnType().Size()-1 {
+					bytes = append(bytes, OpPush)
+					bytes = binary.BigEndian.AppendUint64(bytes, 1)
+					bytes = append(bytes, OpAdd)
+				}
+			}
+		default:
+			// Handle regular variable assignment
+		}
+
+	case parser.ArrayLiteral:
+		// Put all of the individual elements on the stack
+		for _, elem := range stmt.Elements {
+			elemBytes := c.compileStatement(elem, sc, 0)
+			bytes = append(bytes, elemBytes...)
+		}
+
+		arrayLen := uint64(len(stmt.Elements))
+
+		bytes = append(bytes, OpAlloc)
+		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
+
+		bytes = append(bytes, OpStoreHeap)
+		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
+
+		// Put the length on the stack
+		bytes = append(bytes, OpPush)
+		bytes = binary.BigEndian.AppendUint64(bytes, arrayLen)
+	case parser.ArrayIndex:
+		v, isGlobal := sc.getVariable(stmt.ArrayVar)
+		var loadOp byte
 		if isGlobal {
-			storeOp = OpStoreGlobal
+			loadOp = OpLoadGlobal
 		} else {
-			storeOp = OpStore
+			loadOp = OpLoad
 		}
 
-		for n := range v.size {
-			bytes = append(bytes, storeOp)
-			bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset+n)
-		}
+		// Load the address of the array on the heap
+		bytes = append(bytes, loadOp)
+		bytes = binary.BigEndian.AppendUint64(bytes, v.stackOffset)
 
+		// Compile the array index expression
+		index := c.compileStatement(stmt.Index, sc, 0)
+		bytes = append(bytes, index...)
+
+		bytes = append(bytes, OpAdd) // Add the index to the base address
+
+		// Load the array reference
+		bytes = append(bytes, OpLoadHeap)
 	default:
 		panic(fmt.Sprintf("unsupported statement type: %T", stmt))
 	}

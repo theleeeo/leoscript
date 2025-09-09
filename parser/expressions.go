@@ -336,7 +336,8 @@ func (p *Parser) parseArrayIndex() (Expression, error) {
 	}
 
 	return ArrayIndex{
-		ArrayVar: ident.Value,
-		Index:    index,
+		ElementType: types.Unspecified,
+		ArrayVar:    ident.Value,
+		Index:       index,
 	}, nil
 }

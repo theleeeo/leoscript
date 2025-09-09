@@ -224,8 +224,9 @@ func (a ArrayLiteral) String() string {
 }
 
 type ArrayIndex struct {
-	ArrayVar string
-	Index    Expression
+	ElementType types.Type
+	ArrayVar    string
+	Index       Expression
 }
 
 func (a ArrayIndex) String() string {
@@ -233,5 +234,5 @@ func (a ArrayIndex) String() string {
 }
 
 func (a ArrayIndex) ReturnType() types.Type {
-	return types.Array{ElementType: a.Index.ReturnType()}
+	return a.ElementType
 }

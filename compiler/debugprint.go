@@ -147,6 +147,22 @@ func DebugPrint(rawExe []byte) {
 			b.WriteString(stubDef.Name)
 			b.WriteRune(')')
 			b.WriteString("\033[0m") // Reset color
+		case OpAlloc:
+			b.WriteString("ALLOC")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe.code[i:i+8])), 10))
+			i = i + 7
+		case OpStoreHeap:
+			b.WriteString("STORE_HEAP")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe.code[i:i+8])), 10))
+			i = i + 7
+		case OpLoadHeap:
+			b.WriteString("LOAD_HEAP")
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}
@@ -267,6 +283,22 @@ func DumpOpcode(exe []byte) string {
 
 			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
 			i = i + 7
+		case OpAlloc:
+			b.WriteString("ALLOC")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
+		case OpStoreHeap:
+			b.WriteString("STORE_HEAP")
+			b.WriteRune(' ')
+			i++
+
+			b.WriteString(strconv.FormatInt(int64(binary.BigEndian.Uint64(exe[i:i+8])), 10))
+			i = i + 7
+		case OpLoadHeap:
+			b.WriteString("LOAD_HEAP")
 		default:
 			panic("unknown opcode: " + strconv.Itoa(int(op)))
 		}
